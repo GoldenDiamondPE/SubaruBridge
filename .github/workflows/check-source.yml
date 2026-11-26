@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Audit public source boundary
-        run: python3 scripts/audit_public_source.py .
+        run: python3 scripts/audit_public_source.py . --verify-inventory
       - name: Boundary regressions
         run: python3 -m unittest discover -s tests -v
       - name: Install pinned Rust

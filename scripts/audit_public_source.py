@@ -46,15 +46,28 @@ def audit(root):
             patterns=[r'gh' + r'[pousr]_[A-Za-z0-9]{30,}',r'github' + r'_pat_[A-Za-z0-9_]{30,}',r'-----BEGIN ' + r'(?:RSA |OPENSSH |EC )?PRIVATE KEY-----',
                       r'C:[/\\]Users[/\\]Brandon',r'19231' + r'FDF600JVK',r'\b[A-Fa-f0-9]{2}(?::[A-Fa-f0-9]{2}){5}\b',r'(?m)^package com\.' + r'uievolution',r'(?m)^package com\.' + r'subaru\.global']
             if any(re.search(pattern,text) for pattern in patterns):errors.append(name+': credential, identifier or proprietary source marker');continue
-        inventory[name]=hashlib.sha256(raw).hexdigest()
+        # The repository declares LF text; verify the Git representation even
+        # when a Windows editor has temporarily written CRLF in the worktree.
+        inventory[name]=hashlib.sha256(raw if relative==PNG else raw.replace(b'\r\n',b'\n')).hexdigest()
     if errors:raise ValueError('\n'.join(errors))
     return inventory
 
 
+def verify_inventory(root,actual):
+    expected=json.loads((Path(root)/'source-inventory.json').read_text(encoding='utf-8'))
+    current={k:v for k,v in actual.items() if k!='source-inventory.json'}
+    if current!=expected:raise ValueError('Source inventory differs; regenerate it after reviewing the changed source')
+
+
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('root',type=Path);p.add_argument('--inventory',type=Path)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('root',type=Path);p.add_argument('--inventory',type=Path);p.add_argument('--verify-inventory',action='store_true')
     args=p.parse_args()
     try:result=audit(args.root)
     except ValueError as error:raise SystemExit('Public source check FAILED:\n'+str(error))
-    if args.inventory:args.inventory.write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
+    if args.inventory:
+        result.pop('source-inventory.json',None)
+        args.inventory.write_bytes((json.dumps(result,indent=2)+'\n').encode('utf-8'))
+    if args.verify_inventory:
+        try:verify_inventory(args.root,result)
+        except ValueError as error:raise SystemExit('Public source check FAILED:\n'+str(error))
     print(json.dumps({'source_check':'PASS','files':len(result),'policy':'original source and explicitly reviewed assets only'}))

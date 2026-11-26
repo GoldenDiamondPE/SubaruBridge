@@ -3,6 +3,8 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
+import hashlib
+import json
 
 spec=importlib.util.spec_from_file_location('audit',Path(__file__).resolve().parents[1]/'scripts/audit_public_source.py')
 audit=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit)
@@ -34,6 +36,15 @@ class Boundary(unittest.TestCase):
     def test_replaced_pattern_rejected(self):
         self.put('android/src/main/assets/subarubridge-lab/pattern.png',b'unreviewed bytes')
         with self.assertRaises(ValueError):audit.audit(self.root)
+    def test_windows_text_hash_matches_git_lf(self):
+        self.put('README.md',b'first\r\nsecond\r\n')
+        self.assertEqual(audit.audit(self.root)['README.md'],hashlib.sha256(b'first\nsecond\n').hexdigest())
+    def test_inventory_detects_changed_source(self):
+        self.put('README.md',b'original\n');expected=audit.audit(self.root)
+        self.put('source-inventory.json',json.dumps(expected).encode())
+        audit.verify_inventory(self.root,audit.audit(self.root))
+        self.put('README.md',b'changed\n')
+        with self.assertRaises(ValueError):audit.verify_inventory(self.root,audit.audit(self.root))
 
 
 if __name__=='__main__':unittest.main()

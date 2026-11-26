@@ -18,6 +18,8 @@ Before a pull request:
 
 ```sh
 python3 scripts/audit_public_source.py .
+python3 scripts/audit_public_source.py . --inventory source-inventory.json
+python3 scripts/audit_public_source.py . --verify-inventory
 cd rust
 cargo test
 cd ../android

@@ -1,6 +1,6 @@
 {
   ".gitattributes": "23302dd90b8bb74b44d365fafef8df20f809b61cb347023951ecf60a88a29651",
-  ".github/workflows/check-source.yml": "ccb173b21083f0bb0516bab9745b2fd2c13f301349929f4011d44de0fcd4c03e",
+  ".github/workflows/check-source.yml": "97fd33ccab9b90da4aefae34cdb9690ca39532ff2902aa7359b00d0f389cb95c",
   ".gitignore": "f8c4545cf8892d04c28211bbe0dbc387552bc13fcd00d876a5fa8a1e2c7b2b7a",
   "android/build.gradle": "94e80c334fe1abab402a3b8faefdea6d69f24542c22bf910cce4ab53e51a2406",
   "android/headunit-ui/dashboard.css": "60c6570b533a5310997dceea56ef3c8f530310eb2bbc5ca7bdd17a06d1d8e926",
@@ -28,9 +28,9 @@
   "android/src/androidTest/java/org/mlpi/pixelprobe/starlink/BridgeCoreSmoke.java": "4e515926cc3fff7f87e9913de08f48772a1d89890da079e1e9a431f578335a8b",
   "android/src/main/AndroidManifest.xml": "dd4fb34d056f72fc536621f45d49cd69bd19cb55b9943ed0bfae0ac62f1cf120",
   "android/src/main/assets/subarubridge-lab/pattern.png": "4bd97df4c282b97fba8a280df9e3504c4de0c38eb5cd10bacbe1ca0b0a60a6f9",
-  "android/src/main/java/org/mlpi/pixelprobe/starlink/CarUi.java": "64cd300dc3a472f30ba8e98c132d945e8e8852206e9ee83d8bdc51efc88995e6",
-  "android/src/main/java/org/mlpi/pixelprobe/starlink/DiagnosticEngine.java": "9c32d90583f765d84353ab5ea4cb007cd6c634d1c29f38f897efc7cf0b3a28d4",
-  "android/src/main/java/org/mlpi/pixelprobe/starlink/HtmlView.java": "31c716c38cd8c5c4e473ade8c148df1793f697758582187360bf347fbad3be4c",
+  "android/src/main/java/org/mlpi/pixelprobe/starlink/CarUi.java": "16b70caa5e2345dcef6d0a074420e3e3fe7e59eea521a096b2ea99a9c3476e69",
+  "android/src/main/java/org/mlpi/pixelprobe/starlink/DiagnosticEngine.java": "3aa9286bfac1fa131a00c3c1f73fc42380e6178a4c895e0a9ca425f7bc67ea01",
+  "android/src/main/java/org/mlpi/pixelprobe/starlink/HtmlView.java": "ad6241d4566537fa70118f9d86215bd22c9e016ee567357089c476974f18b54d",
   "android/src/main/java/org/mlpi/pixelprobe/starlink/LinkDiagnostics.java": "94ba2cafd13511f5b46f1f03645c5d1f174a837d5135075b2b4e21e7cb085b83",
   "android/src/main/java/org/mlpi/pixelprobe/starlink/LocalHttp.java": "85254cd8fc79a1f720b9efd7204aee9487ef90fb181d022172b4b1be9badda1f",
   "android/src/main/java/org/mlpi/pixelprobe/starlink/RustCore.java": "25f67b04ed04c71f6d0acb6963245de3fb50aefd2516486853b1273eafb7ae13",
@@ -45,7 +45,7 @@
   "android/src/main/res/values/probe_icon_colors.xml": "9802c529faa3a3d2277160cb74a3a419451ce522330f426440e1575028f97421",
   "android/src/main/res/values/styles.xml": "d96323b2a9de8e51c982766362c1c369c4cda6e4b48db57c5de6ea7ce2ed2342",
   "android/src/main/res/xml/local_network_security.xml": "ac38d1a54dba1d4183d4381d0077e898fed5691009836c549318e6b8b70bd66d",
-  "CONTRIBUTING.md": "8ba9ae2fe73b7b1baceaa6bde248c8f95aff0699c07574209e06691d1d5833bc",
+  "CONTRIBUTING.md": "b391e6a8e38cfe93d0e5f4f8af341d164fa42607afb537f0e61c48f07c797b41",
   "docs/_config.yml": "6cfc4d35741a7f07675195e00c866ddf1780549e8cd75d195db37aeaff7c8818",
   "docs/_layouts/default.html": "aec730a437afc2b15064fbfd4648d71e5a51fb8fc682c82308e0e7f7c2aa6e6b",
   "docs/architecture.md": "4b94b488abc81d6326975cbd5aaf215b11d3a8a8fd09c4e91466ff9c40732c71",
@@ -69,9 +69,9 @@
   "rust/src/slip.rs": "573c79014f3c33d9f86326c160420c2b6a179bf1e74eb0b2851adc477b50fe82",
   "rust/src/transport.rs": "9c4537747076a8870f5520a76149410fffb82c623f4f9a6abd1f8571703b16b4",
   "rust/tests/protocol.rs": "01f5c429480a7c96544f99886530e33798b28236018098bd26d2ae90067bb31a",
-  "scripts/audit_public_source.py": "67321d1d176d45e1d13b88b1587b42fb4c79a151180addf2119a49d9a579d536",
+  "scripts/audit_public_source.py": "555e4f19a981372c58dcc5fca784c694b61212050078a2de788439cf5042a6d5",
   "scripts/build_android_rust.py": "13b2401a873b43ffb993727ef9c1ba2df4f57658461f3864049fb4ff7168ae40",
   "scripts/compile_car_ui.py": "1de24398dd7145de2d5ff34f11adb2820187365bb2a37a540d1c4d22a1a144d0",
   "scripts/test_starlink_http.py": "c92e6e9951deb040e76e280392e9fe4d6e19b47f0357f22fe56b572e695885bc",
-  "tests/test_public_boundary.py": "c3dddcc79e2b5d941ed7e0b35794206f07cfbab9c16b4dc3b2d982b164bf8827"
+  "tests/test_public_boundary.py": "f1ef193477116ed252abe79fb96dc08f77ef86d2a89d5461d273458554f4b28b"
 }
