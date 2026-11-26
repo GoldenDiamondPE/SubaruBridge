@@ -111,7 +111,8 @@ public final class StarlinkRouter {
         }
         return html(new CarUi(context).basic(run,screen,state,screen==3?nativeStatus(run):null,form.toString()),request.close);
     }
-    public LocalHttp.Response handle(LocalHttp.Request request) {
+    public LocalHttp.Response handle(LocalHttp.Request request) { return handle(request,"preview"); }
+    private LocalHttp.Response handle(LocalHttp.Request request,String source) {
         if(request==null)return error(400,"Missing request",true);
         String loggedPath="invalid";
         LocalHttp.Response response;
@@ -155,29 +156,35 @@ public final class StarlinkRouter {
         catch(java.net.URISyntaxException e){response=error(400,"Invalid request target",true);}
         catch(Exception e){Log.w("SubaruBridgeHttp","Local handler failed: "+e.getClass().getSimpleName());response=error(500,"Local handler unavailable",true);}
         Log.i("SubaruBridgeHttp",request.method+" "+loggedPath+" status="+response.status+" bytes="+response.wire.length);
+        LinkDiagnostics.http(context,source,request.method,loggedPath,response.status,response.wire.length);
         return response;
     }
     public LocalHttp.Response handle(byte[] raw) {
-        try{return handle(LocalHttp.parse(raw));}catch(LocalHttp.Error e){return error(e.status,e.getMessage(),true);}catch(IOException e){return error(400,"Invalid request",true);}
+        try{return handle(LocalHttp.parse(raw),"bluetooth");}catch(LocalHttp.Error e){return error(e.status,e.getMessage(),true);}catch(IOException e){return error(400,"Invalid request",true);}
     }
     /** Only our bounded diagnostic data; never HCI, vendor files or identifiers. */
     public void exportReport(OutputStream destination) throws IOException {
         synchronized(engine) {
+            synchronized(LinkDiagnostics.class) {
             try(ZipOutputStream zip=new ZipOutputStream(destination)) {
                 Map<String,Object> metadata=new LinkedHashMap<>();
                 metadata.put("product","SubaruBridge");metadata.put("build",DiagnosticEngine.BUILD);
                 metadata.put("serverTimeMs",System.currentTimeMillis());metadata.put("uptimeMs",SystemClock.elapsedRealtime());
                 metadata.put("connection",StarlinkService.state());metadata.put("androidApi",android.os.Build.VERSION.SDK_INT);
+                metadata.put("transport",LinkDiagnostics.snapshot());
                 metadata.put("scope","Original app events only. No raw Bluetooth or USB capture included.");
                 zip.putNextEntry(new ZipEntry("report.json"));zip.write(new JSONObject(metadata).toString().getBytes(StandardCharsets.UTF_8));zip.closeEntry();
-                File journal=new File(context.getFilesDir(),"subarubridge-diagnostics/events.jsonl");
+                for(String name:new String[]{"events.jsonl","transport-private.jsonl"}) {
+                File journal=new File(context.getFilesDir(),"subarubridge-diagnostics/"+name);
                 if(journal.isFile()) {
                     if(journal.length()>1024*1024)throw new IOException("Journal size limit");
-                    zip.putNextEntry(new ZipEntry("events-private.jsonl"));
+                    zip.putNextEntry(new ZipEntry(name.equals("events.jsonl")?"events-private.jsonl":name));
                     try(InputStream in=new FileInputStream(journal)) {byte[] bytes=new byte[8192];int n,total=0;
                         while((n=in.read(bytes))!=-1){total+=n;if(total>1024*1024)throw new IOException("Journal size limit");zip.write(bytes,0,n);}}
                     zip.closeEntry();
                 }
+                }
+            }
             }
         }
     }

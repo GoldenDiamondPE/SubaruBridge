@@ -32,6 +32,12 @@ public final class BridgeCoreSmoke extends Instrumentation {
             check(router.handle("GET /version HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.US_ASCII)).status==200,"Local router unavailable");
             check(router.handle("GET http://example.invalid/ HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.US_ASCII)).status==403,"Remote target accepted");
             check(router.handle("GET /subarubridge-diag/%0aInjected HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.US_ASCII)).status==400,"Control character in path accepted");
+            String marker="test-private-bootstrap-value";
+            String body="pid="+marker;
+            check(router.handle(("POST "+StarlinkRouter.ENTRY+" HTTP/1.0\r\nContent-Length: "+body.length()+"\r\n\r\n"+body).getBytes(StandardCharsets.US_ASCII)).status==200,"Bootstrap failed");
+            java.io.File log=new java.io.File(context.getFilesDir(),"subarubridge-diagnostics/transport-private.jsonl");
+            String journal=new String(java.nio.file.Files.readAllBytes(log.toPath()),StandardCharsets.UTF_8);
+            check(!journal.contains(marker)&&journal.contains("\"route\":\"launcher\""),"Bootstrap body leaked or route metadata missing");
             result.putString("core","PASS: 64 JNI lifetimes, malformed HTTP rejection and local-only routes");code=Activity.RESULT_OK;
         }catch(Throwable error){result.putString("core","FAIL: "+error);}
         return code;

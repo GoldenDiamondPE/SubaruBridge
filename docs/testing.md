@@ -56,7 +56,12 @@ They are targeted regressions, not a TCP conformance certification.
 The app records confirmed events in its private
 `files/subarubridge-diagnostics/events.jsonl`. Use **Export private test report**
 on the phone to save its own event journal and build/status information in Downloads.
-This works without a PC or root. It includes no raw Bluetooth/USB packets.
+This works without a PC or root. The report also includes connection-stage and
+byte counters plus a bounded history of known HTTP route categories/statuses.
+It labels phone-preview requests separately from Bluetooth requests. This helps
+distinguish no app-channel connection, received bytes without HTTP, and an HTTP
+reply without needing a laptop. Request bodies, headers, addresses and raw
+Bluetooth/USB packets are not included.
 `adb shell run-as org.subarubridge.app`
 can read this file from your own debug build after the test. A full HCI capture
 requires separate OS support; the app cannot grant itself that access. The Android

@@ -39,6 +39,13 @@ bodies are not logged; event journals store only explicit diagnostic fields.
 The private journal is capped at 1 MiB and reports storage failure rather than
 claiming an unsaved result succeeded.
 
+An additional app-owned metadata journal is separately capped at 1 MiB. It stores
+connection stages, byte counts, allowlisted route categories and response status,
+with preview/Bluetooth source labels. It never records packet payloads, bootstrap
+bodies, header values or device addresses. A full or unavailable metadata journal
+is flagged in the exported report. These summaries cannot replace a raw HCI trace
+when exact framing details are required.
+
 The shared Rust C API returns owned byte buffers; the adapter must free each
 once using the library function. Handles are registered rather than exposing raw
 engine pointers. JNI copies bytes and releases buffers on the Android boundary.

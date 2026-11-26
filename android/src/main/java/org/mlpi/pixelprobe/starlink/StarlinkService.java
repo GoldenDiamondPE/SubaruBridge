@@ -28,6 +28,7 @@ public final class StarlinkService extends Service {
     public static boolean running(){return running;}
     private void state(String value){
         state=value;Log.i("SubaruBridgeLink",value);
+        LinkDiagnostics.state(this,value);
         android.util.AtomicFile file=new android.util.AtomicFile(new File(getFilesDir(),"bridge-link-state.txt"));
         FileOutputStream out=null;
         try{out=file.startWrite();out.write((value+"\n"+System.currentTimeMillis()+"\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));file.finishWrite(out);}
@@ -80,7 +81,7 @@ public final class StarlinkService extends Service {
                     int actions=0;
                     while(!batches.isEmpty()) {
                         RustCore.Batch batch=batches.removeFirst();
-                        if(batch.wire.length>0){socket.getOutputStream().write(batch.wire);socket.getOutputStream().flush();}
+                        if(batch.wire.length>0){socket.getOutputStream().write(batch.wire);socket.getOutputStream().flush();LinkDiagnostics.sent(batch.wire.length);}
                         for(RustCore.Request request:batch.requests) {
                             if(++actions>256)throw new IOException("Request batch limit");
                             LocalHttp.Response response=router.handle(request.bytes);
@@ -94,7 +95,7 @@ public final class StarlinkService extends Service {
             Pump pump=new Pump();
             clock.scheduleAtFixedRate(()->{try{pump.tick();}catch(IOException e){try{socket.close();}catch(IOException ignored){}}},100,100,TimeUnit.MILLISECONDS);
             byte[] bytes=new byte[8192];int count;
-            while(!stopping && (count=socket.getInputStream().read(bytes))!=-1){if(count>0)pump.feed(Arrays.copyOf(bytes,count));}
+            while(!stopping && (count=socket.getInputStream().read(bytes))!=-1){if(count>0){LinkDiagnostics.received(count);pump.feed(Arrays.copyOf(bytes,count));}}
         }finally{clock.shutdownNow();if(awake.isHeld())awake.release();}
     }
     @Override public void onDestroy() {
