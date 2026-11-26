@@ -18,12 +18,18 @@ Recorded 2026-11-26. Raw evidence remains private; only results are summarized h
 | Legacy STARLINK applications | Stopped during the independent transport test |
 | Interactive emulator with JavaScript disabled | Four screens, three confirmed touches, phone-data read and saved result verified |
 | Phone-only private report export | ZIP integrity and own diagnostic contents verified |
-| Publication-boundary regressions | Seven tests passed |
+| Publication-boundary and inventory regressions | Nine tests passed |
+| Final Bluetooth keep-alive check | Timestamp, launcher POST and version succeeded on one TCP connection |
+| Final closed-connection burst | 32 further HTTP responses completed |
+| Offline transport metadata | Radio counters and source labels verified; bootstrap body excluded |
 
 The radio run lasted approximately 128 seconds. It used a synthetic Windows peer,
 not a Subaru emulator or the actual car. The final build also adds rejection of
 control characters in paths and correct parsing of comma-separated Connection
 tokens; those changes have targeted device regressions.
+The app-owned offline diagnostics were then tested with a further 35 real-radio
+transactions and a three-file private ZIP export. The byte counters were nonzero,
+and synthetic bootstrap-body markers were absent from the saved metadata.
 
 The deeper tests reproduced and fixed overlapping TCP reassembly and premature
 active-flow exhaustion after completed closes. A listener-start intent delivered
