@@ -1,0 +1,21 @@
+{
+  "brand": "SubaruBridge",
+  "eyebrow": "YOUR PIXEL WORKSPACE",
+  "homeTitle": "Make yourself at home.",
+  "homeSubtitle": "A little more possibility. Right here in your Subaru.",
+  "defaultTheme": "midnight",
+  "defaultLayout": "grid",
+  "columnsWide": 4,
+  "columnsNarrow": 2,
+  "tiles": [
+    {"id": "display", "title": "Display", "subtitle": "See the difference", "icon": "display", "tone": "blue", "screen": 1},
+    {"id": "touch", "title": "Touch", "subtitle": "Make the connection", "icon": "touch", "tone": "green", "screen": 2},
+    {"id": "phone", "title": "Pixel", "subtitle": "Your phone, in view", "icon": "phone", "tone": "purple", "screen": 3},
+    {"id": "results", "title": "Results", "subtitle": "Keep what you learn", "icon": "results", "tone": "orange", "screen": 4}
+  ],
+  "themes": {
+    "midnight": {"label": "Midnight", "background": "#101222", "glow": "#202d51", "surface": "#202438", "surfaceRaised": "#2b3048", "text": "#f7f8ff", "muted": "#b3bad2", "accent": "#75aaff", "onAccent": "#07152b", "border": "#373e59", "dock": "#1a1d30"},
+    "daylight": {"label": "Daylight", "background": "#e9edf7", "glow": "#ffffff", "surface": "#ffffff", "surfaceRaised": "#e9eef9", "text": "#14223d", "muted": "#54627d", "accent": "#2563df", "onAccent": "#ffffff", "border": "#ccd5e7", "dock": "#f9fbff"},
+    "coast": {"label": "Coast", "background": "#071e29", "glow": "#154954", "surface": "#123440", "surfaceRaised": "#204651", "text": "#effcff", "muted": "#a8cbd3", "accent": "#72e1ce", "onAccent": "#092a2e", "border": "#315764", "dock": "#102d39"}
+  }
+}

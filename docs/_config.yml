@@ -1,0 +1,9 @@
+title: SubaruBridge
+description: An original, local Android workspace for legacy Subaru STARLINK interfaces.
+url: https://goldendiamondpe.github.io
+baseurl: /SubaruBridge
+markdown: kramdown
+kramdown:
+  input: GFM
+exclude:
+  - architecture.md.tmp

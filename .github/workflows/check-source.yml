@@ -1,0 +1,37 @@
+name: Source and protocol checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit public source boundary
+        run: python3 scripts/audit_public_source.py .
+      - name: Boundary regressions
+        run: python3 -m unittest discover -s tests -v
+      - name: Install pinned Rust
+        run: rustup toolchain install 1.90.0 --profile minimal
+      - name: Native protocol regressions
+        working-directory: rust
+        run: cargo test --locked
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.4.1'
+      - name: Install pinned Rust and Android targets
+        run: |
+          rustup toolchain install 1.90.0 --profile minimal
+          rustup target add --toolchain 1.90.0 aarch64-linux-android x86_64-linux-android
+      - name: Install Android components
+        run: sdkmanager 'platforms;android-36' 'ndk;28.2.13676358'
+      - name: Build from source
+        run: gradle -p android --no-daemon --max-workers=2 '-Dorg.gradle.jvmargs=-Xmx3g' assembleDebug assembleDebugAndroidTest

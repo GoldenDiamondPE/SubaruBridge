@@ -1,0 +1,45 @@
+plugins { id 'com.android.application' version '9.2.0' }
+
+def hostPython = System.getenv('MLPI_BUILD_PYTHON') ?: 'python3'
+def sharedUi = tasks.register('prepareStarlinkUi', Exec) {
+    inputs.dir('headunit-ui'); inputs.file('../scripts/compile_car_ui.py')
+    outputs.dir(layout.buildDirectory.dir('generated/starlinkAssets'))
+    commandLine hostPython, file('../scripts/compile_car_ui.py').absolutePath,
+        '--output', layout.buildDirectory.dir('generated/starlinkAssets/subarubridge-ui').get().asFile.absolutePath,
+        '--landing', layout.buildDirectory.file('generated/starlinkAssets/launcher/subarubridge-demo.html').get().asFile.absolutePath
+}
+def rustCore = tasks.register('prepareRustCore', Exec) {
+    inputs.dir('../rust/src'); inputs.file('../rust/Cargo.toml'); inputs.file('../scripts/build_android_rust.py')
+    outputs.dir(layout.buildDirectory.dir('generated/rust'))
+    doFirst {
+        def sdk = System.getenv('ANDROID_HOME') ?: System.getenv('ANDROID_SDK_ROOT')
+        if (!sdk && file('local.properties').exists()) {
+            def local = new Properties(); file('local.properties').withInputStream { local.load(it) }; sdk = local.getProperty('sdk.dir')
+        }
+        if (!sdk) throw new GradleException('Set ANDROID_HOME or sdk.dir in local.properties')
+        commandLine hostPython, file('../scripts/build_android_rust.py').absolutePath, '--sdk', sdk
+    }
+}
+tasks.matching { it.name.startsWith('configureNdkBuild') || it.name.startsWith('buildNdkBuild') }.configureEach { dependsOn rustCore }
+
+android {
+    namespace 'org.mlpi.pixelprobe'
+    compileSdk 36
+    ndkVersion '28.2.13676358'
+    defaultConfig {
+        applicationId 'org.subarubridge.app'
+        minSdk 30
+        targetSdk 36
+        versionCode 51
+        versionName '0.51-dev'
+        testInstrumentationRunner 'org.mlpi.pixelprobe.starlink.BridgeCoreSmoke'
+        ndk { abiFilters 'arm64-v8a', 'x86_64' }
+    }
+    externalNativeBuild { ndkBuild { path file('src/main/jni/Android.mk') } }
+    sourceSets.main.assets.srcDir(layout.buildDirectory.dir('generated/starlinkAssets').get().asFile)
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+tasks.named('preBuild') { dependsOn sharedUi, rustCore }
