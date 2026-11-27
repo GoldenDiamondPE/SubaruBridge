@@ -15,10 +15,9 @@ pub fn schedule()->Schedule {serde_json::from_str(include_str!("../../../vehicle
 #[serde(rename_all="camelCase",deny_unknown_fields)]
 pub struct Request {
     pub state:Garage,pub today:Date,pub now_ms:u64,pub command:Command,
-    #[serde(default="default_soon_mm")]pub due_soon_mm:u64,
-    #[serde(default="default_soon_days")]pub due_soon_days:i64,
+    #[serde(default)]pub due_soon_mm:Option<u64>,
+    #[serde(default)]pub due_soon_days:Option<i64>,
 }
-fn default_soon_mm()->u64{500*MM_PER_MILE}fn default_soon_days()->i64{30}
 #[derive(Deserialize)]
 #[serde(tag="type",rename_all="camelCase",rename_all_fields="camelCase",deny_unknown_fields)]
 pub enum Command {
@@ -27,6 +26,8 @@ pub enum Command {
     SetOverride{value:Override},ResetOverride{vehicle_id:String,item_id:String},MergeBackup{backup:Garage},
     UpdateService{service:Service},UpdateFuel{entry:Fuel},UpdateExpense{expense:Expense},UpdateTrip{trip:Trip},
     RecordFillUp{entry:Fuel,reading:Reading},
+    AddCustomItem{item:CustomItem},UpdateCustomItem{item:CustomItem},SetPreferences{preferences:MaintenancePreferences},
+    SnoozeReminder{value:ReminderSnooze},ClearSnooze{vehicle_id:String,item_id:String},
 }
 #[derive(Debug,Serialize)]
 #[serde(rename_all="camelCase")]
@@ -113,7 +114,8 @@ fn range(value:&DistanceRange)->Result<(),String>{if value.low_mm>value.high_mm 
 fn interval(value:&Interval)->Result<(),String>{if value.miles.is_none() && value.months.is_none() || value.miles.is_some_and(|v|v==0 || v>1_000_000) || value.months.is_some_and(|v|v==0 || v>2400){Err("Invalid service interval".into())}else{Ok(())}}
 pub fn validate(state:&Garage,today:&Date,now:u64)->Result<(),String>{
     if state.schema_version!=1{return Err("Unsupported garage schema; data was not changed".into());}
-    if state.vehicles.len()>50 || state.readings.len()+state.services.len()+state.fuel.len()+state.expenses.len()+state.trips.len()>MAX_RECORDS || state.overrides.len()>1000{return Err("Garage capacity exceeded".into());}
+    if state.vehicles.len()>50 || state.readings.len()+state.services.len()+state.fuel.len()+state.expenses.len()+state.trips.len()>MAX_RECORDS || state.overrides.len()>1000 || state.custom_items.len()>1000 || state.snoozes.len()>1000{return Err("Garage capacity exceeded".into());}
+    if state.preferences.due_soon_mm>100_000*MM_PER_MILE || !(0..=3650).contains(&state.preferences.due_soon_days){return Err("Invalid maintenance reminder thresholds".into());}
     let mut identifiers=BTreeSet::new();let mut vehicles=BTreeSet::new();
     for vehicle in &state.vehicles {
         id(&vehicle.id)?;if !identifiers.insert(&vehicle.id){return Err("Duplicate vehicle identifier".into());}vehicles.insert(vehicle.id.as_str());
@@ -164,13 +166,23 @@ pub fn validate(state:&Garage,today:&Date,now:u64)->Result<(),String>{
             if pair[1].distance_mm<pair[0].distance_mm{return Err("Active confirmed readings decrease; correct the erroneous measurement rather than creating a new lower odometer".into());}
         }
     }
-    let rules=schedule();let valid_rule=|key:&str|rules.rules.iter().any(|r|r.id==key);
+    let rules=schedule();let mut custom_ids=BTreeSet::new();
+    for item in &state.custom_items {
+        id(&item.id)?;text(&item.title,160)?;text(&item.notes,2000)?;interval(&item.interval)?;
+        if !vehicles.contains(item.vehicle_id.as_str()) || !custom_ids.insert(item.id.as_str()) || rules.rules.iter().any(|r|r.id==item.id) || item.title.trim().is_empty() || !["inspect","replace","renew","service"].contains(&item.action.as_str()){return Err("Invalid or duplicate owner maintenance item".into());}
+    }
+    let valid_rule=|vehicle:&str,key:&str|rules.rules.iter().any(|r|r.id==key) || state.custom_items.iter().any(|r|r.id==key && r.vehicle_id==vehicle);
     for service in &state.services {
-        check_record(&service.id,&service.vehicle_id,&mut ids)?;text(&service.provider,160)?;text(&service.notes,2000)?;
+        check_record(&service.id,&service.vehicle_id,&mut ids)?;text(&service.provider,160)?;text(&service.notes,2000)?;text(&service.warranty,2000)?;
+        if service.part_numbers.len()>50{return Err("Too many service part numbers".into());}for value in &service.part_numbers{text(value,160)?;}
         if service.date.is_none() && service.mileage.is_none(){return Err("Record a service date or mileage range".into());}
-        if service.date.as_ref().is_some_and(|d|d>today) || service.item_ids.is_empty() || service.item_ids.len()>50 || service.item_ids.iter().any(|v|!valid_rule(v)){return Err("Invalid service date or maintenance item".into());}
+        if service.date.as_ref().is_some_and(|d|d>today) || service.item_ids.is_empty() || service.item_ids.len()>50 || service.item_ids.iter().any(|v|!valid_rule(&service.vehicle_id,v)){return Err("Invalid service date or maintenance item".into());}
         let distinct:BTreeSet<_>=service.item_ids.iter().collect();if distinct.len()!=service.item_ids.len(){return Err("Duplicate service item".into());}
         if service.cost_cents>1_000_000_000{return Err("Service amount exceeds supported limit".into());}
+        if let Some(cost)=&service.cost_breakdown {
+            let sum=cost.parts_cents.checked_add(cost.labor_cents).and_then(|v|v.checked_add(cost.tax_cents));
+            if sum!=Some(service.cost_cents){return Err("Parts, labor and tax must add up to the service total".into());}
+        }
         if service.factory_baseline && (service.cost_cents!=0 || service.mileage.as_ref().is_some_and(|v|v.low_mm!=0 || v.high_mm!=0)) {
             return Err("A factory baseline must have zero mileage and no paid service cost".into());
         }
@@ -196,7 +208,8 @@ pub fn validate(state:&Garage,today:&Date,now:u64)->Result<(),String>{
         let mut trips:Vec<_>=state.trips.iter().filter(|t|t.vehicle_id==vehicle.id).collect();trips.sort_by_key(|t|t.started_ms);
         for pair in trips.windows(2){if pair[1].started_ms<pair[0].ended_ms{return Err("Overlapping trips would double-count mileage".into());}}
     }
-    let mut overrides=BTreeSet::new();for custom in &state.overrides {if !vehicles.contains(custom.vehicle_id.as_str()) || !valid_rule(&custom.item_id) || !overrides.insert((&custom.vehicle_id,&custom.item_id)){return Err("Invalid or duplicate maintenance override".into());}interval(&custom.interval)?;}
+    let mut overrides=BTreeSet::new();for custom in &state.overrides {if !vehicles.contains(custom.vehicle_id.as_str()) || !valid_rule(&custom.vehicle_id,&custom.item_id) || !overrides.insert((&custom.vehicle_id,&custom.item_id)){return Err("Invalid or duplicate maintenance override".into());}interval(&custom.interval)?;}
+    let mut snoozes=BTreeSet::new();for value in &state.snoozes {if !vehicles.contains(value.vehicle_id.as_str()) || !valid_rule(&value.vehicle_id,&value.item_id) || !snoozes.insert((&value.vehicle_id,&value.item_id)){return Err("Invalid or duplicate maintenance reminder snooze".into());}}
     Ok(())
 }
 fn merge<T:Clone+PartialEq>(current:&mut Vec<T>,incoming:Vec<T>,key:impl Fn(&T)->&str)->Result<(),String>{
@@ -209,7 +222,7 @@ fn replace<T>(records:&mut [T],value:T,key:impl Fn(&T)->(&str,&str))->Result<(),
 }
 pub fn execute(request:Request)->Result<Value,String>{
     let mut state=request.state;validate(&state,&request.today,request.now_ms)?;
-    if request.due_soon_mm>100_000*MM_PER_MILE || !(0..=3650).contains(&request.due_soon_days){return Err("Invalid due-soon thresholds".into());}
+    if request.due_soon_mm.is_some_and(|v|v>100_000*MM_PER_MILE) || request.due_soon_days.is_some_and(|v|!(0..=3650).contains(&v)){return Err("Invalid due-soon thresholds".into());}
     let original=state.clone();
     match request.command {
         Command::View=>(),Command::AddVehicle{vehicle}=>state.vehicles.push(vehicle),
@@ -231,18 +244,27 @@ pub fn execute(request:Request)->Result<Value,String>{
         Command::UpdateTrip{trip}=>replace(&mut state.trips,trip,|v|(&v.id,&v.vehicle_id))?,
         Command::SetOverride{value}=>{if let Some(old)=state.overrides.iter_mut().find(|v|v.vehicle_id==value.vehicle_id && v.item_id==value.item_id){*old=value;}else{state.overrides.push(value);}},
         Command::ResetOverride{vehicle_id,item_id}=>{state.overrides.retain(|v|v.vehicle_id!=vehicle_id || v.item_id!=item_id);},
+        Command::AddCustomItem{item}=>state.custom_items.push(item),
+        Command::UpdateCustomItem{item}=>replace(&mut state.custom_items,item,|v|(&v.id,&v.vehicle_id))?,
+        Command::SetPreferences{preferences}=>state.preferences=preferences,
+        Command::SnoozeReminder{value}=>{if let Some(old)=state.snoozes.iter_mut().find(|v|v.vehicle_id==value.vehicle_id && v.item_id==value.item_id){*old=value;}else{state.snoozes.push(value);}},
+        Command::ClearSnooze{vehicle_id,item_id}=>state.snoozes.retain(|v|v.vehicle_id!=vehicle_id || v.item_id!=item_id),
         Command::MergeBackup{backup}=>{
             validate(&backup,&request.today,request.now_ms)?;
+            if state.vehicles.is_empty(){state.preferences=backup.preferences.clone();}else if state.preferences!=backup.preferences{return Err("Backup reminder settings conflict with local settings; nothing was imported".into());}
+            merge(&mut state.custom_items,backup.custom_items,|v|&v.id)?;
             merge(&mut state.vehicles,backup.vehicles,|v|&v.id)?;merge(&mut state.readings,backup.readings,|v|&v.id)?;
             merge(&mut state.services,backup.services,|v|&v.id)?;merge(&mut state.fuel,backup.fuel,|v|&v.id)?;
             merge(&mut state.expenses,backup.expenses,|v|&v.id)?;merge(&mut state.trips,backup.trips,|v|&v.id)?;
             for value in backup.overrides {if let Some(old)=state.overrides.iter().find(|v|v.vehicle_id==value.vehicle_id && v.item_id==value.item_id){if old!=&value{return Err("Backup interval conflicts with local data".into());}}else{state.overrides.push(value);}}
+            for value in backup.snoozes {if let Some(old)=state.snoozes.iter().find(|v|v.vehicle_id==value.vehicle_id && v.item_id==value.item_id){if old!=&value{return Err("Backup reminder snooze conflicts with local data".into());}}else{state.snoozes.push(value);}}
         }
     }
     validate(&state,&request.today,request.now_ms)?;
     let changed=state!=original;
     if changed{state.revision=state.revision.checked_add(1).ok_or("Revision exhausted")?;}
     let schedule=schedule();let mut summaries=Vec::new();
+    let soon_mm=request.due_soon_mm.unwrap_or(state.preferences.due_soon_mm);let soon_days=request.due_soon_days.unwrap_or(state.preferences.due_soon_days);
     for vehicle in &state.vehicles {
         let miles=mileage(&state,&vehicle.id);
         let services:Vec<_>=state.services.iter().filter(|s|s.vehicle_id==vehicle.id).collect();
@@ -252,13 +274,23 @@ pub fn execute(request:Request)->Result<Value,String>{
                 let history:Vec<_>=services.iter().copied().filter(|s|s.item_ids.contains(&rule.id)).collect();
                 let last=latest_service(&history);
                 let custom=state.overrides.iter().find(|v|v.vehicle_id==vehicle.id && v.item_id==rule.id);
-                let mut status=maintenance::calculate(rule,last,miles.current_mm,miles.estimated,&request.today,vehicle.severe,custom,&schedule.source_url,request.due_soon_mm,request.due_soon_days);
+                let mut status=maintenance::calculate(rule,last,miles.current_mm,miles.estimated,&request.today,vehicle.severe,custom,&schedule.source_url,soon_mm,soon_days);
                 if !history.is_empty() && last.is_none() && status.status!="notApplicable" {
                     status.uncertain=true;status.explanation="Service records cannot be reliably ordered. Add the missing dates or mileage before choosing a last service.".into();
                 }
                 due.push(status);
             }
         }
+        for item in state.custom_items.iter().filter(|v|v.vehicle_id==vehicle.id) {
+            let rule=Rule{id:item.id.clone(),title:item.title.clone(),action:item.action.clone(),normal:item.interval.clone(),initial:None,severe:None,source_row:"Owner-defined item; no manufacturer interval is claimed".into(),note_refs:vec![]};
+            let history:Vec<_>=services.iter().copied().filter(|s|s.item_ids.contains(&item.id)).collect();let last=latest_service(&history);
+            let default=Override{vehicle_id:vehicle.id.clone(),item_id:item.id.clone(),interval:item.interval.clone(),disabled:false};
+            let custom=state.overrides.iter().find(|v|v.vehicle_id==vehicle.id && v.item_id==item.id).unwrap_or(&default);
+            let mut status=maintenance::calculate(&rule,last,miles.current_mm,miles.estimated,&request.today,false,Some(custom),"",soon_mm,soon_days);
+            if !history.is_empty() && last.is_none() && status.status!="notApplicable"{status.uncertain=true;status.explanation="Owner-defined item. Service records cannot be reliably ordered; add the missing date or mileage.".into();}
+            due.push(status);
+        }
+        for item in &mut due {item.reminder_snoozed_until=state.snoozes.iter().find(|v|v.vehicle_id==vehicle.id && v.item_id==item.item_id && v.until>=request.today).map(|v|v.until.clone());}
         let fuel_cost:u64=state.fuel.iter().filter(|e|e.vehicle_id==vehicle.id).map(|e|e.cost_cents).sum();
         let service_cost:u64=services.iter().filter(|s|!s.factory_baseline).map(|s|s.cost_cents).sum();
         let other:u64=state.expenses.iter().filter(|e|e.vehicle_id==vehicle.id && !e.financing).map(|e|e.cost_cents).sum();

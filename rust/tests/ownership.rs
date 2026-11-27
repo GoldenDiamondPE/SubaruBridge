@@ -1,6 +1,46 @@
 use subarubridge_core::ownership::{self as own,date::Date,model::*,maintenance};
 use serde_json::{json,Value};
 
+#[test]fn service_cost_breakdown_uses_exact_minor_units_and_must_match_the_total(){
+ let mut s=garage();let mut paid=service("s","engine-oil",Some((81000,81000)),Some("2026-11-01"));paid.cost_cents=12345;paid.cost_breakdown=Some(CostBreakdown{parts_cents:5000,labor_cents:7000,tax_cents:345});paid.diy=true;paid.part_numbers=vec!["Owner-recorded-part".into()];paid.warranty="12 months per owner receipt".into();s.services.push(paid);assert!(valid(&s).is_ok());assert_eq!(execute(&s,json!({"type":"view"}))["summaries"][0]["costs"]["serviceCents"],12345);
+ s.services[0].cost_cents=12346;assert!(valid(&s).is_err());s.services[0].cost_breakdown=Some(CostBreakdown{parts_cents:u64::MAX,labor_cents:1,tax_cents:0});assert!(valid(&s).is_err());
+}
+#[test]fn earlier_service_records_load_with_empty_optional_service_book_details(){
+ let value:Service=serde_json::from_value(json!({"id":"s","vehicleId":"car","itemIds":["engine-oil"],"date":"2026-11-01"})).unwrap();assert!(value.cost_breakdown.is_none());assert!(!value.diy);assert!(value.part_numbers.is_empty() && value.warranty.is_empty());
+}
+
+fn owner_item()->CustomItem{CustomItem{id:"registration".into(),vehicle_id:"car".into(),title:"Registration renewal".into(),action:"renew".into(),interval:Interval{miles:None,months:Some(12)},notes:"Owner-selected annual interval".into()}}
+#[test]fn owner_maintenance_works_without_a_supported_manufacturer_profile(){
+ let mut s=garage();s.vehicles[0].maintenance_profile=None;s.vehicles[0].severe=true;s.custom_items.push(owner_item());s.services.push(service("renewed","registration",None,Some("2025-11-27")));
+ let out=execute(&s,json!({"type":"view"}));assert_eq!(out["ok"],true);let d=&out["summaries"][0]["maintenance"][0];assert_eq!(d["status"],"due");assert_eq!(d["sourceUrl"],"");assert!(d["explanation"].as_str().unwrap().contains("Owner interval"));
+}
+#[test]fn owner_items_reject_duplicates_invalid_actions_and_cross_vehicle_references(){
+ let mut s=garage();s.custom_items.push(owner_item());assert!(valid(&s).is_ok());s.custom_items.push(owner_item());assert!(valid(&s).is_err());s.custom_items.pop();s.custom_items[0].action="manufacturer-approved".into();assert!(valid(&s).is_err());s.custom_items[0]=owner_item();
+ let mut other=vehicle();other.id="other".into();s.vehicles.push(other);let mut wrong=service("s","registration",None,Some("2026-11-01"));wrong.vehicle_id="other".into();s.services.push(wrong);assert!(valid(&s).is_err());
+}
+#[test]fn owner_maintenance_edits_keep_saved_service_history(){
+ let mut s=garage();s.custom_items.push(owner_item());s.services.push(service("s","registration",None,Some("2025-11-27")));let mut changed=owner_item();changed.interval.months=Some(24);let out=execute(&s,json!({"type":"updateCustomItem","item":changed}));assert_eq!(out["ok"],true);
+ let status=out["summaries"][0]["maintenance"].as_array().unwrap().iter().find(|v|v["itemId"]=="registration").unwrap();assert_eq!(status["status"],"upToDate");assert_eq!(out["state"]["services"].as_array().unwrap().len(),1);
+}
+#[test]fn reminder_preferences_change_the_soon_window_without_changing_the_service_interval(){
+ let mut s=garage();s.readings.push(reading("r",1,85000));s.services.push(service("s","engine-oil",Some((80000,80000)),Some("2026-10-01")));
+ let status=|v:&Value|v["summaries"][0]["maintenance"].as_array().unwrap().iter().find(|v|v["itemId"]=="engine-oil").unwrap().clone();assert_eq!(status(&execute(&s,json!({"type":"view"})))["status"],"upToDate");
+ let out=execute(&s,json!({"type":"setPreferences","preferences":{"dueSoonMm":2000*MM_PER_MILE,"dueSoonDays":30}}));let due=status(&out);assert_eq!(due["status"],"dueSoon");assert_eq!(due["nextLowMm"],86000*MM_PER_MILE);
+ assert_eq!(execute(&s,json!({"type":"setPreferences","preferences":{"dueSoonMm":0,"dueSoonDays":-1}}))["ok"],false);
+}
+#[test]fn snooze_does_not_hide_the_maintenance_status_and_expires_by_local_civil_date(){
+ let mut s=garage();s.custom_items.push(owner_item());s.services.push(service("s","registration",None,Some("2025-01-01")));
+ let out=execute(&s,json!({"type":"snoozeReminder","value":{"vehicleId":"car","itemId":"registration","until":"2026-12-04"}}));assert_eq!(out["ok"],true);let next:Garage=serde_json::from_value(out["state"].clone()).unwrap();
+ let status=|v:&Value|v["summaries"][0]["maintenance"].as_array().unwrap().iter().find(|v|v["itemId"]=="registration").unwrap().clone();let d=status(&out);assert_eq!(d["status"],"overdue");assert_eq!(d["reminderSnoozedUntil"],"2026-12-04");
+ let cleared=execute(&next,json!({"type":"clearSnooze","vehicleId":"car","itemId":"registration"}));assert!(status(&cleared)["reminderSnoozedUntil"].is_null());
+ s.snoozes.push(ReminderSnooze{vehicle_id:"car".into(),item_id:"registration".into(),until:date("2026-11-26")});assert!(status(&execute(&s,json!({"type":"view"})))["reminderSnoozedUntil"].is_null());
+}
+#[test]fn backups_include_custom_items_settings_and_snoozes(){
+ let mut s=garage();s.custom_items.push(owner_item());s.preferences.due_soon_days=60;s.snoozes.push(ReminderSnooze{vehicle_id:"car".into(),item_id:"registration".into(),until:date("2026-12-01")});
+ let out=execute(&Garage::empty(),json!({"type":"mergeBackup","backup":s}));assert_eq!(out["ok"],true);assert_eq!(out["state"]["customItems"].as_array().unwrap().len(),1);assert_eq!(out["state"]["preferences"]["dueSoonDays"],60);assert_eq!(out["state"]["snoozes"].as_array().unwrap().len(),1);
+ assert_eq!(execute(&garage(),json!({"type":"mergeBackup","backup":s}))["ok"],false);
+}
+
 #[test]fn fuel_and_optional_odometer_are_validated_as_one_transaction(){
  let mut s=garage();s.readings.push(reading("anchor",1,80000));let f=fuel("f",2,81000,40000,true);let r=reading("fuel-reading",2,81000);
  let out=execute(&s,json!({"type":"recordFillUp","entry":f,"reading":r}));assert_eq!(out["ok"],true);assert_eq!(out["state"]["revision"],1);assert_eq!(out["state"]["fuel"].as_array().unwrap().len(),1);assert_eq!(out["summaries"][0]["mileage"]["currentMm"],81000*MM_PER_MILE);
@@ -39,7 +79,7 @@ fn date(s:&str)->Date{Date::parse(s).unwrap()}
 fn vehicle()->Vehicle{serde_json::from_value(json!({"id":"car","nickname":"Legacy","make":"Subaru","model":"Legacy","year":2017,"engine":"2.5L","transmission":"CVT","maintenanceProfile":"subaru-us-2017-legacy-25-cvt"})).unwrap()}
 fn garage()->Garage{let mut s=Garage::empty();s.vehicles.push(vehicle());s}
 fn reading(id:&str,at:u64,miles:u64)->Reading{Reading{id:id.into(),vehicle_id:"car".into(),at_ms:at,distance_mm:miles*MM_PER_MILE,source:DistanceSource::Manual,confidence:Confidence::Confirmed,supersedes:None,notes:String::new()}}
-fn service(id:&str,item:&str,miles:Option<(u64,u64)>,when:Option<&str>)->Service{Service{id:id.into(),vehicle_id:"car".into(),item_ids:vec![item.into()],date:when.map(date),mileage:miles.map(|(lo,hi)|DistanceRange{low_mm:lo*MM_PER_MILE,high_mm:hi*MM_PER_MILE}),cost_cents:0,provider:String::new(),notes:String::new(),factory_baseline:false}}
+fn service(id:&str,item:&str,miles:Option<(u64,u64)>,when:Option<&str>)->Service{Service{id:id.into(),vehicle_id:"car".into(),item_ids:vec![item.into()],date:when.map(date),mileage:miles.map(|(lo,hi)|DistanceRange{low_mm:lo*MM_PER_MILE,high_mm:hi*MM_PER_MILE}),cost_cents:0,provider:String::new(),notes:String::new(),factory_baseline:false,cost_breakdown:None,diy:false,part_numbers:vec![],warranty:String::new()}}
 fn due(item:&str,s:Option<&Service>,miles:Option<u64>,severe:bool,custom:Option<&Override>)->maintenance::Due{let db=own::schedule();let r=db.rules.iter().find(|r|r.id==item).unwrap();maintenance::calculate(r,s,miles.map(|v|v*MM_PER_MILE),false,&date("2026-11-27"),severe,custom,&db.source_url,500*MM_PER_MILE,30)}
 fn execute(state:&Garage,command:Value)->Value{serde_json::from_slice(&own::execute_json(&serde_json::to_vec(&json!({"state":state,"today":"2026-11-27","nowMs":1800000000000u64,"command":command})).unwrap())).unwrap()}
 fn valid(s:&Garage)->Result<(),String>{own::validate(s,&date("2026-11-27"),1800000000000)}

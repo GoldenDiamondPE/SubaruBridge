@@ -10,6 +10,8 @@
 - Add record edits, owner interval restoration, currency relabel protection and
   atomic optional odometer recording with fill-ups.
 - Add opt-in local maintenance reminders and explicit JSON/CSV/offline HTML exports.
+- Add vehicle-scoped owner maintenance, reminder lead times/snoozes and service
+  book parts/labor/tax, DIY, part numbers, warranty notes and history search.
 - Add isolated storage, corruption, failed/interrupted write, backup, concurrent
   mutation, export-escaping, reminder-filtering and native-form tests.
 

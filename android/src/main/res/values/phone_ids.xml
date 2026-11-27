@@ -3,6 +3,14 @@
     <item name="phone_garage" type="id" />
     <item name="garage_retry" type="id" />
     <item name="garage_add_vehicle" type="id" />
+    <item name="garage_add_item" type="id" />
+    <item name="garage_lead_times" type="id" />
+    <item name="garage_edit_item" type="id" />
+    <item name="garage_snooze" type="id" />
+    <item name="garage_item_title" type="id" />
+    <item name="garage_item_miles" type="id" />
+    <item name="garage_item_months" type="id" />
+    <item name="garage_lead_days" type="id" />
     <item name="garage_switch" type="id" />
     <item name="garage_overview" type="id" />
     <item name="garage_maintenance" type="id" />
@@ -15,6 +23,7 @@
     <item name="garage_log_expense" type="id" />
     <item name="garage_log_trip" type="id" />
     <item name="garage_filter" type="id" />
+    <item name="garage_search" type="id" />
     <item name="garage_edit_vehicle" type="id" />
     <item name="garage_reminders" type="id" />
     <item name="garage_export" type="id" />

@@ -26,16 +26,16 @@ public final class OwnershipExport {
     private static String instant(JSONObject record, String key) { return record.isNull(key) ? "" : Instant.ofEpochMilli(record.optLong(key)).toString(); }
     private static String csv(JSONObject state, JSONObject vehicle) throws Exception {
         StringBuilder out = new StringBuilder();
-        line(out, "record_type", "record_id", "vehicle_id", "date_or_start_utc", "end_utc", "odometer_mm", "service_low_mm", "service_high_mm", "trip_distance_mm", "fuel_ml", "cost_hundredths", "currency", "source", "confidence", "items_or_category", "full_tank", "missed_fill", "supersedes", "provider", "notes");
+        line(out, "record_type", "record_id", "vehicle_id", "date_or_start_utc", "end_utc", "odometer_mm", "service_low_mm", "service_high_mm", "trip_distance_mm", "fuel_ml", "cost_hundredths", "currency", "source", "confidence", "items_or_category", "full_tank", "missed_fill", "supersedes", "provider", "notes", "parts_hundredths", "labor_hundredths", "tax_hundredths", "diy", "part_numbers", "warranty");
         for (String collection : new String[]{"readings", "services", "fuel", "expenses", "trips"}) {
             JSONArray records = state.getJSONArray(collection);
             for (int i = 0; i < records.length(); i++) {
                 JSONObject r = records.getJSONObject(i); if (!vehicle.getString("id").equals(r.getString("vehicleId"))) continue;
-                JSONObject mileage = r.optJSONObject("mileage");
+                JSONObject mileage = r.optJSONObject("mileage"), costs = r.optJSONObject("costBreakdown");
                 line(out, collection, r.getString("id"), r.getString("vehicleId"), r.has("atMs") ? instant(r, "atMs") : r.has("startedMs") ? instant(r, "startedMs") : value(r, "date"), instant(r, "endedMs"),
                         collection.equals("trips") ? "" : value(r, "distanceMm"), mileage == null ? "" : value(mileage, "lowMm"), mileage == null ? "" : value(mileage, "highMm"), collection.equals("trips") ? value(r, "distanceMm") : "",
                         value(r, "volumeMl"), value(r, "costCents"), vehicle.getString("currency"), value(r, "source"), value(r, "confidence"), r.has("itemIds") ? r.getJSONArray("itemIds").toString() : value(r, "category"),
-                        value(r, "full"), value(r, "missedFill"), value(r, "supersedes"), value(r, "provider"), value(r, "notes"));
+                        value(r, "full"), value(r, "missedFill"), value(r, "supersedes"), value(r, "provider"), value(r, "notes"), costs == null ? "" : value(costs, "partsCents"), costs == null ? "" : value(costs, "laborCents"), costs == null ? "" : value(costs, "taxCents"), value(r, "diy"), value(r, "partNumbers"), value(r, "warranty"));
             }
         }
         return out.toString();
@@ -45,6 +45,7 @@ public final class OwnershipExport {
         JSONObject state = snapshot.getJSONObject("state"); boolean metric = vehicle.getString("units").equals("metric"); String unit = metric ? " km" : " mi";
         Map<String, String> titles = new HashMap<>(); JSONArray rules = snapshot.getJSONObject("schedule").getJSONArray("rules");
         for (int i = 0; i < rules.length(); i++) titles.put(rules.getJSONObject(i).getString("id"), rules.getJSONObject(i).getString("title"));
+        JSONArray custom = state.getJSONArray("customItems"); for (int i = 0; i < custom.length(); i++) titles.put(custom.getJSONObject(i).getString("id"), custom.getJSONObject(i).getString("title") + " (owner-defined)");
         StringBuilder out = new StringBuilder("<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width\"><title>SubaruBridge service history</title><style>body{font:16px system-ui,sans-serif;margin:36px;line-height:1.5;color:#161616}h1{font-size:26px}article{border-top:1px solid #ccc;padding:16px 0;break-inside:avoid}p{white-space:pre-wrap}small{color:#555}@media print{body{margin:0}@page{margin:18mm}}</style><body><h1>Service history</h1><h2>");
         out.append(html(vehicle.getString("nickname"))).append("</h2><p>").append(html(vehicle.getInt("year") + " " + vehicle.getString("make") + " " + vehicle.getString("model"))).append("</p><small>Owner-entered records. Missing and approximate details are retained. This report does not certify vehicle condition.</small>");
         List<JSONObject> records = new ArrayList<>(); JSONArray services = state.getJSONArray("services");
@@ -56,7 +57,11 @@ public final class OwnershipExport {
             JSONObject range = r.optJSONObject("mileage");
             if (range != null) out.append(" · ").append(html(OwnershipNumbers.distance(range.getLong("lowMm"), metric) + (range.getLong("highMm") == range.getLong("lowMm") ? "" : " – " + OwnershipNumbers.distance(range.getLong("highMm"), metric) + " (approximate range)") + unit));
             else out.append(" · Mileage unknown");
-            out.append("</p><p>").append(html(OwnershipNumbers.money(r.getLong("costCents"), vehicle.getString("currency")))).append("</p><p>").append(html(r.getString("provider"))).append("</p><p>").append(html(r.getString("notes"))).append("</p></article>");
+            out.append("</p><p>").append(html(OwnershipNumbers.money(r.getLong("costCents"), vehicle.getString("currency")))).append("</p><p>").append(html(r.getString("provider"))).append("</p><p>").append(html(r.getString("notes"))).append("</p>");
+            if (r.optBoolean("diy")) out.append("<p>DIY service</p>");
+            JSONObject costs = r.optJSONObject("costBreakdown"); if (costs != null) out.append("<p>").append(html("Parts: " + OwnershipNumbers.money(costs.getLong("partsCents"), vehicle.getString("currency")) + " · Labor: " + OwnershipNumbers.money(costs.getLong("laborCents"), vehicle.getString("currency")) + " · Tax: " + OwnershipNumbers.money(costs.getLong("taxCents"), vehicle.getString("currency")))).append("</p>");
+            JSONArray parts = r.optJSONArray("partNumbers"); if (parts != null && parts.length() > 0) out.append("<p>").append(html("Parts: " + parts)).append("</p>");
+            out.append("<p>").append(html(r.optString("warranty"))).append("</p></article>");
         }
         if (records.isEmpty()) out.append("<p>No services recorded.</p>");
         return out.append("</body></html>").toString();

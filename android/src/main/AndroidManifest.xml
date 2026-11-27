@@ -18,7 +18,7 @@
         <activity android:name=".starlink.GarageActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".starlink.PhoneActionActivity" android:exported="false" />
         <receiver android:name=".ownership.GarageReminders" android:exported="false">
-            <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter>
+            <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>
         </receiver>
         <service android:name=".starlink.BridgeNotificationListener" android:exported="true" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>

@@ -34,7 +34,8 @@ public final class GarageReminders extends BroadcastReceiver {
             if (!active) continue;
             JSONArray items = summary.getJSONArray("maintenance");
             for (int j = 0; j < items.length(); j++) {
-                String status = items.getJSONObject(j).getString("status");
+                JSONObject item = items.getJSONObject(j); if (!item.isNull("reminderSnoozedUntil")) continue;
+                String status = item.getString("status");
                 if (status.equals("overdue") || status.equals("due") || status.equals("dueSoon") || status.equals("inspectionRecommended")) attention++;
                 if (status.equals("overdue")) overdue++;
             }

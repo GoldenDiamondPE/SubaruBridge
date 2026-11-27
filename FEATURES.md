@@ -14,8 +14,9 @@ is evidence that the independent app works on the Subaru.
 | Calls / messages | Android dialer/composer, confirmed notification replies; native iOS prompts/composer | No arbitrary inbox read or call-audio interception; normal factory hands-free testing |
 | Notifications | Android opt-in bounded memory feed; iOS app-owned local notifications | iPhone-wide relay requires separate authorized accessory research |
 | Ownership | Native Android Garage; bounded atomic private storage, profiles, confirmed/approximate readings, correction trail and versioned Rust calculations | iOS persistence/UI adapter, attachments and future schema migrations |
-| Maintenance | 18 sourced normal-service rules for US 2017 Legacy 2.5 CVT; uncertain ranges, date/distance thresholds, service edits and owner intervals | Manufacturer severe-service notes, other vehicles and custom items |
-| Maintenance reminders | Opt-in daily Android inexact alarm and local notification; saved changes trigger checks; unknown history and archived vehicles excluded | Notification delivery after device power management/reboot; iOS adapter |
+| Maintenance | 18 sourced normal-service rules for US 2017 Legacy 2.5 CVT; uncertain ranges, date/distance thresholds, editable owner-defined items and intervals on any vehicle | Manufacturer severe-service notes and verified schedules for other vehicles |
+| Service book | Multi-item visits, dates/ranges, DIY/provider, parts/labor/tax breakdown, owner-recorded part numbers, warranty notes, search and printable history | Receipt/photo/PDF attachments and richer part records |
+| Maintenance reminders | Opt-in daily Android inexact alarm and local notification; configurable lead times and snoozes; saved changes trigger checks; unknown history and archived vehicles excluded | Notification delivery after device power management/reboot; iOS adapter |
 | Trips / fuel / expenses | Completed manual trips, reconciled estimates, full/partial/missed fills and derived operating/financing totals; editable records | Automatic GPS, routes, richer analytics and safeguards for auto recording |
 | Data ownership | User-chosen JSON export/additive restore, CSV history and escaped printable offline HTML service report | Attachments, encrypted backups, conflict-resolution UI and CSV/GPX import |
 | Themes / app SDK | Editable original dashboard configuration/templates | Versioned sandboxed packages, permissions and richer simulator |
@@ -23,6 +24,26 @@ is evidence that the independent app works on the Subaru.
 | OBD-II / black box | Optional read-only design | Additional compatible hardware and platform permission/storage tests |
 | MirrorLink / Pi / scrcpy | Earlier development copies preserved | Certification and descriptor acceptance remain unresolved; separate experiment |
 | CarPlay | Research only | Receiver hardware, licensing/authentication and verified display path |
+
+## Remaining platform scope
+
+| System | Next deliverable and dependency |
+| --- | --- |
+| Ownership analytics | Monthly/yearly mileage, cost and fuel charts with measured/estimated labels; shared aggregation and date-boundary tests |
+| Maintenance references | Exact severe-service notes, fluids/capacities/torques and parts; authoritative model-specific review before publishing facts |
+| Attachments and backups | Private receipt/photo/PDF storage, bundled restoration, encrypted export and conflict review; transactional file/schema tests |
+| Automatic trips | Explicit location/background permission, vehicle selection, battery-efficient GPS, route/parking storage and GPX; platform and device checks |
+| Read-only diagnostics | Optional supported OBD-II hardware, verified PID support, DTC/readiness history and gauges; no ECU writes or code clearing |
+| Black box | Bounded local telemetry/connection timeline, retention, redaction and export; verified data sources and privacy controls |
+| Head-unit dashboard | Ownership widgets, media apps, notification grouping and static fallbacks; independent car render/touch/reconnect evidence |
+| Media expansion | Provider capability model, queues, virtual CDs, skins, radio/self-hosted sources and listening history; official APIs, rights and parked-state limits |
+| Screensavers and wheel shortcuts | Idle/static clock designs and event inspector first; verified rendering/input and a trusted parked signal for animations |
+| App ecosystem | Versioned manifests, restricted permissions, original examples and simulator; compatible distribution on both mobile platforms |
+| Native platform integration | iOS Garage, Android/iOS widgets, local reminders and automation; platform-specific APIs and signed device testing |
+| Protocol tools | Capture import/redaction, decoded inspector, replay and simulator failure cases; synthetic tests before any hardware verification |
+
+This is an incremental development backlog. A planned system is not described as
+implemented merely because a placeholder, model or simulator exists.
 
 Shared data formats and Rust calculation/protocol code are preferred where they
 help both platforms. Native adapters remain necessary. Android notification

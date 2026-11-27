@@ -39,6 +39,7 @@ public final class GarageActivity extends Activity {
     private JSONObject snapshot, state, vehicle, summary;
     private String selected = "", section = "Overview", formKind, editingId = "", itemId = "", historyFilter = "All";
     private String draftId = UUID.randomUUID().toString();
+    private String historyQuery = "";
     private int historyLimit = 50;
     private boolean busy;
     private Form form;
@@ -57,6 +58,7 @@ public final class GarageActivity extends Activity {
             selected = saved.getString("selected", selected); section = saved.getString("section", "Overview");
             formKind = saved.getString("form"); editingId = saved.getString("editing", ""); itemId = saved.getString("item", "");
             draftId = saved.getString("draftId", draftId);
+            historyQuery = saved.getString("historyQuery", "");
             restoredDraft = saved.getBundle("draft"); exportKind = saved.getString("export", "backup");
         }
         beginPage("Garage", "Opening your saved vehicle records…");
@@ -66,6 +68,7 @@ public final class GarageActivity extends Activity {
         super.onSaveInstanceState(out); out.putString("selected", selected); out.putString("section", section);
         out.putString("form", formKind); out.putString("editing", editingId); out.putString("item", itemId);
         out.putString("draftId", draftId);
+        out.putString("historyQuery", historyQuery);
         out.putString("export", exportKind); if (form != null) out.putBundle("draft", form.draft());
     }
     private boolean alive() { return !isFinishing() && !isDestroyed(); }
@@ -85,7 +88,7 @@ public final class GarageActivity extends Activity {
                     if (!alive()) return; busy = false;
                     if (form != null) form.enable(true);
                     if (snapshot == null || errorText == null) beginPage("Garage", "Your records were preserved.");
-                    errorText.setText("Could not complete this change. " + safeError(failure));
+                    showError("Could not complete this change. " + safeError(failure));
                     if (snapshot == null) button("Try again", R.id.garage_retry, () -> perform(() -> store.view(), false));
                 });
             }
@@ -109,12 +112,13 @@ public final class GarageActivity extends Activity {
         view.setPadding(dp(12), dp(10), dp(12), dp(10)); view.setId(id); view.setOnClickListener(v -> action.run());
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.setMargins(0, dp(5), 0, dp(5)); page.addView(view, params); return view;
     }
-    private void row(String title, String detail, Runnable action) {
+    private LinearLayout row(String title, String detail, Runnable action) {
         LinearLayout group = new LinearLayout(this); group.setOrientation(LinearLayout.VERTICAL); group.setPadding(0, dp(12), 0, dp(12)); group.setMinimumHeight(dp(64));
         TextView primary = new TextView(this); primary.setText(title); primary.setTextColor(palette.text); primary.setTextSize(17); group.addView(primary);
         TextView secondary = new TextView(this); secondary.setText(detail); secondary.setTextColor(palette.muted); secondary.setTextSize(14); secondary.setPadding(0, dp(5), 0, 0); group.addView(secondary);
         if (action != null) { group.setClickable(true); group.setFocusable(true); group.setContentDescription(title + ". " + detail); group.setOnClickListener(v -> action.run()); }
         page.addView(group, new LinearLayout.LayoutParams(-1, -2)); View line = new View(this); line.setBackgroundColor(palette.border); page.addView(line, new LinearLayout.LayoutParams(-1, dp(1)));
+        return group;
     }
     private void beginPage(String title, String subtitle) {
         ScrollView scroll = new ScrollView(this); scroll.setFillViewport(true); scroll.setBackgroundColor(palette.background);
@@ -123,10 +127,12 @@ public final class GarageActivity extends Activity {
             android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout() | WindowInsets.Type.ime());
             page.setPadding(dp(22) + bars.left, dp(14) + bars.top, dp(22) + bars.right, dp(20) + bars.bottom); return insets;
         });
-        button(formKind == null ? "‹ SubaruBridge" : "‹ Cancel", View.NO_ID, this::back);
+        Button back = button(formKind == null ? "‹ SubaruBridge" : "‹ Cancel", View.NO_ID, this::back);
+        back.setBackgroundColor(android.graphics.Color.TRANSPARENT); back.setGravity(Gravity.START | Gravity.CENTER_VERTICAL); back.setPadding(0, 0, 0, 0); back.setMinHeight(dp(44));
         label(title, 28, palette.text, true); if (!subtitle.isEmpty()) note(subtitle);
-        errorText = label("", 14, palette.accent, false); errorText.setId(R.id.garage_error); errorText.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        errorText = label("", 14, palette.accent, false); errorText.setId(R.id.garage_error); errorText.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE); errorText.setVisibility(View.GONE);
     }
+    private void showError(String message) { errorText.setText(message); errorText.setVisibility(message.isEmpty() ? View.GONE : View.VISIBLE); if (!message.isEmpty() && page.getParent() instanceof ScrollView) ((ScrollView)page.getParent()).smoothScrollTo(0, 0); }
     private void back() {
         if (busy) return;
         if (formKind == null) { finish(); return; }
@@ -146,9 +152,7 @@ public final class GarageActivity extends Activity {
             if (formKind != null) { buildForm(); return; }
             form = null; beginPage("Garage", "Mileage, maintenance and costs. Saved on this phone.");
             if (vehicle == null) { heading("Add your vehicle"); note("Start with a vehicle profile. Odometer and service history can be added whenever you have them."); button("Add vehicle", R.id.garage_add_vehicle, () -> openForm("vehicle", "", "")); dataButtons(); return; }
-            heading(vehicle.getString("nickname") + (vehicle.optBoolean("archived") ? " · Archived" : ""));
-            note(vehicle.getInt("year") + " " + vehicle.getString("make") + " " + vehicle.getString("model") + " · " + unit());
-            button("Switch or add vehicle", R.id.garage_switch, this::chooseVehicle);
+            row(vehicle.getString("nickname") + (vehicle.optBoolean("archived") ? " · Archived" : "") + " ⌄", vehicle.getInt("year") + " " + vehicle.getString("make") + " " + vehicle.getString("model") + " · " + unit() + " · Switch or add vehicle", this::chooseVehicle).setId(R.id.garage_switch);
             HorizontalScrollView navigation = new HorizontalScrollView(this); LinearLayout links = new LinearLayout(this);
             for (String title : new String[]{"Overview", "Maintenance", "History", "More"}) {
                 Button link = new Button(this); link.setText(title); link.setAllCaps(false); link.setTextColor(title.equals(section) ? palette.accent : palette.muted);
@@ -157,7 +161,7 @@ public final class GarageActivity extends Activity {
             }
             navigation.addView(links); page.addView(navigation);
             switch (section) { case "Maintenance": maintenance(); break; case "History": history(); break; case "More": more(); break; default: overview(); }
-        } catch (Exception error) { beginPage("Garage", "Your records were preserved."); errorText.setText(safeError(error)); }
+        } catch (Exception error) { beginPage("Garage", "Your records were preserved."); showError(safeError(error)); }
     }
     private boolean metric() { return vehicle != null && vehicle.optString("units").equals("metric"); }
     private String unit() { return metric() ? "km" : "mi"; }
@@ -191,12 +195,14 @@ public final class GarageActivity extends Activity {
     private static String statusName(String status) { switch (status) { case "upToDate": return "Up to date"; case "dueSoon": return "Due soon"; case "due": return "Due"; case "overdue": return "Overdue"; case "inspectionRecommended": return "Inspection recommended"; case "notApplicable": return "Disabled"; default: return "Unknown service history"; } }
     private void maintenance() throws Exception {
         JSONArray items = summary.getJSONArray("maintenance");
-        if (items.length() == 0) { note("A verified manufacturer schedule is not bundled for this profile. Your mileage, services, fuel and costs still work."); return; }
-        note("Normal US schedule · 2017 Legacy 2.5 CVT. Both time and distance apply, whichever comes first. Unknown history is never assumed overdue.");
+        button("Add maintenance item", R.id.garage_add_item, () -> openForm("custom", "", ""));
+        button("Reminder lead times", R.id.garage_lead_times, () -> openForm("preferences", "", ""));
+        if (vehicle.isNull("maintenanceProfile")) note("A verified manufacturer schedule is not selected. Add owner-defined maintenance for this vehicle.");
+        else note("Normal US schedule · 2017 Legacy 2.5 CVT. Both time and distance apply, whichever comes first. Unknown history is never assumed overdue.");
         if (vehicle.optBoolean("severe")) note("Severe service selected. Manufacturer severe-condition footnotes are not yet verified; add explicit owner intervals where needed.");
         List<JSONObject> sorted = new ArrayList<>(); for (int i = 0; i < items.length(); i++) sorted.add(items.getJSONObject(i));
         sorted.sort(Comparator.comparingInt(value -> priority(value.optString("status"))));
-        for (JSONObject item : sorted) row(item.getString("title"), statusName(item.getString("status")) + (item.optBoolean("uncertain") ? " · Uncertain" : "") + next(item), () -> detail(item));
+        for (JSONObject item : sorted) row(item.getString("title"), statusName(item.getString("status")) + (item.optBoolean("uncertain") ? " · Uncertain" : "") + (item.isNull("reminderSnoozedUntil") ? "" : " · Reminders snoozed until " + item.optString("reminderSnoozedUntil")) + next(item), () -> detail(item));
     }
     private int priority(String status) { switch (status) { case "overdue": return 0; case "due": return 1; case "dueSoon": case "inspectionRecommended": return 2; case "unknownHistory": return 3; case "upToDate": return 4; default: return 5; } }
     private String next(JSONObject item) {
@@ -210,7 +216,7 @@ public final class GarageActivity extends Activity {
         JSONObject last = item.optJSONObject("lastMileage"); if (last != null) message.append("\nLast mileage: ").append(distance(last.optLong("lowMm"))).append(last.optLong("highMm") != last.optLong("lowMm") ? " – " + distance(last.optLong("highMm")) : "");
         if (!item.isNull("remainingLowMm")) message.append("\nDistance to threshold: ").append(distance(item.optLong("remainingLowMm"))).append(item.optLong("remainingHighMm") != item.optLong("remainingLowMm") ? " to " + distance(item.optLong("remainingHighMm")) : "");
         if (!item.isNull("remainingDays")) message.append("\nDays to threshold: ").append(item.optLong("remainingDays"));
-        message.append("\n\n").append(item.optString("explanation")).append("\n\nManufacturer table: ").append(item.optString("sourceRow"));
+        message.append("\n\n").append(item.optString("explanation")).append("\n\nSource: ").append(item.optString("sourceRow"));
         new AlertDialog.Builder(this).setTitle(item.optString("title")).setMessage(message.toString())
                 .setPositiveButton("Log service", (d, w) -> openForm("service", "", item.optString("itemId")))
                 .setNeutralButton("Interval & source", (d, w) -> openForm("interval", "", item.optString("itemId"))).setNegativeButton("Close", null).show();
@@ -220,9 +226,11 @@ public final class GarageActivity extends Activity {
         for (int i = 0; i < all.length(); i++) if (selected.equals(all.getJSONObject(i).getString("vehicleId"))) result.put(all.getJSONObject(i)); return result;
     }
     private JSONObject find(String name, String id) throws Exception { JSONArray list = state.getJSONArray(name); for (int i = 0; i < list.length(); i++) if (id.equals(list.getJSONObject(i).optString("id"))) return list.getJSONObject(i); return new JSONObject(); }
-    private static String collection(String kind) { switch (kind) { case "reading": return "readings"; case "service": return "services"; case "expense": return "expenses"; case "trip": return "trips"; default: return "fuel"; } }
+    private static String collection(String kind) { switch (kind) { case "reading": return "readings"; case "service": return "services"; case "expense": return "expenses"; case "trip": return "trips"; case "custom": return "customItems"; default: return "fuel"; } }
     private static final class Event { String kind, title, detail, id; long at; Event(String kind, String title, String detail, String id, long at) { this.kind=kind; this.title=title; this.detail=detail; this.id=id; this.at=at; } }
     private void history() throws Exception {
+        EditText query = new EditText(this); query.setText(historyQuery); query.setHint("Search services, parts or notes"); query.setSingleLine(true); query.setTextColor(palette.text); query.setHintTextColor(palette.muted); query.setId(R.id.garage_search); query.setFilters(new InputFilter[]{new InputFilter.LengthFilter(160)}); page.addView(query);
+        button("Search history", View.NO_ID, () -> { historyQuery = query.getText().toString().trim(); historyLimit = 50; if (Build.VERSION.SDK_INT >= 30 && getWindow().getInsetsController() != null) getWindow().getInsetsController().hide(WindowInsets.Type.ime()); render(); });
         button("Show: " + historyFilter, R.id.garage_filter, () -> new AlertDialog.Builder(this).setTitle("History").setItems(new String[]{"All", "Odometer", "Services", "Fuel", "Expenses", "Trips"}, (d, which) -> { historyFilter = new String[]{"All", "Odometer", "Services", "Fuel", "Expenses", "Trips"}[which]; historyLimit = 50; render(); }).show());
         List<Event> events = new ArrayList<>(); Set<String> corrected = new HashSet<>(); JSONArray readings = records("readings");
         for (int i = 0; i < readings.length(); i++) if (!readings.getJSONObject(i).isNull("supersedes")) corrected.add(readings.getJSONObject(i).getString("supersedes"));
@@ -240,7 +248,8 @@ public final class GarageActivity extends Activity {
                     case "trip": at = v.getLong("endedMs"); title = "Trip · " + distance(v.getLong("distanceMm")); detail = when(v.getLong("startedMs")) + " · " + v.getString("source"); break;
                 }
                 if (!v.optString("notes").isEmpty()) detail += "\n" + v.getString("notes");
-                events.add(new Event(kinds[k], title, detail, id, at));
+                String searchable = (title + " " + v.toString()).toLowerCase(Locale.ROOT);
+                if (historyQuery.isEmpty() || searchable.contains(historyQuery.toLowerCase(Locale.ROOT))) events.add(new Event(kinds[k], title, detail, id, at));
             }
         }
         events.sort(Comparator.comparingLong((Event e) -> e.at).reversed()); note(events.size() + " saved records. Tap a record to review or correct it.");
@@ -248,13 +257,18 @@ public final class GarageActivity extends Activity {
         if (events.size() > historyLimit) button("Show 50 more", View.NO_ID, () -> { historyLimit += 50; render(); });
     }
     private String serviceTitles(JSONArray ids) throws Exception { List<String> titles = new ArrayList<>(); for (int i = 0; i < ids.length(); i++) titles.add(rule(ids.getString(i)).optString("title", ids.getString(i))); return String.join(", ", titles); }
-    private JSONObject rule(String id) throws Exception { JSONArray rules = snapshot.getJSONObject("schedule").getJSONArray("rules"); for (int i = 0; i < rules.length(); i++) if (id.equals(rules.getJSONObject(i).getString("id"))) return rules.getJSONObject(i); return new JSONObject(); }
+    private JSONArray availableRules() throws Exception {
+        JSONArray rules = new JSONArray(snapshot.getJSONObject("schedule").getJSONArray("rules").toString()), custom = state.getJSONArray("customItems");
+        for (int i = 0; i < custom.length(); i++) { JSONObject item = custom.getJSONObject(i); if (selected.equals(item.getString("vehicleId"))) rules.put(new JSONObject().put("id", item.getString("id")).put("title", item.getString("title")).put("action", item.getString("action")).put("normal", item.getJSONObject("interval")).put("sourceRow", "Owner-defined maintenance item").put("notes", item.getString("notes"))); }
+        return rules;
+    }
+    private JSONObject rule(String id) throws Exception { JSONArray rules = availableRules(); for (int i = 0; i < rules.length(); i++) if (id.equals(rules.getJSONObject(i).getString("id"))) return rules.getJSONObject(i); return new JSONObject(); }
     private void chooseVehicle() {
         try {
             JSONArray cars = state.getJSONArray("vehicles"); String[] names = new String[cars.length() + 1];
             for (int i = 0; i < cars.length(); i++) names[i] = cars.getJSONObject(i).getString("nickname") + (cars.getJSONObject(i).optBoolean("archived") ? " · Archived" : ""); names[cars.length()] = "Add vehicle";
             new AlertDialog.Builder(this).setTitle("Your garage").setItems(names, (d, index) -> { if (index == cars.length()) openForm("vehicle", "", ""); else { selected = cars.optJSONObject(index).optString("id"); render(); } }).show();
-        } catch (Exception error) { errorText.setText(safeError(error)); }
+        } catch (Exception error) { showError(safeError(error)); }
     }
     private void more() throws Exception {
         button("Edit vehicle profile", R.id.garage_edit_vehicle, () -> openForm("vehicle", selected, ""));
@@ -310,11 +324,11 @@ public final class GarageActivity extends Activity {
     private void toast(String value) { Toast.makeText(this, value, Toast.LENGTH_SHORT).show(); }
 
     private void openForm(String kind, String id, String item) { if (busy) return; formKind = kind; editingId = id; itemId = item; draftId = UUID.randomUUID().toString(); restoredDraft = null; buildFormSafely(); }
-    private void buildFormSafely() { try { buildForm(); } catch (Exception failure) { formKind = null; form = null; render(); errorText.setText(safeError(failure)); } }
+    private void buildFormSafely() { try { buildForm(); } catch (Exception failure) { formKind = null; form = null; render(); showError(safeError(failure)); } }
     private void buildForm() throws Exception {
-        beginPage(formKind.equals("vehicle") ? (editingId.isEmpty() ? "Add vehicle" : "Vehicle profile") : formKind.equals("interval") ? "Service interval" : editingId.isEmpty() ? "Log " + formKind : formKind.equals("reading") ? "Correct odometer" : "Edit " + formKind, "");
+        beginPage(formKind.equals("vehicle") ? (editingId.isEmpty() ? "Add vehicle" : "Vehicle profile") : formKind.equals("interval") ? "Service interval" : formKind.equals("custom") ? "Owner maintenance item" : formKind.equals("preferences") ? "Reminder lead times" : editingId.isEmpty() ? "Log " + formKind : formKind.equals("reading") ? "Correct odometer" : "Edit " + formKind, "");
         form = new Form(); JSONObject existing = formKind.equals("vehicle") ? (editingId.isEmpty() ? new JSONObject() : vehicle) : formKind.equals("interval") ? new JSONObject() : find(collection(formKind), editingId);
-        switch (formKind) { case "vehicle": vehicleForm(existing); break; case "reading": readingForm(existing); break; case "service": serviceForm(existing); break; case "fuel": fuelForm(existing); break; case "expense": expenseForm(existing); break; case "trip": tripForm(existing); break; case "interval": intervalForm(); break; }
+        switch (formKind) { case "vehicle": vehicleForm(existing); break; case "reading": readingForm(existing); break; case "service": serviceForm(existing); break; case "fuel": fuelForm(existing); break; case "expense": expenseForm(existing); break; case "trip": tripForm(existing); break; case "interval": intervalForm(); break; case "custom": customForm(existing); break; case "preferences": preferencesForm(); break; }
         if (restoredDraft != null) { form.restore(restoredDraft); restoredDraft = null; }
         form.refresh();
     }
@@ -322,16 +336,18 @@ public final class GarageActivity extends Activity {
         final Map<String, View> inputs = new LinkedHashMap<>(); final ArrayList<View> controls = new ArrayList<>();
         final ArrayList<Runnable> refreshers = new ArrayList<>();
         LinearLayout details;
-        void fold(int start) {
+        void fold(int start) { fold(start, "Vehicle details, units & maintenance"); }
+        void fold(int start, String title) {
             details = new LinearLayout(GarageActivity.this); details.setOrientation(LinearLayout.VERTICAL); details.setVisibility(View.GONE);
             while (page.getChildCount() > start) { View view = page.getChildAt(start); page.removeViewAt(start); details.addView(view); }
-            Button disclosure = button("Vehicle details, units & maintenance", R.id.garage_profile_details, () -> details.setVisibility(details.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
+            Button disclosure = button(title, R.id.garage_profile_details, () -> details.setVisibility(details.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
             controls.add(disclosure); page.addView(details, new LinearLayout.LayoutParams(-1, -2));
         }
         EditText text(String key, String title, String value, boolean numeric, int id) {
-            note(title); EditText field = new EditText(GarageActivity.this); field.setText(value); field.setSingleLine(!key.equals("notes"));
-            field.setInputType(numeric ? InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL : InputType.TYPE_CLASS_TEXT | (key.equals("notes") ? InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES : InputType.TYPE_TEXT_VARIATION_NORMAL));
-            field.setFilters(new InputFilter[]{new InputFilter.LengthFilter(key.equals("notes") ? 2000 : 160)}); field.setTextColor(palette.text); field.setHintTextColor(palette.muted);
+            boolean multiline = key.equals("notes") || key.equals("warranty");
+            note(title); EditText field = new EditText(GarageActivity.this); field.setText(value); field.setSingleLine(!multiline);
+            field.setInputType(numeric ? InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL : InputType.TYPE_CLASS_TEXT | (multiline ? InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES : InputType.TYPE_TEXT_VARIATION_NORMAL));
+            field.setFilters(new InputFilter[]{new InputFilter.LengthFilter(multiline ? 2000 : 160)}); field.setTextColor(palette.text); field.setHintTextColor(palette.muted);
             field.setBackground(background(palette.surface, 10)); field.setPadding(dp(12), dp(12), dp(12), dp(12)); field.setId(id); field.setContentDescription(title);
             page.addView(field, new LinearLayout.LayoutParams(-1, -2)); inputs.put(key, field); controls.add(field); return field;
         }
@@ -340,7 +356,7 @@ public final class GarageActivity extends Activity {
         CheckBox check(String key, String title, boolean value) { CheckBox check = new CheckBox(GarageActivity.this); check.setText(title); check.setTextColor(palette.text); check.setTextSize(16); check.setChecked(value); check.setMinHeight(dp(48)); page.addView(check); inputs.put(key, check); controls.add(check); return check; }
         String text(String key) { return ((EditText)inputs.get(key)).getText().toString().trim(); }
         boolean checked(String key) { return ((CheckBox)inputs.get(key)).isChecked(); }
-        void save(TaskFactory factory) { controls.add(button("Save on this phone", R.id.garage_save, () -> { try { JSONObject command = factory.make(); errorText.setText(""); perform(() -> store.execute(command), true); } catch (Exception failure) { errorText.setText(safeError(failure)); } })); }
+        void save(TaskFactory factory) { controls.add(button("Save on this phone", R.id.garage_save, () -> { try { JSONObject command = factory.make(); showError(""); perform(() -> store.execute(command), true); } catch (Exception failure) { showError(safeError(failure)); } })); }
         void enable(boolean enabled) { for (View input : controls) input.setEnabled(enabled); }
         void refresh() { for (Runnable action : refreshers) action.run(); }
         void choices(JSONArray rules, JSONArray selectedItems, String first) throws Exception {
@@ -416,7 +432,7 @@ public final class GarageActivity extends Activity {
         });
     }
     private void serviceForm(JSONObject existing) throws Exception {
-        JSONArray rules = snapshot.getJSONObject("schedule").getJSONArray("rules"), selectedItems = existing.optJSONArray("itemIds");
+        JSONArray rules = availableRules(), selectedItems = existing.optJSONArray("itemIds");
         note("Select the work completed. For a historical estimate, leave the date blank and enter a mileage range.");
         form.choices(rules, selectedItems, itemId);
         form.text("date", "Service date (YYYY-MM-DD; may be blank)", existing.isNull("date") ? (editingId.isEmpty() ? LocalDate.now().toString() : "") : existing.optString("date"), false, R.id.garage_date);
@@ -424,14 +440,27 @@ public final class GarageActivity extends Activity {
         form.number("low", "Service odometer / lower estimate (" + unit() + ", optional)", range == null ? "" : inputDistance(range.getLong("lowMm")), R.id.garage_service_low);
         form.number("high", "Upper estimate (" + unit() + "; leave blank for an exact reading)", range == null || range.getLong("lowMm") == range.getLong("highMm") ? "" : inputDistance(range.getLong("highMm")), R.id.garage_service_high);
         form.number("cost", "Total paid (" + vehicle.optString("currency") + "; optional)", editingId.isEmpty() ? "" : BigDecimal.valueOf(existing.optLong("costCents"), 2).toPlainString(), R.id.garage_cost);
-        form.text("provider", "Service provider / DIY (optional)", existing.optString("provider")); notes(existing);
+        form.text("provider", "Service provider (optional)", existing.optString("provider"));
+        int extraStart = page.getChildCount();
+        form.check("diy", "DIY service", existing.optBoolean("diy"));
+        JSONArray partNumbers = existing.optJSONArray("partNumbers"); List<String> parts = new ArrayList<>(); if (partNumbers != null) for (int i = 0; i < partNumbers.length(); i++) parts.add(partNumbers.getString(i));
+        form.text("partNumbers", "Part numbers (comma separated, optional)", String.join(", ", parts));
+        JSONObject breakdown = existing.optJSONObject("costBreakdown");
+        for (String key : new String[]{"parts", "labor", "tax"}) form.number(key, key.substring(0, 1).toUpperCase(Locale.ROOT) + key.substring(1) + " cost (optional)", breakdown == null ? "" : BigDecimal.valueOf(breakdown.optLong(key + "Cents"), 2).toPlainString(), View.NO_ID);
+        form.text("warranty", "Warranty information (optional)", existing.optString("warranty"));
+        note("If you enter a cost breakdown, parts + labor + tax must equal the total. Leave Total paid blank to use their sum. Part numbers are owner records; compatibility is not inferred.");
+        form.fold(extraStart, "Parts, labor & warranty"); notes(existing);
         form.save(() -> {
             JSONArray items = new JSONArray(); for (int i = 0; i < rules.length(); i++) { String id = rules.getJSONObject(i).getString("id"); if (form.checked("item-" + id)) items.put(id); }
             String date = day(form.text("date"), true); JSONObject mileage = null;
             if (!form.text("high").isEmpty() && form.text("low").isEmpty()) throw new IllegalArgumentException("Enter the lower estimate first");
             if (!form.text("low").isEmpty()) { long low = OwnershipNumbers.distance(form.text("low"), metric()); mileage = new JSONObject().put("lowMm", low).put("highMm", form.text("high").isEmpty() ? low : OwnershipNumbers.distance(form.text("high"), metric())); }
+            JSONObject costs = null;
+            if (!form.text("parts").isEmpty() || !form.text("labor").isEmpty() || !form.text("tax").isEmpty()) costs = new JSONObject().put("partsCents", OwnershipNumbers.cents(form.text("parts"))).put("laborCents", OwnershipNumbers.cents(form.text("labor"))).put("taxCents", OwnershipNumbers.cents(form.text("tax")));
+            long total = form.text("cost").isEmpty() && costs != null ? Math.addExact(Math.addExact(costs.getLong("partsCents"), costs.getLong("laborCents")), costs.getLong("taxCents")) : OwnershipNumbers.cents(form.text("cost"));
+            JSONArray savedParts = new JSONArray(); for (String part : form.text("partNumbers").split(",")) if (!part.trim().isEmpty()) savedParts.put(part.trim());
             JSONObject value = record(existing).put("itemIds", items).put("date", date.isEmpty() ? JSONObject.NULL : date).put("mileage", mileage == null ? JSONObject.NULL : mileage)
-                    .put("costCents", OwnershipNumbers.cents(form.text("cost"))).put("provider", form.text("provider")).put("notes", form.text("notes"));
+                    .put("costCents", total).put("provider", form.text("provider")).put("notes", form.text("notes")).put("diy", form.checked("diy")).put("costBreakdown", costs == null ? JSONObject.NULL : costs).put("partNumbers", savedParts).put("warranty", form.text("warranty"));
             return command("addService", "updateService", "service", value);
         });
     }
@@ -471,18 +500,56 @@ public final class GarageActivity extends Activity {
     }
     private void intervalForm() throws Exception {
         JSONObject rule = rule(itemId), interval = rule.getJSONObject("normal"); boolean disabled = false; JSONArray overrides = state.getJSONArray("overrides");
+        boolean owner = !find("customItems", itemId).optString("id").isEmpty();
         for (int i = 0; i < overrides.length(); i++) { JSONObject value = overrides.getJSONObject(i); if (selected.equals(value.getString("vehicleId")) && itemId.equals(value.getString("itemId"))) { interval = value.getJSONObject("interval"); disabled = value.getBoolean("disabled"); } }
-        heading(rule.getString("title")); note("An owner interval overrides the manufacturer interval. Distances here are miles, as in the source schedule. Leave one threshold blank to use only the other.");
+        heading(rule.getString("title")); note((owner ? "This is an owner-defined interval. " : "An owner interval overrides the manufacturer interval. ") + "Distances here are whole miles. Leave one threshold blank to use only the other.");
         form.number("miles", "Interval (whole miles)", interval.isNull("miles") ? "" : interval.optString("miles"), View.NO_ID);
         form.number("months", "Interval (whole months)", interval.isNull("months") ? "" : interval.optString("months"), View.NO_ID);
         form.check("disabled", "Disable this maintenance item", disabled);
-        JSONObject source = snapshot.getJSONObject("schedule"); note("Manufacturer source · " + source.getString("sourcePage") + " · row " + rule.getString("sourceRow") + " · verified " + source.getString("verifiedDate")); note(source.getString("limitations"));
-        button("Open manufacturer source", View.NO_ID, () -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(source.optString("sourceUrl")))));
+        JSONObject source = snapshot.getJSONObject("schedule");
+        if (owner) { note("Owner-defined interval. " + rule.optString("notes")); button("Edit maintenance item", R.id.garage_edit_item, () -> openForm("custom", itemId, "")); }
+        else {
+            note("Manufacturer source · " + source.getString("sourcePage") + " · row " + rule.getString("sourceRow") + " · verified " + source.getString("verifiedDate")); note(source.getString("limitations"));
+            button("Open manufacturer source", View.NO_ID, () -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(source.optString("sourceUrl")))));
+        }
         form.save(() -> {
             JSONObject value = new JSONObject().put("vehicleId", selected).put("itemId", itemId).put("disabled", form.checked("disabled"))
                     .put("interval", new JSONObject().put("miles", form.text("miles").isEmpty() ? JSONObject.NULL : Long.parseLong(form.text("miles"))).put("months", form.text("months").isEmpty() ? JSONObject.NULL : Integer.parseInt(form.text("months"))));
             return new JSONObject().put("type", "setOverride").put("value", value);
         });
-        button("Restore manufacturer interval", R.id.garage_reset_interval, () -> { try { JSONObject command = new JSONObject().put("type", "resetOverride").put("vehicleId", selected).put("itemId", itemId); perform(() -> store.execute(command), true); } catch (Exception failure) { errorText.setText(safeError(failure)); } });
+        button(owner ? "Restore item interval" : "Restore manufacturer interval", R.id.garage_reset_interval, () -> { try { JSONObject command = new JSONObject().put("type", "resetOverride").put("vehicleId", selected).put("itemId", itemId); perform(() -> store.execute(command), true); } catch (Exception failure) { showError(safeError(failure)); } });
+        button("Snooze reminders for 7 days", R.id.garage_snooze, () -> snooze(7));
+        button("Snooze reminders for 30 days", View.NO_ID, () -> snooze(30));
+        button("Clear reminder snooze", View.NO_ID, () -> snooze(0));
+        note("Snoozing only affects notifications. The maintenance status and calculation remain visible.");
+    }
+    private void snooze(int days) {
+        try {
+            JSONObject command = new JSONObject().put("type", days == 0 ? "clearSnooze" : "snoozeReminder");
+            if (days == 0) command.put("vehicleId", selected).put("itemId", itemId);
+            else command.put("value", new JSONObject().put("vehicleId", selected).put("itemId", itemId).put("until", LocalDate.now().plusDays(days).toString()));
+            perform(() -> store.execute(command), true);
+        } catch (Exception error) { showError(safeError(error)); }
+    }
+    private void customForm(JSONObject existing) throws Exception {
+        form.text("title", "Maintenance name", existing.optString("title"), false, R.id.garage_item_title);
+        form.text("action", "Action: replace, inspect, renew or service", existing.optString("action", "service"));
+        JSONObject interval = existing.optJSONObject("interval");
+        form.number("miles", "Interval (whole miles; may be blank)", interval == null || interval.isNull("miles") ? "" : interval.optString("miles"), R.id.garage_item_miles);
+        form.number("months", "Interval (whole months; may be blank)", interval == null || interval.isNull("months") ? "" : interval.optString("months"), R.id.garage_item_months);
+        notes(existing); note("Choose at least one interval. This is your own maintenance schedule, not a manufacturer requirement. Use it for batteries, wipers, tires, registration, inspections or other work.");
+        form.save(() -> {
+            JSONObject chosen = new JSONObject().put("miles", form.text("miles").isEmpty() ? JSONObject.NULL : Long.parseLong(form.text("miles")))
+                    .put("months", form.text("months").isEmpty() ? JSONObject.NULL : Integer.parseInt(form.text("months")));
+            JSONObject item = record(existing).put("title", form.text("title")).put("action", form.text("action").toLowerCase(Locale.ROOT)).put("notes", form.text("notes")).put("interval", chosen);
+            return command("addCustomItem", "updateCustomItem", "item", item);
+        });
+    }
+    private void preferencesForm() throws Exception {
+        JSONObject prefs = state.getJSONObject("preferences");
+        form.number("distance", "Due-soon lead distance (" + unit() + ")", inputDistance(prefs.getLong("dueSoonMm")), R.id.garage_distance);
+        form.number("days", "Due-soon lead time (days)", prefs.getString("dueSoonDays"), R.id.garage_lead_days);
+        note("These lead times apply to all vehicles and are included in garage backups. They change the Due soon window; the actual service interval remains the same.");
+        form.save(() -> new JSONObject().put("type", "setPreferences").put("preferences", new JSONObject().put("dueSoonMm", OwnershipNumbers.distance(form.text("distance"), metric())).put("dueSoonDays", Integer.parseInt(form.text("days")))));
     }
 }

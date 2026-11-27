@@ -27,6 +27,18 @@ the bundled manufacturer schedule turned off.
 5. Open **Interval & source** to set an explicit owner interval, disable an item,
    restore the manufacturer interval or open the source document.
 
+Use **Add maintenance item** for batteries, wipers, tire changes, registration,
+inspections, PCV service or other work. Enter the action and a distance and/or
+time interval you choose. It is labeled as owner-defined, never as a verified
+manufacturer requirement. Custom items work on vehicles without a bundled
+manufacturer profile. Edit the definition through its interval screen; saved
+service history remains attached to the same item.
+
+**Reminder lead times** changes the Due soon window for all garage vehicles.
+It does not change the actual service interval. An item's interval screen also
+offers 7/30-day reminder snoozes and clearing the snooze. The calculated due
+status remains visible while its notification is snoozed.
+
 Normal-service thresholds use whichever applicable time or mileage threshold
 comes first. Manufacturer severe-service footnotes have not yet been verified.
 Choosing severe conditions does not invent a shorter interval. Critical fluid
@@ -39,6 +51,12 @@ See [maintenance provenance](../MAINTENANCE_DATA.md).
 record to review/edit it. Odometer corrections require a reason and append a
 replacement; original readings remain visible. Other edits retain the record ID
 and recalculate the same history, rather than adding another paid service.
+History search includes service items, part numbers, providers and notes.
+
+In **Log service**, open **Parts, labor & warranty** for DIY status, part numbers,
+warranty notes and an optional parts/labor/tax breakdown. Components must equal
+the total. Leave Total paid blank to calculate it from those components. Part
+numbers are your records; the app does not certify their compatibility.
 
 For fuel, enter the fill time, odometer, purchased volume, total cost and full or
 partial status. Partial fills are included in the next full-to-full measurement.
@@ -71,13 +89,14 @@ plates, private notes or message contents. Reboot and extended idle delivery nee
 device-specific verification.
 
 **Export garage backup** opens Android's file picker. It exports all vehicles
-and ownership records as versioned JSON. It excludes app themes, connection
-captures, media credentials and reminder/selection preferences. Backups are
+and ownership records as versioned JSON, including custom maintenance, lead times
+and snoozes. It excludes app themes, connection captures, media credentials,
+Android reminder-enable permission and selection preferences. Backups are
 unencrypted: the destination is your choice, and choosing a cloud file provider
 may upload that file. Keep a backup before uninstalling or clearing app data.
 
 **Import garage backup** adds new IDs. Identical records are not duplicated.
-Conflicting records, unknown schemas and invalid data cancel the entire import.
+Conflicting records/settings, unknown schemas and invalid data cancel the entire import.
 This first version does not replace a conflicting local record automatically.
 
 **Export history CSV** exports the selected vehicle with explicit canonical units
@@ -90,5 +109,5 @@ certificate.
 The first private storage adapter caps garage state at 1.5 MiB and 10,000 total
 history records. A failed or oversized save preserves the previous committed
 file. Future-schema or unreadable files are not reset to an empty garage.
-Attachments, encrypted backups, custom maintenance items, richer analytics and
+Attachments, encrypted backups, richer analytics and
 the native iOS Garage interface are subsequent work.

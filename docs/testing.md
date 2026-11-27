@@ -48,7 +48,7 @@ concurrent writers, corruption/unknown-schema preservation, validation rejection
 backup idempotence/conflicts, units/money, export escaping and reminder filtering.
 
 Run the shared tests using `cargo +1.90.0 test --manifest-path rust/Cargo.toml --locked`.
-The Garage schema/calc suite has 34 cases; the existing media and protocol suites
+The Garage schema/calc suite has 42 cases; the existing media and protocol suites
 remain included. For manual checks, use an emulator and a clearly labeled test
 vehicle. Log an odometer, approximate service, full/partial fill, expense and
 completed trip. Restart the app, inspect history and export/import a backup.

@@ -68,6 +68,8 @@ final class GarageChecks {
         store.execute(cmd("addService", "service", service)); String report = OwnershipExport.render(store.view(), "car", "report"); check(!report.contains("<script>") && report.contains("&lt;script&gt;") && report.contains("Mileage unknown"), "Offline report escaping or uncertainty failed");
         check(GarageReminders.counts(store.view())[0] == 0, "Unknown history generated a reminder");
         JSONObject overdue = new JSONObject(service.toString()).put("date", "2026-01-01"); store.execute(cmd("updateService", "service", overdue)); check(GarageReminders.counts(store.view())[0] == 1, "Time-based overdue item did not reach reminder summary");
+        store.execute(cmd("snoozeReminder", "value", new JSONObject().put("vehicleId", "car").put("itemId", "engine-oil").put("until", "2026-12-04"))); check(GarageReminders.counts(store.view())[0] == 0, "Snoozed item generated a reminder");
+        store.execute(new JSONObject().put("type", "clearSnooze").put("vehicleId", "car").put("itemId", "engine-oil")); check(GarageReminders.counts(store.view())[0] == 1, "Cleared snooze still hid a reminder");
         store.execute(cmd("updateVehicle", "vehicle", car("car").put("archived", true))); check(GarageReminders.counts(store.view())[0] == 0, "Archived vehicle generated reminders");
         check(OwnershipNumbers.distance("1", false) == 1609344 && OwnershipNumbers.distance("1", true) == 1000000 && OwnershipNumbers.volume("1", false) == 3785 && OwnershipNumbers.cents("0.29") == 29, "Unit/money conversion wrong");
         rejected(() -> OwnershipNumbers.cents("0.001")); rejected(() -> OwnershipNumbers.distance("NaN", false)); rejected(() -> OwnershipNumbers.distance("-1", false));
@@ -91,6 +93,8 @@ final class GarageChecks {
             instrumentation.runOnMainSync(() -> check(((TextView)screen.findViewById(R.id.garage_mileage)).getText().toString().equals("81000 mi"), "Saved odometer did not reach native overview"));
             click(screen, instrumentation, R.id.garage_maintenance); click(screen, instrumentation, R.id.garage_history); click(screen, instrumentation, R.id.garage_more);
             await(screen, instrumentation, R.id.garage_csv); check(GarageActivity.testStore.view().getJSONObject("state").getJSONArray("readings").length() == 1, "UI save did not persist");
+            click(screen, instrumentation, R.id.garage_maintenance); click(screen, instrumentation, R.id.garage_add_item); type(screen, instrumentation, R.id.garage_item_title, "Synthetic registration"); type(screen, instrumentation, R.id.garage_item_months, "12"); click(screen, instrumentation, R.id.garage_save);
+            await(screen, instrumentation, R.id.garage_add_item); check(GarageActivity.testStore.view().getJSONObject("state").getJSONArray("customItems").length() == 1, "Custom maintenance form did not persist");
         } finally { instrumentation.runOnMainSync(screen::finish); GarageActivity.testStore = null; }
     }
 }

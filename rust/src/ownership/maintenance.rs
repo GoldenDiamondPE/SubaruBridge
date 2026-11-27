@@ -9,13 +9,14 @@ pub struct Due {
     pub next_low_mm:Option<u64>,pub next_high_mm:Option<u64>,pub next_date:Option<Date>,
     pub remaining_low_mm:Option<i64>,pub remaining_high_mm:Option<i64>,pub remaining_days:Option<i64>,
     pub source_url:String,pub source_row:String,pub explanation:String,
+    pub reminder_snoozed_until:Option<Date>,
 }
 pub fn calculate(rule:&Rule,service:Option<&Service>,current:Option<u64>,estimated:bool,today:&Date,severe:bool,
                  override_rule:Option<&Override>,source_url:&str,soon_mm:u64,soon_days:i64)->Due {
     let mut due=Due{item_id:rule.id.clone(),title:rule.title.clone(),action:rule.action.clone(),status:"unknownHistory".into(),uncertain:estimated,
         last_service_id:service.map(|s|s.id.clone()),last_date:service.and_then(|s|s.date.clone()),last_mileage:service.and_then(|s|s.mileage.clone()),
         next_low_mm:None,next_high_mm:None,next_date:None,remaining_low_mm:None,remaining_high_mm:None,remaining_days:None,
-        source_url:source_url.into(),source_row:rule.source_row.clone(),explanation:String::new()};
+        source_url:source_url.into(),source_row:rule.source_row.clone(),explanation:String::new(),reminder_snoozed_until:None};
     if override_rule.is_some_and(|v|v.disabled){due.status="notApplicable".into();due.explanation="Disabled by the vehicle owner.".into();return due;}
     let Some(service)=service else{due.explanation="No service history was recorded. No completion or overdue status is assumed.".into();return due;};
     let interval=if let Some(custom)=override_rule {&custom.interval}

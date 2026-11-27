@@ -35,7 +35,7 @@ calendar-month arithmetic, including month-end and leap-year handling.
 cargo +1.90.0 test --manifest-path rust/Cargo.toml --locked
 ```
 
-34 ownership regressions cover unknown/approximate history, first and subsequent
+42 ownership regressions cover unknown/approximate history, first and subsequent
 coolant intervals, calendar and mileage thresholds, severe-condition gaps, owner
 overrides, odometer correction cycles, a 10,000-record correction chain, GPS
 confidence, trip reconciliation, ambiguous service ordering, partial fuel fills,
@@ -66,6 +66,16 @@ Odometer corrections append a reasoned replacement and preserve the original.
 Changing currency after cost records exist is rejected, because amounts are
 never silently relabeled or converted. Units can change without changing data.
 
-Next: native iOS persistence/UI using this API, custom maintenance, attachments,
+Owner-defined maintenance is scoped to a vehicle and works without a bundled
+manufacturer profile. It is labeled as an owner interval, supports service
+history and cannot be attached to another vehicle's records. Configurable
+due-soon thresholds and reminder snoozes are included in the shared state and
+backups. Snoozing never changes a calculated maintenance status.
+
+Service-book details support DIY, owner-recorded part numbers, warranty notes
+and exact parts/labor/tax amounts. A supplied breakdown must equal the total;
+overflow or a mismatch is rejected before persistence.
+
+Next: native iOS persistence/UI using this API, attachments,
 backup conflict review, analytics, permission-based GPS and optional read-only
 diagnostics. Android-only notification/RFCOMM capabilities are not implied for iOS.

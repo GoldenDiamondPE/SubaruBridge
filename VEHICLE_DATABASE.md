@@ -14,6 +14,9 @@ provenance and limitations are recorded in [MAINTENANCE_DATA.md](MAINTENANCE_DAT
 | `expenses` | Civil date, category, cost and separate financing flag |
 | `trips` | Completed non-overlapping time range, source, distance and notes |
 | `overrides` | Explicit owner distance/time intervals or disabled maintenance items |
+| `customItems` | Vehicle-scoped owner-defined maintenance, without a manufacturer interval claim |
+| `preferences` | Shared due-soon distance/day thresholds |
+| `snoozes` | Per-vehicle/item reminder dates; calculated due status is preserved |
 
 Distances are unsigned integer millimetres. Fuel uses integer millilitres.
 `costCents` means hundredths of the vehicle's supported two-decimal currency.
@@ -32,7 +35,8 @@ Input is capped at 4 MiB. Owned buffers must be freed exactly once using
 
 Commands are `view`, `addVehicle`, `updateVehicle`, `addReading`, `addService`,
 `updateService`, `addFuel`, `updateFuel`, `addExpense`, `updateExpense`, `addTrip`,
-`updateTrip`, `setOverride`, `resetOverride`, `recordFillUp` and `mergeBackup`.
+`updateTrip`, `setOverride`, `resetOverride`, `recordFillUp`, `mergeBackup`,
+`addCustomItem`, `updateCustomItem`, `setPreferences`, `snoozeReminder` and `clearSnooze`.
 Variant and field names are camelCase. `recordFillUp` takes `entry` and a matching
 confirmed manual `reading`; both are validated in one revision. Record edits may
 not move a history record between vehicles. Currency changes with saved costs
@@ -42,5 +46,16 @@ Android's backup envelope has `format:"org.subarubridge.garage"`, `schemaVersion
 `exportedAt` (ISO timestamp) and `garage` (the canonical state). Restore is additive
 and rejects conflicting IDs. Import must commit the whole successful result or
 none of it. Native iOS should implement the same rules around the C API instead
-of reimplementing calculations in Swift. Attachments, user-defined schedule items,
+of reimplementing calculations in Swift. Attachments,
 telemetry samples and future schema migrations are not part of this schema yet.
+
+Service records also support optional `costBreakdown` (`partsCents`, `laborCents`,
+`taxCents`), `diy`, `partNumbers` and `warranty`. The breakdown must equal the
+single canonical `costCents` total. Optional additions default safely when reading
+earlier v1 records. Old clients that do not recognize a field must preserve the
+file and report an upgrade requirement, rather than discarding unknown data.
+
+Backup restoration into an empty garage adopts its reminder preferences. A
+non-empty garage rejects conflicting preferences, snoozes, intervals or record
+IDs instead of silently choosing a winner. Custom items must be included with
+the service records that refer to them.

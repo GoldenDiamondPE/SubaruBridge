@@ -17,6 +17,9 @@ pub struct Garage {
     #[serde(default)] pub expenses:Vec<Expense>,
     #[serde(default)] pub trips:Vec<Trip>,
     #[serde(default)] pub overrides:Vec<Override>,
+    #[serde(default)] pub custom_items:Vec<CustomItem>,
+    #[serde(default)] pub preferences:MaintenancePreferences,
+    #[serde(default)] pub snoozes:Vec<ReminderSnooze>,
 }
 impl Garage {pub fn empty()->Self{Self{schema_version:1,..Self::default()}}}
 
@@ -57,7 +60,14 @@ pub struct Service {
     #[serde(default)] pub date:Option<Date>,#[serde(default)] pub mileage:Option<DistanceRange>,
     #[serde(default)] pub cost_cents:u64,#[serde(default)] pub provider:String,#[serde(default)] pub notes:String,
     #[serde(default)] pub factory_baseline:bool,
+    #[serde(default)] pub cost_breakdown:Option<CostBreakdown>,
+    #[serde(default)] pub diy:bool,
+    #[serde(default)] pub part_numbers:Vec<String>,
+    #[serde(default)] pub warranty:String,
 }
+#[derive(Clone,Debug,PartialEq,Serialize,Deserialize)]
+#[serde(rename_all="camelCase",deny_unknown_fields)]
+pub struct CostBreakdown {pub parts_cents:u64,pub labor_cents:u64,pub tax_cents:u64}
 #[derive(Clone,Debug,PartialEq,Serialize,Deserialize)]
 #[serde(rename_all="camelCase",deny_unknown_fields)]
 pub struct Fuel {
@@ -82,6 +92,16 @@ pub struct Interval {pub miles:Option<u64>,pub months:Option<u32>}
 #[derive(Clone,Debug,PartialEq,Serialize,Deserialize)]
 #[serde(rename_all="camelCase",deny_unknown_fields)]
 pub struct Override {pub vehicle_id:String,pub item_id:String,pub interval:Interval,#[serde(default)]pub disabled:bool}
+#[derive(Clone,Debug,PartialEq,Serialize,Deserialize)]
+#[serde(rename_all="camelCase",deny_unknown_fields)]
+pub struct CustomItem {pub id:String,pub vehicle_id:String,pub title:String,pub action:String,pub interval:Interval,#[serde(default)]pub notes:String}
+#[derive(Clone,Debug,PartialEq,Serialize,Deserialize)]
+#[serde(rename_all="camelCase",deny_unknown_fields)]
+pub struct MaintenancePreferences {pub due_soon_mm:u64,pub due_soon_days:i64}
+impl Default for MaintenancePreferences {fn default()->Self{Self{due_soon_mm:500*MM_PER_MILE,due_soon_days:30}}}
+#[derive(Clone,Debug,PartialEq,Serialize,Deserialize)]
+#[serde(rename_all="camelCase",deny_unknown_fields)]
+pub struct ReminderSnooze {pub vehicle_id:String,pub item_id:String,pub until:Date}
 #[derive(Clone,Debug,Serialize,Deserialize)]
 #[serde(rename_all="camelCase",deny_unknown_fields)]
 pub struct Rule {
