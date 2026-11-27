@@ -43,6 +43,15 @@ pub extern "C" fn sb_core_tick(handle: u64, now: u64) -> CoreBuffer {
     let Ok(mut r) = registry().lock() else { return CoreBuffer::empty(); };
     r.engines.get_mut(&handle).map(|e| CoreBuffer::new(e.tick(now).encode())).unwrap_or_else(CoreBuffer::empty)
 }
+/// Read a bounded UTF-8 ownership command. No sockets, files or vehicle access.
+#[no_mangle]
+pub unsafe extern "C" fn sb_ownership_execute(data:*const u8,len:usize)->CoreBuffer {
+    if len>crate::ownership::MAX_JSON || (len>0 && data.is_null()) {
+        return CoreBuffer::new(b"{\"ok\":false,\"error\":\"Ownership input limit\"}".to_vec());
+    }
+    let input=if len==0{&[]}else{slice::from_raw_parts(data,len)};
+    CoreBuffer::new(crate::ownership::execute_json(input))
+}
 /// Free exactly once, using the unchanged buffer returned by this library.
 #[no_mangle]
 pub unsafe extern "C" fn sb_core_buffer_free(buffer: CoreBuffer) {

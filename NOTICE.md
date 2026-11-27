@@ -14,8 +14,10 @@ obligations when sharing modified builds.
 
 Android SDK/NDK, Android Gradle Plugin, Gradle and Rust are external build tools
 downloaded from their maintainers and subject to their respective licenses.
-They are not vendored into this repository. The Rust crate currently has no
-third-party crate dependencies. Icons and dashboard assets here are original;
+They are not vendored into this repository. The ownership model uses pinned
+serde and serde_json dependencies and their transitive crates. Their license
+notices are listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+Icons and dashboard assets here are original;
 they are not Apple or Subaru interface assets.
 
 Product names identify interoperability targets and do not indicate endorsement.

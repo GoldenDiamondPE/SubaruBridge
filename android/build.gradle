@@ -9,7 +9,7 @@ def sharedUi = tasks.register('prepareStarlinkUi', Exec) {
         '--landing', layout.buildDirectory.file('generated/starlinkAssets/launcher/subarubridge-demo.html').get().asFile.absolutePath
 }
 def rustCore = tasks.register('prepareRustCore', Exec) {
-    inputs.dir('../rust/src'); inputs.file('../rust/Cargo.toml'); inputs.file('../scripts/build_android_rust.py')
+    inputs.dir('../rust/src'); inputs.file('../rust/Cargo.toml'); inputs.file('../rust/Cargo.lock'); inputs.dir('../vehicle-database'); inputs.file('../scripts/build_android_rust.py')
     outputs.dir(layout.buildDirectory.dir('generated/rust'))
     doFirst {
         def sdk = System.getenv('ANDROID_HOME') ?: System.getenv('ANDROID_SDK_ROOT')

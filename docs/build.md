@@ -47,6 +47,20 @@ $env:MLPI_BUILD_PYTHON = 'C:\path\to\python.exe'
 gradle -p android --no-daemon --max-workers=2 '-Dorg.gradle.jvmargs=-Xmx3g' assembleDebug assembleDebugAndroidTest
 ```
 
+The ownership foundation uses pinned serde dependencies, whose procedural macros
+need a host linker. Windows without Visual C++ build tools can use Rust's GNU
+host toolchain instead:
+
+```powershell
+rustup toolchain install 1.90.0-x86_64-pc-windows-gnu --profile minimal
+rustup target add --toolchain 1.90.0-x86_64-pc-windows-gnu aarch64-linux-android x86_64-linux-android
+$env:SUBARUBRIDGE_RUST_TOOLCHAIN = '1.90.0-x86_64-pc-windows-gnu'
+```
+
+The Android target still links with the pinned NDK. Run host component tests with
+`cargo +1.90.0-x86_64-pc-windows-gnu test --manifest-path rust/Cargo.toml --locked`.
+Dependency versions are locked and permission notices are included in the source.
+
 On Linux/macOS use `export` to set these variables; `python3` is the default.
 The build reads `sdk.dir` from `android/local.properties` if SDK environment
 variables are absent. Rust's NDK linker is configured by the included build script.

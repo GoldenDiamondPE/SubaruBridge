@@ -12,13 +12,15 @@ milestone is a parked-car display, touch and reconnect test.
 ## What is here
 
 - Original paired Bluetooth Classic RFCOMM listener; no root is needed for the app.
-- A dependency-free Rust core for bounded SLIP, IPv4, ICMP echo, TCP and HTTP framing.
+- An original Rust core for bounded SLIP, IPv4, ICMP echo, TCP and HTTP framing.
 - Original local HTTP routes, battery/clock diagnostics, private result journal.
 - A script-free HTML dashboard with three themes, two layouts and editable templates.
 - Phone preview, Android component tests and native protocol regressions.
 - A stable C interface for shared protocol work.
 - Android Music, Maps, Phone, Messages and Notifications dashboard cards with explicit permission and confirmation boundaries.
 - A native iOS companion source project and unsigned simulator build checks.
+- A typed shared ownership foundation for vehicle, mileage, maintenance, fuel,
+  trip and expense records. See [its component status and next Android work](OWNERSHIP_FOUNDATION.md).
 
 This repository contains the complete standalone STARLINK-path app and its build
 sources. It contains no

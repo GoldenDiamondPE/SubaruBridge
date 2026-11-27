@@ -3,4 +3,6 @@
 pub mod http;
 pub mod slip;
 pub mod transport;
+pub mod ownership;
+pub mod capabilities;
 mod ffi;
