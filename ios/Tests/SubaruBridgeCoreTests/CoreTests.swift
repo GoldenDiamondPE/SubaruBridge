@@ -4,7 +4,7 @@ import XCTest
 final class CoreTests: XCTestCase {
     func testPhoneNumbersCannotInjectOtherURLSchemes() throws {
         XCTAssertEqual(try CompanionActions.dialURL("+12025550100").scheme, "tel")
-        for invalid in ["", "tel:1234", "123;456", "123#456", "https://example.invalid", "123\n456"] {
+        for invalid in ["", "tel:1234", "123;456", "123#456", "https://example.invalid", "123\n456", "123\n"] {
             XCTAssertFalse(CompanionActions.validPhoneNumber(invalid))
             XCTAssertThrowsError(try CompanionActions.dialURL(invalid))
         }

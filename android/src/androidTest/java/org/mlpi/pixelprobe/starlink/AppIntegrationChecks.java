@@ -74,10 +74,29 @@ final class AppIntegrationChecks {
             for(int i=0;i<25;i++)phone.posted(new StatusBarNotification("org.example.fixture","org.example.fixture",100+i,null,android.os.Process.myUid(),0,0,general,android.os.Process.myUserHandle(),System.currentTimeMillis()));
             check(phone.notifications().size()==20,"General notification store unbounded");
             phone.prefs().edit().putBoolean("notifications",false).apply();check(phone.notifications().isEmpty(),"Disabled general notification contents retained");
+            AtomicInteger replies=new AtomicInteger();java.util.concurrent.atomic.AtomicReference<String> replyText=new java.util.concurrent.atomic.AtomicReference<>();
+            String replyAction=context.getPackageName()+".SYNTHETIC_REPLY";
+            BroadcastReceiver receiver=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent intent){Bundle answers=RemoteInput.getResultsFromIntent(intent);if(answers!=null){replyText.set(answers.getString("text"));replies.incrementAndGet();}}};
+            if(android.os.Build.VERSION.SDK_INT>=33)context.registerReceiver(receiver,new IntentFilter(replyAction),Context.RECEIVER_NOT_EXPORTED);else context.registerReceiver(receiver,new IntentFilter(replyAction));
+            PendingIntent delivery=PendingIntent.getBroadcast(context,953,new Intent(replyAction).setPackage(context.getPackageName()),PendingIntent.FLAG_MUTABLE|PendingIntent.FLAG_CANCEL_CURRENT);
+            try {
+                phone.prefs().edit().putBoolean("messages",true).putString("reply","Synthetic reply only").apply();
+                Notification.Action reply=new Notification.Action.Builder(null,"Reply",delivery).setSemanticAction(Notification.Action.SEMANTIC_ACTION_REPLY).addRemoteInput(new RemoteInput.Builder("text").setAllowFreeFormInput(true).build()).build();
+                Notification replyNotification=new Notification.Builder(context,"fixture").setContentTitle("Fixture conversation").setContentText("Synthetic reply fixture").setCategory(Notification.CATEGORY_MESSAGE).addAction(reply).build();
+                StatusBarNotification replyRecord=new StatusBarNotification(context.getPackageName(),context.getPackageName(),15,null,android.os.Process.myUid(),0,0,replyNotification,android.os.Process.myUserHandle(),System.currentTimeMillis());
+                phone.posted(replyRecord);PhoneIntegrations.Notice notice=phone.messages().get(0);phone.queue("reply",notice.id);
+                check(replies.get()==0,"Reply sent before confirmation");String id=phone.pending().id;phone.confirm(id);
+                deadline=SystemClock.elapsedRealtime()+3000;while(replies.get()==0 && SystemClock.elapsedRealtime()<deadline)Thread.sleep(20);
+                check(replies.get()==1 && "Synthetic reply only".equals(replyText.get()),"Confirmed RemoteInput reply did not reach Android receiver");
+                try{phone.confirm(id);throw new AssertionError("Reply confirmation replay accepted");}catch(LocalHttp.Error expected){check(expected.status==409,"Wrong replay error");}
+                check(replies.get()==1,"Reply duplicated after confirmation replay");
+                phone.posted(replyRecord);phone.queue("reply",phone.messages().get(0).id);id=phone.pending().id;phone.posted(replyRecord);
+                try{phone.confirm(id);throw new AssertionError("Stale reply action accepted");}catch(LocalHttp.Error expected){check(expected.status==409,"Wrong stale reply error");}phone.cancel(id);
+            } finally {delivery.cancel();context.unregisterReceiver(receiver);}
             java.io.ByteArrayOutputStream report=new java.io.ByteArrayOutputStream();router.exportReport(report);
             java.util.zip.ZipInputStream zip=new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(report.toByteArray()));
             java.util.zip.ZipEntry entry;while((entry=zip.getNextEntry())!=null){java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream();byte[] block=new byte[4096];int count;while((count=zip.read(block))!=-1)bytes.write(block,0,count);String text=bytes.toString("UTF-8");check(!text.contains("Private fixture body") && !text.contains("Fixture sender") && !text.contains("+12025550100"),"Personal app content leaked into diagnostic report");}
-            result.putString("apps","PASS: real Android media callback; replay/expiry; Maps encoding; dialer/SMS intents; bounded notification feed and filters; report privacy");
+            result.putString("apps","PASS: real Android media callback; one confirmed RemoteInput reply and stale/replay rejection; Maps encoding; dialer/SMS intents; bounded notification feed; report privacy");
         } finally {
             session.release();PhoneIntegrations.Pending pending=phone.pending();if(pending!=null)phone.cancel(pending.id);phone.clearNotifications();
             SharedPreferences.Editor restore=phone.prefs().edit().clear();for(Map.Entry<String,?> entry:original.entrySet())if(entry.getValue() instanceof Boolean)restore.putBoolean(entry.getKey(),(Boolean)entry.getValue());else if(entry.getValue() instanceof String)restore.putString(entry.getKey(),(String)entry.getValue());restore.commit();

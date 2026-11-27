@@ -3,7 +3,7 @@ import Foundation
 import Combine
 
 struct AccessorySummary: Identifiable {
-    let id: UInt
+    let id: Int
     let name: String
     let model: String
     let protocols: [String]

@@ -35,12 +35,30 @@ def main():
         return data.decode('utf-8')
     prefix='/subarubridge-diag/'
     try:
+        # Activity launch returns before its loopback server is ready. Wait only
+        # for availability; assertion failures below are never retried.
+        deadline=time.monotonic()+10
+        while True:
+            try:
+                c.request('GET','/version');ready=c.getresponse();ready.read()
+                assert ready.status==200,'Preview health check failed'
+                break
+            except (OSError,http.client.RemoteDisconnected):
+                c.close()
+                if time.monotonic()>=deadline:raise
+                time.sleep(0.1)
         v=json.loads(request('version','GET','/version'));assert v['build']=='0.53-dev' and v['transport']=='original-rust-rfcomm'
         assert request('launcher-lookup','GET','/kvs/launcher_url_vehicle/')=='http://192.168.1.1/smartaccess/launcher/subarubridge-demo.html'
         assert re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d{4}',request('timestamp-before-post','GET','/timestamp/'))
         # Same HTTP connection: the car may send timestamp and launcher POST in sequence.
         home=request('car-absolute-post','POST','http://192.168.1.1/smartaccess/launcher/subarubridge-demo.html',raw=b'pvr=1&pid=synthetic')
-        assert '<script' not in home.lower() and all('id="tile-'+i+'"' in home for i in ('music','navigation','calls','messages'))
+        assert '<script' not in home.lower() and all('id="tile-'+i+'"' in home for i in ('music','navigation','calls','messages','notifications'))
+        for app in ('music','navigation','calls','messages','notifications'):
+            page=request('app-'+app,'GET',prefix+'apps/'+app);assert '<script' not in page.lower()
+        request('unknown-app','GET',prefix+'apps/unknown',404)
+        request('actions-post-only','GET',prefix+'apps/action',405)
+        request('missing-action-ticket','POST',prefix+'apps/action',409,form={'action':'dial','subject':'','ticket':'missing'})
+        request('duplicate-action-fields','POST',prefix+'apps/action',400,raw=b'action=dial&action=reply&ticket=bad')
         request('remote-target','GET','http://example.invalid/',403)
         request('malformed-target','GET','/%ZZ',400)
         request('traversal-target','GET','/%2e%2e/private',400)

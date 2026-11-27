@@ -5,7 +5,7 @@ public enum CompanionActionError: Error { case invalidNumber, invalidDestination
 
 public enum CompanionActions {
     public static func validPhoneNumber(_ value: String) -> Bool {
-        value.range(of: #"^\+?[0-9][0-9 ()-]{1,30}[0-9]$"#, options: .regularExpression) != nil
+        value.range(of: #"^\+?[0-9][0-9 ()-]{1,30}[0-9]$"#, options: .regularExpression) == value.startIndex..<value.endIndex
     }
     public static func dialURL(_ number: String) throws -> URL {
         guard validPhoneNumber(number) else { throw CompanionActionError.invalidNumber }
