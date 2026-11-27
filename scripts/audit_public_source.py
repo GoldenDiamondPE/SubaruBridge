@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import subprocess
 
-ALLOWED={'.rs','.h','.c','.java','.mk','.py','.md','.html','.css','.json','.toml','.lock','.xml','.gradle','.properties','.yml','.yaml','.svg','.swift','.plist','.pbxproj','.xcscheme','.sh'}
+ALLOWED={'.rs','.h','.c','.java','.mk','.py','.md','.html','.css','.json','.toml','.lock','.xml','.gradle','.properties','.yml','.yaml','.svg','.swift','.plist','.pbxproj','.xcscheme','.sh','.xcprivacy'}
 DENIED={'.apk','.aab','.dex','.odex','.vdex','.smali','.so','.a','.jar','.zip','.7z','.img','.bin','.pcap','.pcapng','.btsnoop','.log','.keystore','.jks','.key','.pem','.db','.sqlite','.jpg','.jpeg','.pdf'}
 PRIVATE_PARTS={'bluetooth-private','captures','firmware','decompiled','smali','jadx','apktool','vendor','jniLibs','standalone-capture'}
 SKIP={'.git','.gradle','.cxx','build','target','__pycache__','.local'}

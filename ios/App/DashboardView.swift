@@ -50,7 +50,7 @@ struct ConnectionLabView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     Text(configuration?.homeTitle ?? "SubaruBridge").font(.largeTitle.bold())
-                    Label("Local iPhone demo · No vehicle transport connected", systemImage: "info.circle")
+                    Label("Local iPhone demo Â· No vehicle transport connected", systemImage: "info.circle")
                         .font(.callout).foregroundStyle(.secondary)
                     if let configurationError { Text(configurationError).foregroundStyle(.red) }
                     if let configuration {
@@ -63,7 +63,7 @@ struct ConnectionLabView: View {
                                             Text(stage == .phone ? "iPhone" : tile.title).font(.headline)
                                         }.frame(maxWidth: .infinity).padding(20)
                                             .background(color("surface", fallback: .gray.opacity(0.2)), in: RoundedRectangle(cornerRadius: 24))
-                                    }.buttonStyle(.plain)
+                                    }.buttonStyle(.plain).accessibilityIdentifier("tool-\(stage.rawValue)")
                                 }
                             }
                         }
@@ -103,7 +103,7 @@ struct ConnectionLabView: View {
     @ViewBuilder private func stageView(_ stage: CheckStage) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                Text("Local demo — this is not a car acknowledgement").font(.caption).foregroundStyle(.secondary)
+                Text("Local demo â€” this is not a car acknowledgement").font(.caption).foregroundStyle(.secondary)
                 switch stage {
                 case .display:
                     Text("A clear beginning.").font(.title.bold())
@@ -114,11 +114,11 @@ struct ConnectionLabView: View {
                     Button("Record local touch") { workspace.record(.touch, .touch) }.buttonStyle(.borderedProminent)
                 case .phone:
                     Text("Battery: \(workspace.battery.map { "\($0)%" } ?? "Not read")")
-                    Text("System uptime: \(Int(ProcessInfo.processInfo.systemUptime)) s")
+                    Text("Local time: \(Date.now.formatted(date: .abbreviated, time: .shortened))")
                     Button("Read this iPhone") { workspace.readPhone() }.buttonStyle(.borderedProminent)
                 case .results:
                     Text(workspace.session.complete ? "Local checks complete" : "Local check progress").font(.title.bold())
-                    Text("Screens \(workspace.session.screensSeen)/4 · Touches \(workspace.session.touches) · Data reads \(workspace.session.dataReads)")
+                    Text("Screens \(workspace.session.screensSeen)/4 Â· Touches \(workspace.session.touches) Â· Data reads \(workspace.session.dataReads)")
                     Button("Save local result") { workspace.save() }.buttonStyle(.borderedProminent)
                     if let exportURL = workspace.exportURL { ShareLink("Share this local test result", item: exportURL) }
                 }

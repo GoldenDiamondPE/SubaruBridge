@@ -18,7 +18,8 @@ milestone is a parked-car display, touch and reconnect test.
 - Phone preview, Android component tests and native protocol regressions.
 - A stable C interface for shared protocol work.
 - Android Music, Maps, Phone, Messages and Notifications dashboard cards with explicit permission and confirmation boundaries.
-- A native iOS companion source project and unsigned simulator build checks.
+- A native basic iOS companion with app-owned local notifications, native UI
+  journeys, simulator checks and development-device packaging scripts.
 - A typed shared ownership foundation for vehicle, mileage, maintenance, fuel,
   trip and expense records. See [its component status and next Android work](OWNERSHIP_FOUNDATION.md).
 - Generic Android music-player selection and an experimental paired-iPhone media
