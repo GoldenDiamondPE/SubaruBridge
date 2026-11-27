@@ -24,7 +24,7 @@ final class DashboardApps {
         String action=fields.get("action"),subject=fields.get("subject");
         if(!tickets.consume(fields.get("ticket"),action,subject,SystemClock.elapsedRealtime()))throw new LocalHttp.Error(409,"Action expired or already used. Refresh before trying again.");
         if(!phone.unlocked())throw new LocalHttp.Error(403,"Unlock your phone before using personal app controls");
-        if(action.startsWith("music-"))return phone.mediaCommand(action.substring(6));
+        if(action.startsWith("music-"))return phone.mediaCommand(action.substring(6),subject);
         return phone.queue(action,subject);
     }
     String actionPage(String notice) throws IOException { return new CarUi(context).app("Action prepared", "Review the result below.", "<p>"+HtmlView.escape(notice)+"</p>","music"); }
@@ -32,21 +32,20 @@ final class DashboardApps {
         StringBuilder body=new StringBuilder();String title,subtitle;
         switch(app){
             case "music":
-                title="Now playing";subtitle="Spotify and other active Android music apps";
-                MediaController controller=phone.controller();
-                if(controller==null){body.append("<h2>No accessible music session</h2><p>Enable music and notification access in phone Integrations, unlock your phone, and start a music app.</p>");}
+                title="Now playing";subtitle="Your selected music source";
+                MediaSnapshot music=phone.music();
+                if(music==null){body.append("<h2>No accessible music session</h2><p>Choose Android or iPhone media in phone Integrations. Unlock the Pixel and start your selected player. Android reads require notification access; iPhone media requires its separate authorized Bluetooth connection.</p>");}
                 else {
-                    MediaMetadata metadata=controller.getMetadata();PlaybackState state=controller.getPlaybackState();
-                    String track=metadata==null?"":PhoneIntegrations.clean(metadata.getText(MediaMetadata.METADATA_KEY_TITLE),160);
-                    String artist=metadata==null?"":PhoneIntegrations.clean(metadata.getText(MediaMetadata.METADATA_KEY_ARTIST),160);
-                    body.append("<h2>").append(HtmlView.escape(track.isEmpty()?"Music session":track)).append("</h2><p class=\"muted\">").append(HtmlView.escape(artist)).append("</p><p class=\"small\">")
-                        .append(state!=null && state.getState()==PlaybackState.STATE_PLAYING?"Playing":"Paused or idle").append(" Â· ").append(HtmlView.escape(controller.getPackageName())).append("</p>");
-                    long actions=state==null?0:state.getActions();
+                    body.append("<h2>").append(HtmlView.escape(music.title.isEmpty()?"Music session":music.title)).append("</h2><p class=\"muted\">").append(HtmlView.escape(music.artist)).append("</p><p class=\"small\">")
+                        .append(HtmlView.escape(music.state)).append(" · ").append(HtmlView.escape(music.source)).append("</p>");
+                    if(!music.album.isEmpty())body.append("<p>").append(HtmlView.escape(music.album)).append("</p>");
+                    if(music.positionMs>=0)body.append("<p class=\"small\">").append(time(music.positionMs)).append(music.durationMs>=0?" / "+time(music.durationMs):"").append(" · Refresh for current position</p>");
+                    if(music.truncated)body.append("<p class=\"small\">Some iPhone text is shortened by Bluetooth.</p>");
                     String[] verbs={"previous","play","pause","next"},labels={"Previous","Play","Pause","Next"};
-                    long[] bits={PlaybackState.ACTION_SKIP_TO_PREVIOUS,PlaybackState.ACTION_PLAY,PlaybackState.ACTION_PAUSE,PlaybackState.ACTION_SKIP_TO_NEXT};
-                    for(int i=0;i<verbs.length;i++)if((actions & bits[i])!=0)body.append(form("music-"+verbs[i],"",labels[i]));
+                    for(int i=0;i<verbs.length;i++)if(music.commands.contains(verbs[i]))body.append(form("music-"+verbs[i],music.target,labels[i]));
                 }
-                body.append(form("spotify","","Prepare Spotify on phone")).append("<p class=\"small\">Audio uses normal Bluetooth media pairing. Commands are requests; refresh to confirm the music app's state.</p>");break;
+                if(!phone.prefs().getString("musicSource","android").equals("iphone"))body.append(form("spotify","","Prepare Spotify on Android"));
+                body.append("<p class=\"small\">For Taurus, start playback on the iPhone. Audio uses normal Bluetooth media pairing. Commands are requests; refresh to confirm the music app's state.</p>");break;
             case "navigation":
                 title="Directions";subtitle="Google Maps direction card";
                 PhoneIntegrations.Notice navigation=phone.navigation();
@@ -76,4 +75,6 @@ final class DashboardApps {
         }
         return new CarUi(context).app(title,subtitle,body.toString(),app);
     }
+    private static String time(long ms){long seconds=Math.max(0,ms)/1000;return (seconds/60)+":"+String.format(java.util.Locale.ROOT,"%02d",seconds%60);}
+
 }

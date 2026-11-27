@@ -4,3 +4,4 @@ pub mod http;
 pub mod slip;
 pub mod transport;
 mod ffi;
+pub mod apple_media;

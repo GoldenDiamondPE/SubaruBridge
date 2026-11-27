@@ -12,6 +12,9 @@ CoreBuffer sb_core_feed(uint64_t handle, const uint8_t *data, size_t len, uint64
 CoreBuffer sb_core_respond(uint64_t handle, uint64_t connection, const uint8_t *data, size_t len, uint8_t close, uint64_t monotonic_ms);
 CoreBuffer sb_core_tick(uint64_t handle, uint64_t monotonic_ms);
 void sb_core_buffer_free(CoreBuffer buffer);
+/* Decode one AMS entity notification (3..512 bytes) to versioned UTF-8 JSON.
+ * No Bluetooth I/O. Return is owned; free with sb_core_buffer_free. */
+CoreBuffer sb_ams_decode(const uint8_t *data, size_t len);
 /* Buffers are Rust-owned: read them, then free once with sb_core_buffer_free.
  * Packet batch: BE u32 wire length, SLIP bytes, BE u16 request count,
  * then (BE u64 connection, BE u32 request length, request bytes) per request.
