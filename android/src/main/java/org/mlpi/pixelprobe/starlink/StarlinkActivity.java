@@ -35,7 +35,7 @@ public final class StarlinkActivity extends Activity {
     private int tab;
     private String previewPath = HOME_PATH, localIssue;
     private boolean coreReady, resumed, permissionInFlight, enableInFlight;
-    private boolean paused, bluetoothPrompted, startRequested, exporting, receiverRegistered, manualSetup;
+    private boolean paused, bluetoothPrompted, startRequested, exporting, receiverRegistered, manualSetup, stoppedSinceResume;
     private long lastStart;
 
     private final BroadcastReceiver bluetoothState = new BroadcastReceiver() {
@@ -188,6 +188,9 @@ public final class StarlinkActivity extends Activity {
         gap(connection, 20); primary = button("Open dashboard", R.id.phone_primary_action, true, this::primaryAction); add(connection, primary);
         section(page, "YOUR WORKSPACE");
         LinearLayout shortcuts = card(page);
+        row(shortcuts, "Apps & integrations", "Music, Google Maps, phone and messages", "grid", View.NO_ID, () -> startActivity(new Intent(this, IntegrationsActivity.class)));
+        divider(shortcuts); row(shortcuts, "Review phone action", "Confirm a prepared call, direction or reply", "phone", View.NO_ID, () -> startActivity(new Intent(this, PhoneActionActivity.class)));
+        divider(shortcuts);
         row(shortcuts, "Connection check", "Display, touch and phone data", "check", View.NO_ID, () -> showDashboard("/subarubridge-diag/basic?screen=1"));
         divider(shortcuts); row(shortcuts, "Appearance", "A shared look for phone and car", "appearance", View.NO_ID, () -> showDashboard("/subarubridge-diag/settings"));
         divider(shortcuts); row(shortcuts, "Pair a device", "Open Bluetooth settings", "link", R.id.phone_pair, this::pair);
@@ -217,6 +220,8 @@ public final class StarlinkActivity extends Activity {
         }); add(pauseArea, pauseButton); add(controls, pauseArea);
         section(page, "DIAGNOSTICS");
         LinearLayout diagnostics = card(page);
+        row(diagnostics, "App integrations", "Permissions, favorites and dashboard order", "grid", View.NO_ID, () -> startActivity(new Intent(this, IntegrationsActivity.class)));
+        divider(diagnostics);
         row(diagnostics, "Run connection check", "Four checks, confirmed on your phone", "check", View.NO_ID, () -> showDashboard("/subarubridge-diag/basic?screen=1"));
         divider(diagnostics); row(diagnostics, "Head-unit tools", "Test state and editable UI files", "grid", View.NO_ID, () -> showDashboard("/subarubridge-diag/developer"));
         divider(diagnostics); row(diagnostics, "Bluetooth settings", "Pairing and system connection controls", "link", View.NO_ID, this::pair);
@@ -369,6 +374,8 @@ public final class StarlinkActivity extends Activity {
     }
     @Override public void onResume() {
         super.onResume(); resumed = true;
+        if (stoppedSinceResume && autoEnabled()) { paused=false;startRequested=false; }
+        stoppedSinceResume=false;
         if (SystemClock.elapsedRealtime() - lastStart > 3000) startRequested = false;
         if (!receiverRegistered) {
             IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
@@ -381,6 +388,7 @@ public final class StarlinkActivity extends Activity {
         if (getIntent().getBooleanExtra("start", false)) { getIntent().removeExtra("start"); begin(true); }
     }
     @Override public void onPause() { resumed = false; handler.removeCallbacks(refresh); if (receiverRegistered) { unregisterReceiver(bluetoothState); receiverRegistered = false; } super.onPause(); }
+    @Override public void onStop() { stoppedSinceResume=true;super.onStop(); }
     @Override public void onSaveInstanceState(Bundle out) {
         out.putInt("tab", tab); out.putString("previewPath", previewPath); out.putBoolean("paused", paused); out.putBoolean("bluetoothPrompted", bluetoothPrompted);
         out.putBoolean("permissionInFlight", permissionInFlight); out.putBoolean("enableInFlight", enableInFlight); super.onSaveInstanceState(out);

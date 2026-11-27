@@ -8,10 +8,12 @@ import java.nio.charset.StandardCharsets;
 
 /** Device ABI and JNI lifetime checks; protocol cases also run as native Rust tests. */
 public final class BridgeCoreSmoke extends Instrumentation {
-    @Override public void onCreate(Bundle args){super.onCreate(args);start();}
+    private boolean apps;
+    @Override public void onCreate(Bundle args){super.onCreate(args);apps=args!=null && "true".equals(args.getString("apps"));start();}
     private static void check(boolean condition,String message){if(!condition)throw new AssertionError(message);}
     @Override public void onStart() {
         Bundle result=new Bundle();int code=run(getTargetContext(),result);
+        if(code==Activity.RESULT_OK && apps){try{AppIntegrationChecks.run(getTargetContext(),result);}catch(Throwable error){result.putString("apps","FAIL: "+error);code=Activity.RESULT_CANCELED;}}
         if(code==Activity.RESULT_OK) {
             try {
                 android.content.Intent intent=new android.content.Intent(getTargetContext(),StarlinkActivity.class)

@@ -35,12 +35,12 @@ def main():
         return data.decode('utf-8')
     prefix='/subarubridge-diag/'
     try:
-        v=json.loads(request('version','GET','/version'));assert v['build']=='0.52-dev' and v['transport']=='original-rust-rfcomm'
+        v=json.loads(request('version','GET','/version'));assert v['build']=='0.53-dev' and v['transport']=='original-rust-rfcomm'
         assert request('launcher-lookup','GET','/kvs/launcher_url_vehicle/')=='http://192.168.1.1/smartaccess/launcher/subarubridge-demo.html'
         assert re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d{4}',request('timestamp-before-post','GET','/timestamp/'))
         # Same HTTP connection: the car may send timestamp and launcher POST in sequence.
         home=request('car-absolute-post','POST','http://192.168.1.1/smartaccess/launcher/subarubridge-demo.html',raw=b'pvr=1&pid=synthetic')
-        assert '<script' not in home.lower() and all('id="tile-'+i+'"' in home for i in ('display','touch','phone','results'))
+        assert '<script' not in home.lower() and all('id="tile-'+i+'"' in home for i in ('music','navigation','calls','messages'))
         request('remote-target','GET','http://example.invalid/',403)
         request('malformed-target','GET','/%ZZ',400)
         request('traversal-target','GET','/%2e%2e/private',400)

@@ -1,0 +1,86 @@
+package org.mlpi.pixelprobe.starlink;
+
+import android.app.*;
+import android.content.*;
+import android.media.*;
+import android.media.session.*;
+import android.os.*;
+import android.service.notification.StatusBarNotification;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.*;
+
+/** Synthetic Android fixtures: never place a call, send an SMS or contact a real account. */
+final class AppIntegrationChecks {
+    private static void check(boolean value,String message){if(!value)throw new AssertionError(message);}
+    private static String page(StarlinkRouter router,String path) {
+        LocalHttp.Response response=router.handle(("GET "+path+" HTTP/1.0\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+        check(response.status==200,"App route failed "+path);return new String(response.wire,StandardCharsets.UTF_8);
+    }
+    private static String form(String page,String action) {
+        Matcher forms=Pattern.compile("<form\\b[^>]*>(.*?)</form>",Pattern.DOTALL).matcher(page);
+        while(forms.find())if(forms.group(1).contains("value=\""+action+"\"")){
+            Matcher fields=Pattern.compile("name=\"([^\"]+)\" value=\"([^\"]*)\"").matcher(forms.group(1));StringBuilder body=new StringBuilder();
+            while(fields.find()){if(body.length()>0)body.append('&');body.append(fields.group(1)).append('=').append(fields.group(2));}return body.toString();
+        }throw new AssertionError("Missing form "+action);
+    }
+    private static int post(StarlinkRouter router,String body){return router.handle(("POST /subarubridge-diag/apps/action HTTP/1.0\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: "+body.getBytes(StandardCharsets.UTF_8).length+"\r\n\r\n"+body).getBytes(StandardCharsets.UTF_8)).status;}
+    static void run(Context context,Bundle result) throws Exception {
+        ActionTickets tickets=new ActionTickets();String ticket=tickets.issue("pause","track",100);
+        check(!tickets.consume(ticket,"next","track",101),"Ticket bound to wrong action");
+        check(!tickets.consume(ticket,"pause","other",101),"Ticket bound to wrong target");
+        check(tickets.consume(ticket,"pause","track",101),"Valid ticket refused");check(!tickets.consume(ticket,"pause","track",102),"Ticket replay accepted");
+        ticket=tickets.issue("pause","track",0);check(!tickets.consume(ticket,"pause","track",300000),"Expired ticket accepted");
+        ticket=tickets.issue("first","",1);for(int i=0;i<128;i++)tickets.issue("new","",2);check(!tickets.consume(ticket,"first","",3),"Ticket store unbounded");
+        for(String invalid:new String[]{"tel:123","123;456","123#456","123\n456",""})check(!PhoneIntegrations.validNumber(invalid),"Dial string injection accepted");
+        check(PhoneIntegrations.validNumber("+12025550100"),"Valid number refused");
+        PhoneIntegrations phone=PhoneIntegrations.get(context);Map<String,?> original=phone.prefs().getAll();
+        MediaSession session=new MediaSession(context,"SubaruBridge synthetic regression");AtomicInteger paused=new AtomicInteger();
+        try {
+            phone.prefs().edit().putBoolean("music",true).putBoolean("navigation",true).putBoolean("messages",true).putString("number","+12025550100").putString("destination","Main & Second?api=evil").apply();
+            check(phone.hasAccess(),"Emulator fixture requires notification-listener access");check(phone.unlocked(),"Unlock the emulator for fixture tests");
+            session.setCallback(new MediaSession.Callback(){@Override public void onPause(){paused.incrementAndGet();}},new Handler(Looper.getMainLooper()));
+            session.setMetadata(new MediaMetadata.Builder().putString(MediaMetadata.METADATA_KEY_TITLE,"Fixture <track>").putString(MediaMetadata.METADATA_KEY_ARTIST,"Synthetic artist").build());
+            session.setPlaybackState(new PlaybackState.Builder().setState(PlaybackState.STATE_PLAYING,0,1).setActions(PlaybackState.ACTION_PLAY|PlaybackState.ACTION_PAUSE).build());session.setActive(true);
+            StarlinkRouter router=StarlinkRuntime.get(context).router;String music=page(router,"/subarubridge-diag/apps/music");
+            check(music.contains("Fixture &lt;track&gt;"),"Media metadata not escaped");String pause=form(music,"music-pause");
+            check(post(router,pause)==200,"Media control failed");
+            long deadline=SystemClock.elapsedRealtime()+3000;while(paused.get()==0 && SystemClock.elapsedRealtime()<deadline)Thread.sleep(20);
+            check(paused.get()==1,"Media callback did not reach session");check(post(router,pause)==409,"Media replay not rejected");check(paused.get()==1,"Media replay duplicated command");
+            check(post(router,"action=music-pause&subject=&ticket=missing")==409,"Forged ticket accepted");
+            check(post(router,"action=music-pause&subject=&ticket=missing&extra=1")==400,"Unknown fields accepted");
+            String dial=form(page(router,"/subarubridge-diag/apps/calls"),"dial");check(post(router,dial)==200,"Dial preparation failed");
+            PhoneIntegrations.Pending pending=phone.pending();check(pending!=null && pending.kind.equals("dial"),"Dial action not queued");
+            Intent dialIntent=phone.confirm(pending.id);check(Intent.ACTION_DIAL.equals(dialIntent.getAction()),"Action would place an unconfirmed call");check(phone.pending()==null,"Confirmation did not consume request");
+            check(post(router,dial)==409,"Dial preparation replay accepted");
+            phone.queue("navigate","");Intent maps=phone.confirm(phone.pending().id);check("Main & Second?api=evil".equals(maps.getData().getQueryParameter("destination")),"Maps query injection");
+            phone.queue("compose","");Intent sms=phone.confirm(phone.pending().id);check(Intent.ACTION_SENDTO.equals(sms.getAction()) && "smsto".equals(sms.getData().getScheme()),"SMS action bypasses system composer");
+            Notification navigation=new Notification.Builder(context,"fixture").setContentTitle("Turn right <test>").setContentText("In 300 metres").setCategory(Notification.CATEGORY_NAVIGATION).build();
+            StatusBarNotification nav=new StatusBarNotification("com.google.android.apps.maps","com.google.android.apps.maps",10,null,android.os.Process.myUid(),0,0,navigation,android.os.Process.myUserHandle(),System.currentTimeMillis());
+            phone.posted(nav);check(page(router,"/subarubridge-diag/apps/navigation").contains("Turn right &lt;test&gt;"),"Navigation fixture absent");phone.removed(nav.getKey());check(phone.navigation()==null,"Removed navigation stayed visible");
+            Notification message=new Notification.Builder(context,"fixture").setContentTitle("Fixture sender").setContentText("Private fixture body").setCategory(Notification.CATEGORY_MESSAGE).build();
+            StatusBarNotification msg=new StatusBarNotification(context.getPackageName(),context.getPackageName(),11,null,android.os.Process.myUid(),0,0,message,android.os.Process.myUserHandle(),System.currentTimeMillis());
+            phone.posted(msg);check(page(router,"/subarubridge-diag/apps/messages").contains("Private fixture body"),"Message opt-in ignored");
+            phone.prefs().edit().putBoolean("messages",false).apply();check(phone.messages().isEmpty(),"Disabled message contents retained");
+            phone.prefs().edit().putBoolean("notifications",true).putBoolean("ongoing",false).apply();
+            Notification general=new Notification.Builder(context,"fixture").setContentTitle("Fixture update").setContentText("Private general body").setVisibility(Notification.VISIBILITY_PRIVATE).build();
+            StatusBarNotification update=new StatusBarNotification("org.example.fixture","org.example.fixture",12,null,android.os.Process.myUid(),0,0,general,android.os.Process.myUserHandle(),System.currentTimeMillis());
+            phone.posted(update);check(phone.notifications().size()==1,"General notification opt-in failed");
+            general.flags|=Notification.FLAG_ONGOING_EVENT;phone.posted(update);check(phone.notifications().isEmpty(),"Ongoing notification not filtered on update");
+            phone.prefs().edit().putBoolean("ongoing",true).apply();phone.posted(update);check(phone.notifications().size()==1,"Ongoing notification opt-in ignored");
+            general.visibility=Notification.VISIBILITY_SECRET;phone.posted(update);check(phone.notifications().isEmpty(),"Secret update retained old body");
+            general.visibility=Notification.VISIBILITY_PRIVATE;
+            for(int i=0;i<25;i++)phone.posted(new StatusBarNotification("org.example.fixture","org.example.fixture",100+i,null,android.os.Process.myUid(),0,0,general,android.os.Process.myUserHandle(),System.currentTimeMillis()));
+            check(phone.notifications().size()==20,"General notification store unbounded");
+            phone.prefs().edit().putBoolean("notifications",false).apply();check(phone.notifications().isEmpty(),"Disabled general notification contents retained");
+            java.io.ByteArrayOutputStream report=new java.io.ByteArrayOutputStream();router.exportReport(report);
+            java.util.zip.ZipInputStream zip=new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(report.toByteArray()));
+            java.util.zip.ZipEntry entry;while((entry=zip.getNextEntry())!=null){java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream();byte[] block=new byte[4096];int count;while((count=zip.read(block))!=-1)bytes.write(block,0,count);String text=bytes.toString("UTF-8");check(!text.contains("Private fixture body") && !text.contains("Fixture sender") && !text.contains("+12025550100"),"Personal app content leaked into diagnostic report");}
+            result.putString("apps","PASS: real Android media callback; replay/expiry; Maps encoding; dialer/SMS intents; bounded notification feed and filters; report privacy");
+        } finally {
+            session.release();PhoneIntegrations.Pending pending=phone.pending();if(pending!=null)phone.cancel(pending.id);phone.clearNotifications();
+            SharedPreferences.Editor restore=phone.prefs().edit().clear();for(Map.Entry<String,?> entry:original.entrySet())if(entry.getValue() instanceof Boolean)restore.putBoolean(entry.getKey(),(Boolean)entry.getValue());else if(entry.getValue() instanceof String)restore.putString(entry.getKey(),(String)entry.getValue());restore.commit();
+        }
+    }
+}

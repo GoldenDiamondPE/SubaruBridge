@@ -112,17 +112,31 @@ public final class CarUi {
     public String home(String run) throws IOException {
         Map<String, String> values = urls(run);
         StringBuilder tiles = new StringBuilder();
-        int count = Integer.parseInt(p("tile.count"));
-        for (int i = 0; i < count; i++) {
-            String key = "tile." + i + ".";
+        int count = Integer.parseInt(p("app.count"));
+        java.util.List<Integer> order = new java.util.ArrayList<>();
+        for (int i=0;i<count;i++) order.add(i);
+        if (context.getSharedPreferences("subarubridge-apps",Context.MODE_PRIVATE).getBoolean("navigationFirst",false)) {
+            for(int i=0;i<count;i++)if(p("app."+i+".id").equals("navigation")){order.remove(Integer.valueOf(i));order.add(0,i);break;}
+        }
+        for (int i : order) {
+            String key = "app." + i + ".";
             Map<String, String> tile = new LinkedHashMap<String, String>();
             for (String field : new String[] {"id", "tone", "title", "subtitle"}) tile.put(field, HtmlView.escape(p(key + field)));
-            tile.put("url", HtmlView.escape(stepUrl(Integer.parseInt(p(key + "screen")), run)));
+            tile.put("url", PREFIX + "apps/" + p(key + "id"));
             tile.put("icon", icon(p(key + "icon"))); tiles.append(template("tile", tile));
         }
         values.put("tiles", tiles.toString()); values.put("arrowIcon", icon("arrow"));
+        android.os.BatteryManager battery=context.getSystemService(android.os.BatteryManager.class);
+        int capacity=battery==null?-1:battery.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY);
+        values.put("clock",new SimpleDateFormat("h:mm a",Locale.getDefault()).format(new Date()));
+        values.put("battery",capacity<0 || capacity>100 ? "Unavailable" : capacity+"%");
         for (String field : new String[] {"eyebrow", "homeTitle", "homeSubtitle"}) values.put(field, HtmlView.escape(p(field)));
         return frame("Home", template("home", values), "home", run);
+    }
+    public String app(String title,String subtitle,String content,String id) throws IOException {
+        Map<String,String> values=urls(null);values.put("title",HtmlView.escape(title));values.put("subtitle",HtmlView.escape(subtitle));
+        values.put("content",content);values.put("refreshUrl",PREFIX+"apps/"+id);
+        return frame(title,template("app",values),"home",null);
     }
     public String basic(String run, int screen, Map<String, Object> state, Map<String, Object> phone, String form) throws IOException {
         Map<String, String> values = urls(run);

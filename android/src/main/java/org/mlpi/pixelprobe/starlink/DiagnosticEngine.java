@@ -9,7 +9,7 @@ import java.util.Set;
 
 /** Transport-independent test state; no vehicle commands or credential fields. */
 public final class DiagnosticEngine {
-    public static final String BUILD = "0.52-dev";
+    public static final String BUILD = "0.53-dev";
     public interface Journal { void append(Map<String, Object> event) throws IOException; }
     public static final class Failure extends Exception {
         public final int status;

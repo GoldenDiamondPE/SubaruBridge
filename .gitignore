@@ -3,6 +3,11 @@
 *.iml
 .gradle/
 .cxx/
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
 build/
 target/
 __pycache__/

@@ -16,15 +16,17 @@ milestone is a parked-car display, touch and reconnect test.
 - Original local HTTP routes, battery/clock diagnostics, private result journal.
 - A script-free HTML dashboard with three themes, two layouts and editable templates.
 - Phone preview, Android component tests and native protocol regressions.
-- A stable C interface so shared protocol work can later be reused on another platform.
+- A stable C interface for shared protocol work.
+- Android Music, Maps, Phone, Messages and Notifications dashboard cards with explicit permission and confirmation boundaries.
+- A native iOS companion source project and unsigned simulator build checks.
 
 This repository contains the complete standalone STARLINK-path app and its build
 sources. It contains no
 legacy STARLINK APK, decompiled code, vendor SDK, extracted art, firmware, keys,
 private captures or app binaries. Earlier MirrorLink, Raspberry Pi and scrcpy
 experiments remain preserved separately in the development tree. This repository
-does not implement iOS, music controls, calls, messaging, navigation or MirrorLink
-certification. It is not affiliated with Subaru, Fujitsu Ten, Apple or Google.
+does not implement a direct iPhone-to-car transport, full CarPlay feature parity or MirrorLink
+certification. See [dashboard apps and limits](docs/apps.md) for the implemented adapters. It is not affiliated with Subaru, Fujitsu Ten, Apple or Google.
 
 ## Build and use
 

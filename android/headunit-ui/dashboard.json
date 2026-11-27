@@ -2,10 +2,10 @@
   "brand": "SubaruBridge",
   "eyebrow": "YOUR WORKSPACE",
   "homeTitle": "Your dashboard",
-  "homeSubtitle": "Simple controls. Everything stays on your phone.",
+  "homeSubtitle": "Your music, directions and conversations. Powered by your phone.",
   "defaultTheme": "midnight",
   "defaultLayout": "grid",
-  "columnsWide": 4,
+  "columnsWide": 5,
   "columnsNarrow": 2,
   "tiles": [
     {
@@ -81,5 +81,42 @@
       "border": "#304850",
       "dock": "#142a31"
     }
-  }
+  },
+  "apps": [
+    {
+      "id": "music",
+      "title": "Music",
+      "subtitle": "Now playing",
+      "icon": "music",
+      "tone": "blue"
+    },
+    {
+      "id": "navigation",
+      "title": "Maps",
+      "subtitle": "Google Maps directions",
+      "icon": "navigation",
+      "tone": "green"
+    },
+    {
+      "id": "calls",
+      "title": "Phone",
+      "subtitle": "Hands-free calls",
+      "icon": "calls",
+      "tone": "purple"
+    },
+    {
+      "id": "messages",
+      "title": "Messages",
+      "subtitle": "Optional sharing",
+      "icon": "messages",
+      "tone": "orange"
+    },
+    {
+      "id": "notifications",
+      "title": "Notifications",
+      "subtitle": "Your app updates",
+      "icon": "notifications",
+      "tone": "blue"
+    }
+  ]
 }
