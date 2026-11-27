@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Explore SubaruBridge's real Android screens and customizable legacy STARLINK dashboard. Original UI, sample data, no vehicle connection.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src 'self' about:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Explore the app · SubaruBridge</title>
+  <link rel="stylesheet" href="assets/demo.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./"><span class="brand-mark">SB</span>SubaruBridge</a>
+    <nav aria-label="Website"><a href="./">Guide</a><a href="garage.html">Garage</a><a href="https://github.com/GoldenDiamondPE/SubaruBridge">Source</a></nav>
+  </header>
+  <main>
+    <section class="intro">
+      <p class="eyebrow">THE APP, UP CLOSE</p>
+      <h1>One phone.<br><span>Your kind of dashboard.</span></h1>
+      <p>Keep your vehicle history on your phone. Make the factory screen your own.</p>
+      <p class="demo-note"><strong>Interactive design preview.</strong> Android images come from the running 0.56 development build. The head-unit preview uses the app’s own templates. All vehicle and media information here is sample data.</p>
+    </section>
+
+    <div class="preview-grid">
+      <section class="phone-section" aria-labelledby="phone-title">
+        <div class="section-heading"><h2 id="phone-title">On your phone</h2><span>Android · 0.56</span></div>
+        <div class="phone-frame"><img id="phone-image" src="assets/demo/garage.png" width="1080" height="2400" alt="Android Garage overview with a sample Legacy, estimated mileage, maintenance status and recorded costs"></div>
+        <div class="phone-picker" role="group" aria-label="Android screenshot">
+          <button type="button" data-phone="home" aria-pressed="false">Home</button>
+          <button type="button" data-phone="garage" aria-pressed="true">Garage</button>
+          <button type="button" data-phone="maintenance" aria-pressed="false">Maintenance</button>
+          <button type="button" data-phone="analytics" aria-pressed="false">Summaries</button>
+        </div>
+        <p id="phone-caption" class="caption" aria-live="polite">A real Android screen. Confirmed readings and trip estimates stay distinct.</p>
+      </section>
+
+      <section class="car-section" aria-labelledby="car-title">
+        <div class="section-heading"><h2 id="car-title">On the factory screen</h2><span>800 × 480 preview</span></div>
+        <div class="headunit-bezel"><div id="car-viewport" class="car-viewport"><iframe id="car-frame" title="SubaruBridge head-unit design preview" sandbox="allow-same-origin" width="800" height="480"></iframe></div><div class="bezel-label">SUBARUBRIDGE <span>DESIGN PREVIEW</span></div></div>
+        <div class="control-row">
+          <fieldset><legend>Theme</legend><div class="segments" id="theme-picker"><button type="button" data-theme="midnight" aria-pressed="true">Midnight</button><button type="button" data-theme="daylight" aria-pressed="false">Daylight</button><button type="button" data-theme="coast" aria-pressed="false">Coast</button></div></fieldset>
+          <fieldset><legend>Layout</legend><div class="segments"><button type="button" data-layout="grid" aria-pressed="true">Grid</button><button type="button" data-layout="list" aria-pressed="false">List</button></div></fieldset>
+        </div>
+        <div class="screen-picker" role="group" aria-label="Head-unit screen"><button type="button" data-screen="home" aria-pressed="true">Dashboard</button><button type="button" data-screen="music" aria-pressed="false">Music</button><button type="button" data-screen="navigation" aria-pressed="false">Maps</button><button type="button" data-screen="notifications" aria-pressed="false">Notifications</button><button type="button" data-screen="settings" aria-pressed="false">Appearance</button></div>
+        <p id="demo-status" class="caption" role="status">Loading the original dashboard templates…</p>
+        <noscript><p>This website preview needs JavaScript to change screens. The actual head-unit dashboard uses ordinary links and forms and works with JavaScript off.</p></noscript>
+        <div class="capability-note"><h3>What this preview shows</h3><p>The editable dashboard, themes, app screens and browser-only example interactions. It does not connect to a car, play audio, start directions, send a message or save vehicle records.</p><p>Android Garage works offline. The independent STARLINK transport still needs display, touch and reconnect verification on the target Subaru. Native iOS Garage, automatic trip recording and live vehicle diagnostics are further development work.</p></div>
+      </section>
+    </div>
+
+    <section class="details">
+      <div><p class="eyebrow">OWNERSHIP, WITHOUT AN ACCOUNT</p><h2>Your service book.<br>Always with you.</h2><p>Profiles, odometer history, time-and-mileage maintenance, multi-item service visits, fuel, completed trips, expenses and local reminders. Back up your records or export a service report from the app.</p><a href="garage.html">Explore Garage</a></div>
+      <div><p class="eyebrow">MADE TO BE TAKEN APART</p><h2>Change the colors.<br>Then change everything else.</h2><p>The dashboard uses original HTML, CSS, SVG icons and a versioned configuration. This preview reads those same source templates; it isn’t a separate visual concept.</p><a href="customization.html">Customize the source</a><p class="code-path">android/headunit-ui/dashboard.json<br>android/headunit-ui/templates/</p></div>
+    </section>
+  </main>
+  <footer><span>Independent, original open-source software.</span><a href="build.html">Build it yourself</a><a href="verification.html">Test results &amp; limits</a></footer>
+
+<script>
+'use strict';
+const state = {theme:'midnight', layout:'grid', screen:'home', playing:false, touches:0};
+const frame = document.getElementById('car-frame');
+const status = document.getElementById('demo-status');
+let data;
+const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const url = screen => '#demo-' + screen;
+const expand = (source, values) => source.replace(/\{\{([A-Za-z][A-Za-z0-9_]*)\}\}/g, (_, key) => {if (!(key in values)) throw Error('Missing preview value: '+key); return values[key];});
+const template = (name, values) => expand(data.templates[name], values);
+const icon = name => data.icons[name];
+function fit() {const width = document.getElementById('car-viewport').clientWidth; frame.style.transform='scale(' + width/800 + ')';}
+new ResizeObserver(fit).observe(document.getElementById('car-viewport'));
+function controls() {
+  for (const key of ['theme','layout','screen']) document.querySelectorAll('[data-'+key+']').forEach(b => b.setAttribute('aria-pressed', String(b.dataset[key]===state[key])));
+}
+function action(label, id) {return '<span class="control-form"><button class="app-control" type="button" data-demo-action="'+id+'">'+escape(label)+'</button></span>';}
+function appContent(id) {
+  switch (id) {
+    case 'music': return '<p class="small muted">SAMPLE MEDIA · BROWSER ONLY</p><h2>Coastal drive</h2><p>SubaruBridge demo artist</p><p class="muted">'+(state.playing?'Playing in this preview':'Paused in this preview')+'</p>'+action('Previous','previous')+action(state.playing?'Pause':'Play','play')+action('Next','next')+'<p class="small muted">Real controls require a supported phone media session. iPhone / Taurus playback still needs hardware verification.</p>';
+    case 'navigation': return '<h2>Directions from your phone</h2><p>Sample destination: City library</p>'+action('Review directions on phone','directions')+'<p class="small muted">The implemented screen prepares a Google Maps handoff. It does not mirror a live map or provide factory navigation.</p>';
+    case 'calls': return '<h2>Keep calls hands-free</h2><p>Sample favorite · Alex</p>'+action('Prepare call on phone','call')+'<p class="small muted">The phone reviews the action before opening its dialer. Audio uses the supported factory Bluetooth path.</p>';
+    case 'messages': return '<h2>Messages stay private</h2><p>Message sharing is optional. Private contents are hidden in this preview.</p>'+action('Review on phone','message')+'<p class="small muted">Android replies depend on the source app offering a reply action and phone confirmation. General iPhone message access is not available to the iOS app.</p>';
+    default: return '<p class="small muted">SAMPLE NOTIFICATIONS</p><div class="message-card"><h2>Maintenance reminder</h2><p>2 items need attention.</p></div><div class="message-card"><h3>Phone connected</h3><p class="muted">Example connection update</p></div><p class="small muted">No personal notifications are read by this website. Android sharing is opt-in.</p>';
+  }
+}
+function render() {
+  const config=data.config, palette=config.themes[state.theme];
+  const urls={homeUrl:url('home'),settingsUrl:url('settings'),developerUrl:url('tools'),startUrl:url('display')};
+  let body;
+  if (state.screen==='home') {
+    const tiles=config.apps.map(app=>template('tile',{...app,title:escape(app.title),subtitle:escape(app.subtitle),url:url(app.id),icon:icon(app.icon)})).join('');
+    body=template('home',{...urls,tiles,arrowIcon:icon('arrow'),clock:'9:41 AM',battery:'86% · sample',eyebrow:escape(config.eyebrow),homeTitle:escape(config.homeTitle),homeSubtitle:escape(config.homeSubtitle)});
+  } else if (state.screen==='settings') {
+    const themes=Object.entries(config.themes).map(([key,p])=>'<a class="choice '+(key===state.theme?'selected':'')+'" href="#theme-'+key+'"><span class="swatch" style="background:'+p.surface+'"></span>'+escape(p.label)+'</a>').join('');
+    const layouts=['grid','list'].map(key=>'<a class="choice '+(key===state.layout?'selected':'')+'" href="#layout-'+key+'">'+(key==='grid'?'App grid':'App list')+'</a>').join('');
+    body=template('settings',{notice:'Website preview only. These choices do not change a phone or car.',themes,layouts});
+  } else if (['display','touch','phone','results'].includes(state.screen)) {
+    const keys=['display','touch','phone','results'];
+    const step=keys.indexOf(state.screen)+1;
+    const steps=keys.map((key,i)=>'<a class="step-link '+(key===state.screen?'current':'')+'" href="'+url(key)+'">'+(i+1)+' '+({display:'Display',touch:'Touch',phone:'Phone',results:'Results'}[key])+'</a>').join('');
+    let panel;
+    if (state.screen==='display') panel='<section class="panel"><h2>Display check</h2><p class="panel-subtitle">Example colors from the browser.</p><div style="display:flex;height:90px;margin:16px 0;border-radius:10px;overflow:hidden"><span style="flex:1;background:#ff453a"></span><span style="flex:1;background:#30d158"></span><span style="flex:1;background:#0a84ff"></span><span style="flex:1;background:#ffffff"></span></div><a class="next-link" href="'+url('touch')+'">Continue to touch</a></section>';
+    if (state.screen==='touch') panel=template('touch',{touches:state.touches,form:action('Send preview touch','touch')});
+    if (state.screen==='phone') panel=template('phone',{battery:86,clock:'9:41',uptime:12,form:action('Read sample data','read')});
+    if (state.screen==='results') panel=template('results',{resultTitle:'Browser preview only',resultSubtitle:'These are sample interactions, not a hardware test result.',screens:'—',touches:state.touches,reads:'—',savedLabel:'No',saved:'No',form:action('About this result','result')});
+    body=template('basic',{title:'Connection check',step,steps,panel,run:'website-demo · sample only'});
+  } else if (state.screen==='tools') {
+    body='<div class="page-heading"><h1>Tools</h1></div><section class="panel"><h2>Build your own screen</h2><p class="panel-subtitle">Original templates. No vendor application dependency.</p><pre class="debug-pre">android/headunit-ui/dashboard.json\nandroid/headunit-ui/dashboard.css\nandroid/headunit-ui/templates/*.html\nandroid/headunit-ui/icons/*.svg</pre><p class="small muted">Website preview · No Bluetooth connection or vehicle data.</p></section>';
+  } else {
+    const app=config.apps.find(app=>app.id===state.screen);
+    body=template('app',{title:escape(app.title),subtitle:escape(app.subtitle),content:appContent(app.id),refreshUrl:url(app.id),homeUrl:urls.homeUrl});
+  }
+  body=body.replace('Saved on your phone.','Preview only. Not saved.').replace(' · saved on your phone',' · browser only');
+  const dock=[['home','home','Home'],['display','results','Check'],['settings','settings','Appearance']].map(([key,symbol,label])=>'<a class="dock-link '+(state.screen===key?'current':'')+'" href="'+url(key)+'">'+icon(symbol)+'<span>'+label+'</span></a>').join('');
+  const css=expand(data.css,{...palette,tile_width_wide:100/config.columnsWide,tile_width_narrow:100/config.columnsNarrow});
+  frame.srcdoc=template('shell',{...urls,pageTitle:'Design preview',brand:escape(config.brand),css,theme:state.theme,layout:state.layout,dock,devCurrent:state.screen==='tools'?'current':'',toolsIcon:icon('tools'),body}).replace('<span class="dot"></span>ON DEVICE','DEMO · OFFLINE');
+  controls();
+  status.textContent='Click the apps and dock to explore. '+palette.label+' · '+state.layout+' layout. All actions stay in this browser.';
+}
+frame.addEventListener('load',()=>{
+  const doc=frame.contentDocument; if (!doc || !data) return;
+  doc.addEventListener('click',event=>{
+    const control=event.target.closest('[data-demo-action]');
+    if(control) {
+      event.preventDefault(); const kind=control.dataset.demoAction;
+      if(kind==='play') {state.playing=!state.playing;render();}
+      else if(kind==='touch') {state.touches++;render();}
+      else status.textContent='Preview only. No '+({call:'call',message:'message',directions:'directions request',result:'test report',read:'phone data request'}[kind]||'media command')+' was sent or saved.';
+      return;
+    }
+    const link=event.target.closest('a'); if (!link) return; event.preventDefault();
+    const value=link.getAttribute('href')||'';
+    if (value.startsWith('#theme-') && data.config.themes[value.slice(7)]) state.theme=value.slice(7);
+    else if (value.startsWith('#layout-') && ['grid','list'].includes(value.slice(8))) state.layout=value.slice(8);
+    else if (value.startsWith('#demo-') && ['home','settings','tools','display','touch','phone','results',...data.config.apps.map(a=>a.id)].includes(value.slice(6))) state.screen=value.slice(6);
+    else {status.textContent='This is a local design preview. No phone or vehicle action was sent.';return;}
+    render();
+  });
+  doc.addEventListener('submit',event=>event.preventDefault());
+});
+document.querySelectorAll('[data-theme],[data-layout],[data-screen]').forEach(button=>button.addEventListener('click',()=>{
+  if(!data)return; for(const key of ['theme','layout','screen']) if(button.dataset[key])state[key]=button.dataset[key]; render();
+}));
+const phoneCaptions={home:['Android SubaruBridge home, ready to connect, with Garage and integrations','The native Android home screen. Garage works even without a connected vehicle.'],garage:['Android Garage showing sample estimated mileage, maintenance and costs','A real Android screen. Confirmed readings and trip estimates stay distinct.'],maintenance:['Android maintenance screen with sourced service intervals and unknown history labels','Time and mileage both apply. Unknown service history is labeled rather than invented.'],analytics:['Android ownership summaries with a chart and recorded distance and costs','Summaries use saved records and clearly describe gaps in coverage.']};
+document.querySelectorAll('[data-phone]').forEach(button=>button.addEventListener('click',()=>{
+  const key=button.dataset.phone, image=document.getElementById('phone-image'); image.src='assets/demo/'+key+'.png';image.alt=phoneCaptions[key][0];document.getElementById('phone-caption').textContent=phoneCaptions[key][1];document.querySelectorAll('[data-phone]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+}));
+fetch('assets/demo-data.json').then(response=>{if(!response.ok)throw Error('Preview assets unavailable');return response.json();}).then(value=>{if(value.schemaVersion!==1)throw Error('Unsupported preview version');data=value;render();fit();}).catch(()=>{status.textContent='The head-unit preview could not load. The real Android screenshots and source guide are still available.';});
+</script>
+</body>
+</html>

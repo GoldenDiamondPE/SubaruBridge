@@ -1,0 +1,12 @@
+.build/
+build/
+.swiftpm/
+*.xcuserstate
+xcuserdata/
+*.ipa
+*.xcarchive
+*.mobileprovision
+*.p12
+*.p8
+
+App/Assets.xcassets/AppIcon.appiconset/AppIcon.png

@@ -36,6 +36,13 @@ class Boundary(unittest.TestCase):
     def test_replaced_pattern_rejected(self):
         self.put('android/src/main/assets/subarubridge-lab/pattern.png',b'unreviewed bytes')
         with self.assertRaises(ValueError):audit.audit(self.root)
+    def test_reviewed_demo_image_requires_exact_bytes(self):
+        path=Path('docs/assets/demo/garage.png')
+        original=(Path(__file__).resolve().parents[1]/path).read_bytes()
+        self.put(path,original)
+        self.assertEqual(audit.audit(self.root)[path.as_posix()],hashlib.sha256(original).hexdigest())
+        self.put(path,b'unreviewed replacement screenshot')
+        with self.assertRaises(ValueError):audit.audit(self.root)
     def test_windows_text_hash_matches_git_lf(self):
         self.put('README.md',b'first\r\nsecond\r\n')
         self.assertEqual(audit.audit(self.root)['README.md'],hashlib.sha256(b'first\nsecond\n').hexdigest())

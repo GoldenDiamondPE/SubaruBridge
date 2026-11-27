@@ -20,10 +20,12 @@ public final class StarlinkRouter {
     private static final String PREFIX = "/subarubridge-diag/";
     private final Context context;
     private final DiagnosticEngine engine;
+    private final DashboardApps apps;
     private final String instance = UUID.randomUUID().toString();
 
     public StarlinkRouter(Context context) {
         this.context = context.getApplicationContext();
+        apps = new DashboardApps(this.context);
         engine = new DiagnosticEngine(event -> {
             File directory = new File(this.context.getFilesDir(), "subarubridge-diagnostics");
             if (!directory.isDirectory() && !directory.mkdirs()) throw new IOException("Journal directory unavailable");
@@ -107,7 +109,7 @@ public final class StarlinkRouter {
             form.append("<form method=\"post\" action=\"/subarubridge-diag/basic\">");
             for(Map.Entry<String,String> entry:f.entrySet())form.append(HtmlView.hidden(entry.getKey(),entry.getValue()));
             form.append("<button id=\"basic-submit\" class=\"primary-button\" type=\"submit\">")
-                    .append(screen==2?"Send touch to Pixel":screen==3?"Read live Pixel data":"Save result on Pixel").append("</button></form>");
+                    .append(screen==2?"Send test touch":screen==3?"Read phone data":"Save result").append("</button></form>");
         }
         return html(new CarUi(context).basic(run,screen,state,screen==3?nativeStatus(run):null,form.toString()),request.close);
     }
@@ -124,7 +126,7 @@ public final class StarlinkRouter {
             if(path==null || !path.startsWith("/") || path.contains("..") || path.chars().anyMatch(c->c<32 || c==127))throw new LocalHttp.Error(400,"Invalid path");
             // Never log bootstrap body/query: a car may put identifying values there.
             String route=path.startsWith(PREFIX)?path.substring(PREFIX.length()):"";
-            loggedPath=Arrays.asList("basic","dashboard","settings","developer","status","event","pattern.png").contains(route)?PREFIX+route:ENTRY.equals(path)?"launcher":path.equals("/kvs/launcher_url_vehicle/")?"launcher-lookup":path.equals("/timestamp/")?"clock":"other";
+            loggedPath=route.startsWith("apps/")?"dashboard-app":Arrays.asList("basic","dashboard","settings","developer","status","event","pattern.png").contains(route)?PREFIX+route:ENTRY.equals(path)?"launcher":path.equals("/kvs/launcher_url_vehicle/")?"launcher-lookup":path.equals("/timestamp/")?"clock":"other";
             Map<String,String> query=fields(uri.getRawQuery());
             if(path.equals(ENTRY) || path.equals("/")) {
                 method(request,"GET","POST");response=html(new CarUi(context).home(null),request.close);
@@ -135,14 +137,20 @@ public final class StarlinkRouter {
             }else if(path.equals("/version") || path.equals("/version/")) {
                 method(request,"GET");Map<String,Object> value=new LinkedHashMap<>();value.put("product","SubaruBridge");value.put("build",DiagnosticEngine.BUILD);value.put("transport","original-rust-rfcomm");response=json(200,value,request.close);
             }else if(path.equals(PREFIX+"basic"))response=basic(request,query);
+            else if(path.equals(PREFIX+"apps/action")) {
+                method(request,"POST");
+                String origin=request.headers.get("origin");
+                if(origin!=null && !origin.equals("http://192.168.1.1") && !origin.equals("http://127.0.0.1:"+StarlinkRuntime.PREVIEW_PORT))throw new LocalHttp.Error(403,"Local origin required");
+                response=html(apps.actionPage(apps.perform(body(request,1024))),request.close);
+            }else if(route.startsWith("apps/")) {method(request,"GET");response=html(apps.page(route.substring(5)),request.close);}
             else if(path.equals(PREFIX+"dashboard")) {method(request,"GET");response=html(new CarUi(context).home(run(query,false)),request.close);}
             else if(path.equals(PREFIX+"settings")) {
-                method(request,"GET","POST");String run=run(query,false),notice="Choose a look. Your connection test stays the same.";CarUi ui=new CarUi(context);
+                method(request,"GET","POST");String run=run(query,false),notice="Choose a shared look for your phone and car.";CarUi ui=new CarUi(context);
                 if(request.method.equals("POST")) {
                     Map<String,String> f=body(request,512);
                     if(f.size()!=2 || !ui.validTheme(f.get("theme")) || !CarUi.validLayout(f.get("layout")))throw new LocalHttp.Error(400,"Unknown appearance choice");
                     if(!ui.save(f.get("theme"),f.get("layout")))throw new LocalHttp.Error(507,"Appearance could not be saved");
-                    ui=new CarUi(context);notice="Saved on your Pixel. Make yourself at home.";
+                    ui=new CarUi(context);notice="Saved. Your phone and car now share this look.";
                 }response=html(ui.settings(run,notice),request.close);
             }else if(path.equals(PREFIX+"developer")) {
                 method(request,"GET");String run=run(query,false);Map<String,Object> value=new LinkedHashMap<>();value.put("build",DiagnosticEngine.BUILD);value.put("instance",instance);value.put("transport","Original Rust core; no legacy runtime");value.put("test",run==null?"Open a connection check to inspect its run":nativeStatus(run));
@@ -172,6 +180,7 @@ public final class StarlinkRouter {
                 metadata.put("serverTimeMs",System.currentTimeMillis());metadata.put("uptimeMs",SystemClock.elapsedRealtime());
                 metadata.put("connection",StarlinkService.state());metadata.put("androidApi",android.os.Build.VERSION.SDK_INT);
                 metadata.put("transport",LinkDiagnostics.snapshot());
+                metadata.put("iPhoneMedia",AppleMediaClient.get(context).diagnostics());
                 metadata.put("scope","Original app events only. No raw Bluetooth or USB capture included.");
                 zip.putNextEntry(new ZipEntry("report.json"));zip.write(new JSONObject(metadata).toString().getBytes(StandardCharsets.UTF_8));zip.closeEntry();
                 for(String name:new String[]{"events.jsonl","transport-private.jsonl"}) {

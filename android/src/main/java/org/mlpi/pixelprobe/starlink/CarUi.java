@@ -98,7 +98,7 @@ public final class CarUi {
     private String frame(String title, String body, String active, String run) throws IOException {
         Map<String, String> values = urls(run);
         StringBuilder dock = new StringBuilder();
-        String[] ids = {"home", "test", "settings"}, symbols = {"home", "results", "settings"}, labels = {"Home", "Check", "Style"};
+        String[] ids = {"home", "test", "settings"}, symbols = {"home", "results", "settings"}, labels = {"Home", "Check", "Appearance"};
         String[] targets = {url("dashboard", run), stepUrl(1, run), url("settings", run)};
         for (int i = 0; i < ids.length; i++) dock.append("<a id=\"dock-").append(ids[i]).append("\" class=\"dock-link")
                 .append(ids[i].equals(active) ? " current" : "").append("\" href=\"").append(HtmlView.escape(targets[i])).append("\">")
@@ -112,21 +112,35 @@ public final class CarUi {
     public String home(String run) throws IOException {
         Map<String, String> values = urls(run);
         StringBuilder tiles = new StringBuilder();
-        int count = Integer.parseInt(p("tile.count"));
-        for (int i = 0; i < count; i++) {
-            String key = "tile." + i + ".";
+        int count = Integer.parseInt(p("app.count"));
+        java.util.List<Integer> order = new java.util.ArrayList<>();
+        for (int i=0;i<count;i++) order.add(i);
+        if (context.getSharedPreferences("subarubridge-apps",Context.MODE_PRIVATE).getBoolean("navigationFirst",false)) {
+            for(int i=0;i<count;i++)if(p("app."+i+".id").equals("navigation")){order.remove(Integer.valueOf(i));order.add(0,i);break;}
+        }
+        for (int i : order) {
+            String key = "app." + i + ".";
             Map<String, String> tile = new LinkedHashMap<String, String>();
             for (String field : new String[] {"id", "tone", "title", "subtitle"}) tile.put(field, HtmlView.escape(p(key + field)));
-            tile.put("url", HtmlView.escape(stepUrl(Integer.parseInt(p(key + "screen")), run)));
+            tile.put("url", PREFIX + "apps/" + p(key + "id"));
             tile.put("icon", icon(p(key + "icon"))); tiles.append(template("tile", tile));
         }
         values.put("tiles", tiles.toString()); values.put("arrowIcon", icon("arrow"));
+        android.os.BatteryManager battery=context.getSystemService(android.os.BatteryManager.class);
+        int capacity=battery==null?-1:battery.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY);
+        values.put("clock",new SimpleDateFormat("h:mm a",Locale.getDefault()).format(new Date()));
+        values.put("battery",capacity<0 || capacity>100 ? "Unavailable" : capacity+"%");
         for (String field : new String[] {"eyebrow", "homeTitle", "homeSubtitle"}) values.put(field, HtmlView.escape(p(field)));
         return frame("Home", template("home", values), "home", run);
     }
+    public String app(String title,String subtitle,String content,String id) throws IOException {
+        Map<String,String> values=urls(null);values.put("title",HtmlView.escape(title));values.put("subtitle",HtmlView.escape(subtitle));
+        values.put("content",content);values.put("refreshUrl",PREFIX+"apps/"+id);
+        return frame(title,template("app",values),"home",null);
+    }
     public String basic(String run, int screen, Map<String, Object> state, Map<String, Object> phone, String form) throws IOException {
         Map<String, String> values = urls(run);
-        String[] labels = {"Display", "Touch", "Pixel", "Results"};
+        String[] labels = {"Display", "Touch", "Phone", "Results"};
         StringBuilder steps = new StringBuilder();
         for (int i = 1; i <= 4; i++) steps.append("<a id=\"basic-nav").append(i).append("\" class=\"step-link")
                 .append(i == screen ? " current" : "").append("\" href=\"").append(HtmlView.escape(stepUrl(i, run))).append("\">")
@@ -140,8 +154,8 @@ public final class CarUi {
         boolean saved = Boolean.TRUE.equals(state.get("summarySaved"));
         boolean complete = ((Number) state.get("screensSeen")).intValue() == 4 && ((Number) state.get("touches")).intValue() >= 3 && ((Number) state.get("dataChecks")).intValue() >= 1;
         values.put("saved", "" + saved); values.put("savedLabel", saved ? "Yes" : "No");
-        values.put("resultTitle", saved && complete ? "All set. Saved on Pixel." : saved ? "Saved. A little more to check." : "Here's where we are.");
-        values.put("resultSubtitle", saved ? "Your observations are in the private journal." : "Save your result when you are ready.");
+        values.put("resultTitle", saved && complete ? "Check complete" : saved ? "Saved. More checks remaining" : "Your results");
+        values.put("resultSubtitle", saved ? "Your result is saved on your phone." : "Save your result when you are ready.");
         values.put("panel", template(new String[] {"display", "touch", "phone", "results"}[screen-1], values));
         return frame(labels[screen-1], template("basic", values), "test", run);
     }
@@ -163,6 +177,6 @@ public final class CarUi {
     }
     public String developer(String run, String state) throws IOException {
         Map<String, String> values = urls(run); values.put("state", HtmlView.escape(state));
-        return frame("Developer", template("developer", values), "developer", run);
+        return frame("Tools", template("developer", values), "developer", run);
     }
 }

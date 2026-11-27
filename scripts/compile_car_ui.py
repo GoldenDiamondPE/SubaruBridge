@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 
 TOKEN = re.compile(r'\{\{([A-Za-z][A-Za-z0-9_]*)\}\}')
 PALETTE = {'label', 'background', 'glow', 'surface', 'surfaceRaised', 'text', 'muted', 'accent', 'onAccent', 'border', 'dock'}
-ICONS = ('home', 'display', 'touch', 'phone', 'results', 'settings', 'tools', 'arrow')
+ICONS = ('home', 'display', 'touch', 'phone', 'results', 'settings', 'tools', 'arrow', 'music', 'navigation', 'calls', 'messages', 'notifications')
 
 
 def expand(source, values):
@@ -24,14 +24,15 @@ def expand(source, values):
 def validate(config, source):
     assert config['defaultTheme'] in config['themes']
     assert config['defaultLayout'] in ('grid', 'list')
-    assert type(config['columnsWide']) is int and 2 <= config['columnsWide'] <= 4
+    assert type(config['columnsWide']) is int and 2 <= config['columnsWide'] <= 5
     assert type(config['columnsNarrow']) is int and 1 <= config['columnsNarrow'] <= 2
     assert len(config['tiles']) == 4 and {v['id'] for v in config['tiles']} == {'display', 'touch', 'phone', 'results'}
     assert {v['screen'] for v in config['tiles']} == {1, 2, 3, 4}
     assert all(v['screen'] == {'display': 1, 'touch': 2, 'phone': 3, 'results': 4}[v['id']] for v in config['tiles'])
+    assert len(config['apps']) == 5 and {v['id'] for v in config['apps']} == {'music', 'navigation', 'calls', 'messages', 'notifications'}
     for key in ('brand', 'eyebrow', 'homeTitle', 'homeSubtitle'):
         assert isinstance(config[key], str) and 0 < len(config[key]) <= 160 and '\n' not in config[key]
-    for tile in config['tiles']:
+    for tile in config['tiles'] + config['apps']:
         assert tile['icon'] in ICONS and tile['tone'] in ('blue', 'green', 'purple', 'orange')
         assert all(isinstance(tile[k], str) and 0 < len(tile[k]) <= 100 and '\n' not in tile[k] for k in ('title', 'subtitle'))
     for key, theme in config['themes'].items():
@@ -73,16 +74,20 @@ def compile_ui(source, output, landing, previews=None):
     for index, tile in enumerate(config['tiles']):
         for key, value in tile.items():
             properties['tile.' + str(index) + '.' + key] = value
+    properties['app.count'] = len(config['apps'])
+    for index, app in enumerate(config['apps']):
+        for key, value in app.items():
+            properties['app.' + str(index) + '.' + key] = value
     (output / 'ui.properties').write_text('\n'.join(key + '=' + prop(value) for key, value in properties.items()) + '\n', encoding='utf-8')
     def template(name, values): return expand((source / 'templates' / (name + '.html')).read_text(encoding='utf-8'), values)
     def icon(name): return (source / 'icons' / (name + '.svg')).read_text(encoding='utf-8')
     def home(theme, layout):
         basic = '/subarubridge-diag/basic?screen='
-        tiles = ''.join(template('tile', dict(tile, title=html.escape(tile['title']), subtitle=html.escape(tile['subtitle']), url=basic + str(tile['screen']), icon=icon(tile['icon']))) for tile in config['tiles'])
+        tiles = ''.join(template('tile', dict(tile, title=html.escape(tile['title']), subtitle=html.escape(tile['subtitle']), url='/subarubridge-diag/apps/' + tile['id'], icon=icon(tile['icon']))) for tile in config['apps'])
         urls = {'homeUrl': '/subarubridge-diag/dashboard', 'settingsUrl': '/subarubridge-diag/settings', 'developerUrl': '/subarubridge-diag/developer', 'startUrl': basic + '1'}
-        body = template('home', dict(urls, tiles=tiles, arrowIcon=icon('arrow'), **{k: html.escape(config[k]) for k in ('eyebrow', 'homeTitle', 'homeSubtitle')}))
+        body = template('home', dict(urls, tiles=tiles, arrowIcon=icon('arrow'), clock='9:41 AM', battery='Preview', **{k: html.escape(config[k]) for k in ('eyebrow', 'homeTitle', 'homeSubtitle')}))
         dock = ''.join('<a id="dock-' + key + '" class="dock-link' + (' current' if key == 'home' else '') + '" href="' + url + '">' + icon(symbol) + '<span>' + text + '</span></a>' for key, symbol, text, url in (
-            ('home', 'home', 'Home', urls['homeUrl']), ('test', 'results', 'Check', basic + '1'), ('settings', 'settings', 'Style', urls['settingsUrl'])))
+            ('home', 'home', 'Home', urls['homeUrl']), ('test', 'results', 'Check', basic + '1'), ('settings', 'settings', 'Appearance', urls['settingsUrl'])))
         return template('shell', dict(urls, pageTitle='Home', brand=html.escape(config['brand']), css=(output / ('theme-' + theme + '.css')).read_text(), theme=theme, layout=layout, dock=dock, devCurrent='', toolsIcon=icon('tools'), body=body))
     landing.parent.mkdir(parents=True, exist_ok=True)
     landing.write_text(home(config['defaultTheme'], config['defaultLayout']), encoding='utf-8')

@@ -44,3 +44,77 @@ research runtime is not proof that this new app passes those checks.
 This is a development preview. It is not feature parity with the discontinued
 STARLINK app, and music, calls, messages, navigation and an iOS application are
 not implemented by this release.
+
+
+## 0.53 dashboard app development
+
+- Android app and instrumentation builds complete for arm64 and x86-64.
+- Emulator integration fixtures reached a real Android MediaSession callback and
+  delivered exactly one confirmed RemoteInput reply to a synthetic receiver.
+  Repeated and stale confirmations were rejected. No real SMS or call was sent.
+- Intent construction, Maps query encoding, general-notification bounds and
+  filtering, disabled-sharing cleanup, existing-notification reseeding and private
+  report exclusion have targeted component checks.
+- The local-route suite passes 61 checks on both the emulator and physical Pixel.
+  Personal preview routes require an app-private session.
+- Pause, leave and launcher-reopen reached Ready on the emulator.
+- The legacy browser preview renders the dashboard at 800 by 480 without scripts.
+- macOS CI passes ten Swift component tests, an unsigned Apple SDK simulator
+  build and a cold iPhone-simulator launch. See the
+  [iOS check run](https://github.com/GoldenDiamondPE/SubaruBridge/actions/runs/45930187043).
+
+These are component and bench observations. Actual Spotify account playback,
+Google Maps notifications, Bluetooth audio, phone/SMS delivery, physical iPhone
+behavior and the new independent transport on the Subaru still need separate
+verification. The earlier private research adapter's car result is not a result
+for this implementation.
+
+## 0.54 Android and Apple media foundation
+
+- Both Android ABIs compile. Android CLI identifies the artifact as 0.54-dev / 54.
+- The 26 Rust tests pass on Windows x86-64, native Apple-silicon macOS, the x86-64
+  Android emulator and the physical arm64 Pixel. Eight cover the new AMS decoder;
+  the 18 existing protocol regressions remain passing.
+- The same original Rust library compiles for the arm64 iPhone target. This is a
+  component build, not a new iPhone app or hardware transport test.
+- Android instrumentation on Pixel and emulator passes decoder/JNI lifetime,
+  metadata/capability/session cleanup and MediaSession tests, including controls
+  reaching a real synthetic Android session. Stale targets and replay are rejected.
+- The script-free local HTTP suite passes 61 checks on each Android device.
+- Notification access was initially off on the Pixel. After normal on-screen
+  permission setup, its full Android integration suite passed.
+
+The iPhone GATT client, normal LE pairing, Taurus playback and simultaneous car
+audio/data remain **hardware verification required**. No Taurus APK/IPA, patched
+player code, audio stream, credential or personal capture is part of this source.
+
+## 0.55–0.56 integrated Garage and ownership summaries
+
+Recorded 2026-11-27. Tests use isolated fixtures or explicitly synthetic emulator
+records. They do not add fictional history to the owner's phone Garage.
+
+| Check | Observed result |
+| --- | --- |
+| Shared Rust core | 76 cases passed on Windows, native Apple-silicon macOS, physical arm64 Pixel and x86-64 Android emulator: 44 ownership, 6 analytics, 8 Apple-media decoder and 18 protocol cases |
+| iPhone architecture | The same original Rust core compiled for arm64 iPhone; this is not a native iOS Garage screen or an iPhone transport result |
+| Android build | 0.56-dev / version code 56, both ABIs and test APK built; inspected and installed with Android CLI |
+| Full Android component/UI fixtures | Passed on Pixel and emulator: atomic persistence, interrupted/rejected writes, future/corrupt/deep JSON preservation, backup/conflict handling, concurrent saves, escaped exports, time-zone/unit/locale conversion, native forms and read-only summaries |
+| Existing integrations | Existing JNI lifetime, media callbacks, confirmed synthetic notification reply, stale/replay rejection, Maps/call/SMS intent construction and notification bounds remain passing; no real call or SMS was sent |
+| Script-free HTTP contracts | 61 passed on the final build on each Android device |
+| Normal emulator UI | Created a demo vehicle and confirmed reading, saved one two-item service visit, recorded a completed manual trip, and viewed estimated mileage and the native summary chart |
+| System file picker | Exported the demo Garage JSON and imported the same file; the saved revision and record counts did not change and the two-item visit was not duplicated |
+| Local reminders | A counts-only maintenance notification appeared for the sample overdue records; its daily alarm was registered and restored after emulator reboot; reminders were switched off afterward |
+| Visual inspection | Reviewed native phone screenshots and fixed unthemed navigation/chart controls plus content scrolling under the system status bar |
+| Public design demo | Original source templates rendered at desktop and phone widths; theme/layout selection, app navigation, browser-only play/pause, safe directions feedback and screenshot selection were checked |
+| Publication boundary | Ten regressions passed, including exact-byte enforcement for the individually reviewed synthetic screenshots; proprietary/private material stays excluded |
+
+The 18 normal-condition manufacturer rules retain their official Subaru table
+source and explicit applicability. Severe-condition footnotes, critical technical
+specifications and parts compatibility are not guessed. Unknown service history
+remains unknown; costs and mileage explain their recorded coverage.
+
+**Still outstanding:** independent physical Subaru bootstrap, rendering, touch
+and reconnect; iPhone/Taurus GATT playback; extended physical-phone idle reminder
+timing; native iOS Garage; automatic GPS trips; read-only OBD-II/live telemetry;
+receipt attachments and encrypted backups. The website is a design preview, not
+a connected vehicle test or a claim of complete CarPlay/STARLINK feature parity.
