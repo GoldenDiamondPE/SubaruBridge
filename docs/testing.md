@@ -48,12 +48,17 @@ concurrent writers, corruption/unknown-schema preservation, validation rejection
 backup idempotence/conflicts, units/money, export escaping and reminder filtering.
 
 Run the shared tests using `cargo +1.90.0 test --manifest-path rust/Cargo.toml --locked`.
-The Garage schema/calc suite has 42 cases; the existing media and protocol suites
-remain included. For manual checks, use an emulator and a clearly labeled test
+The Garage schema/calc suite has 42 cases plus 6 analytics cases; the existing
+8 media and 18 protocol cases remain included (74 shared tests). For manual
+checks, use an emulator and a clearly labeled test
 vehicle. Log an odometer, approximate service, full/partial fill, expense and
 completed trip. Restart the app, inspect history and export/import a backup.
 Verify the native system file picker and actual notification delivery separately
 from component tests. Extended idle/reboot reminder delivery remains outstanding.
+
+Native checks also exercise missing/repeated daylight-saving hours and explicit
+offset round-trips. Analytics screens are checked for read-only execution. A
+physical car is not required for any ownership calculation or storage test.
 
 ## Parked-car test
 

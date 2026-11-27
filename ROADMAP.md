@@ -15,9 +15,9 @@ Build the ownership system into SubaruBridge; do not create a separate tracker.
    severe-service applicability and verified parts/fluid references for the exact
    initial vehicle. Unknown history stays unknown; estimates stay labeled.
 4. **Everyday companion:** verify reminder delivery through reboot/power management,
-   improve backup conflict review, add receipts, richer costs and mileage charts.
+   improve backup conflict review, add receipts, richer costs and forecast comparisons.
    Custom maintenance, service-book details, lead times, snoozes and manual trips
-   are implemented; automatic GPS/routes follow
+   plus recorded monthly/yearly distance/cost charts are implemented; automatic GPS/routes follow
    explicit permission and battery-budget testing. Do not infer live ECU data.
 5. **Infotainment framework:** capability-driven dashboard/widgets, provider-specific
    media features, configurable themes, virtual CDs, notifications and static

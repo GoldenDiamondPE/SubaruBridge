@@ -78,6 +78,25 @@ price stays on the profile and is excluded from these recorded operating totals.
 Currency is locked after cost records are saved; no exchange conversion is guessed.
 US miles/gallons and metric kilometres/litres share canonical stored values.
 
+## Ownership summaries
+
+Open **More → Ownership summaries** for a year of recorded trip-distance or
+operating-cost bars. Switch chart type or year and choose **Read monthly details**
+for counts, distance, duration, average/longest trip, dated costs, financing and
+fuel measurements. The information is calculated locally without changing history.
+
+Logged trip distance is grouped by completion date. Confirmed odometer growth
+covers the first and last confirmed readings within the period; it is not
+presented as complete monthly/yearly mileage. Undated service costs stay in
+lifetime totals and are not assigned a guessed month. Fuel economy requires
+both full fills within the selected period; partial fills between them count.
+Unrecorded driving and purchases are not invented.
+
+Maintenance refreshes when you return to the Garage and when the phone's date
+or time changes. Timestamp forms retain their shown time zone while you edit.
+Default timestamps include an offset so a repeated daylight-saving hour can be
+identified precisely. A nonexistent local time is rejected instead of shifted.
+
 ## Reminders and data
 
 **More → Maintenance reminders** enables local reminders. Allow Android

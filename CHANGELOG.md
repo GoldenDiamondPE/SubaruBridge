@@ -1,5 +1,17 @@
 # Changes
 
+## 0.56-dev — Ownership summaries and time handling
+
+- Add shared, read-only monthly/yearly aggregation and native trip-distance and
+  operating-cost charts, with readable monthly details.
+- Separate logged trips, confirmed odometer growth, fuel-cycle measurements,
+  financing and undated services. Do not imply complete driving/cost coverage.
+- Use native local calendar boundaries for timestamped records and preserve saved
+  civil dates for services/expenses, including daylight-saving boundary tests.
+- Refresh maintenance on return and system date/time changes. Keep a draft's
+  original time zone and explicitly handle repeated or missing local hours.
+- Keep the existing Android media, STARLINK fallback and basic iOS source intact.
+
 ## 0.55-dev — Android Garage
 
 - Integrate the shared ownership foundation with the working Android media and

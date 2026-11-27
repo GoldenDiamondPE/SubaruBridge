@@ -73,6 +73,11 @@ final class GarageChecks {
         store.execute(cmd("updateVehicle", "vehicle", car("car").put("archived", true))); check(GarageReminders.counts(store.view())[0] == 0, "Archived vehicle generated reminders");
         check(OwnershipNumbers.distance("1", false) == 1609344 && OwnershipNumbers.distance("1", true) == 1000000 && OwnershipNumbers.volume("1", false) == 3785 && OwnershipNumbers.cents("0.29") == 29, "Unit/money conversion wrong");
         rejected(() -> OwnershipNumbers.cents("0.001")); rejected(() -> OwnershipNumbers.distance("NaN", false)); rejected(() -> OwnershipNumbers.distance("-1", false));
+        ZoneId zone = ZoneId.of("America/New_York");
+        rejected(() -> OwnershipTime.parse("2026-03-08 02:30", zone)); rejected(() -> OwnershipTime.parse("2026-11-01 01:30", zone));
+        long first = OwnershipTime.parse("2026-11-01 01:30 -04:00", zone), second = OwnershipTime.parse("2026-11-01 01:30 -05:00", zone);
+        check(second - first == 3600000 && OwnershipTime.parse(OwnershipTime.format(second, zone), zone) == second, "Repeated-hour time was silently changed");
+        rejected(() -> OwnershipTime.parse("2026-11-01 01:30 -06:00", zone));
     }
     private static View await(Activity screen, Instrumentation instrumentation, int id) throws Exception {
         final View[] found = new View[1]; long until = System.currentTimeMillis() + 12000;
@@ -95,6 +100,9 @@ final class GarageChecks {
             await(screen, instrumentation, R.id.garage_csv); check(GarageActivity.testStore.view().getJSONObject("state").getJSONArray("readings").length() == 1, "UI save did not persist");
             click(screen, instrumentation, R.id.garage_maintenance); click(screen, instrumentation, R.id.garage_add_item); type(screen, instrumentation, R.id.garage_item_title, "Synthetic registration"); type(screen, instrumentation, R.id.garage_item_months, "12"); click(screen, instrumentation, R.id.garage_save);
             await(screen, instrumentation, R.id.garage_add_item); check(GarageActivity.testStore.view().getJSONObject("state").getJSONArray("customItems").length() == 1, "Custom maintenance form did not persist");
+            long revision = GarageActivity.testStore.view().getJSONObject("state").getLong("revision");
+            click(screen, instrumentation, R.id.garage_more); click(screen, instrumentation, R.id.garage_analytics); await(screen, instrumentation, R.id.garage_chart_mode);
+            check(GarageActivity.testStore.view().getJSONObject("state").getLong("revision") == revision, "Analytics changed saved history");
         } finally { instrumentation.runOnMainSync(screen::finish); GarageActivity.testStore = null; }
     }
 }

@@ -22,7 +22,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--serial',required=True);p.add_argument('--adb',default='adb')
     p.add_argument('--device-port',type=int,default=8009);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--expected-build',default='0.55-dev')
+    p.add_argument('--expected-build',default='0.56-dev')
     args=p.parse_args();args.output.mkdir(parents=True,exist_ok=False)
     port=int(subprocess.check_output([args.adb,'-s',args.serial,'forward','tcp:0','tcp:'+str(args.device_port)],text=True))
     c=http.client.HTTPConnection('127.0.0.1',port,timeout=15);results=[]

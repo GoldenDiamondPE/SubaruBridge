@@ -10,6 +10,7 @@ import java.nio.charset.*;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -21,12 +22,14 @@ public final class OwnershipStore {
     private static final Object LOCK = new Object();
     private final AtomicFile file;
     private final Clock clock;
+    private final boolean liveZone;
 
     public OwnershipStore(Context context) {
-        this(new File(context.getNoBackupFilesDir(), "garage/garage-v1.json"), Clock.systemDefaultZone());
+        this(new File(context.getNoBackupFilesDir(), "garage/garage-v1.json"), Clock.systemUTC(), true);
     }
     /** Allows isolated on-device persistence and clock tests without touching a user's garage. */
-    public OwnershipStore(File path, Clock clock) { this.file = new AtomicFile(path); this.clock = clock; }
+    public OwnershipStore(File path, Clock clock) { this(path, clock, false); }
+    private OwnershipStore(File path, Clock clock, boolean liveZone) { this.file = new AtomicFile(path); this.clock = clock; this.liveZone = liveZone; }
 
     private static JSONObject empty() throws Exception {
         return new JSONObject("{\"schemaVersion\":1,\"revision\":0,\"vehicles\":[],\"readings\":[],\"services\":[],\"fuel\":[],\"expenses\":[],\"trips\":[],\"overrides\":[]}");
@@ -58,7 +61,8 @@ public final class OwnershipStore {
     }
     private JSONObject evaluate(JSONObject state, JSONObject command) throws Exception {
         long now = clock.millis();
-        return OwnershipCore.execute(new JSONObject().put("state", state).put("today", LocalDate.now(clock).toString())
+        LocalDate today = Instant.ofEpochMilli(now).atZone(liveZone ? ZoneId.systemDefault() : clock.getZone()).toLocalDate();
+        return OwnershipCore.execute(new JSONObject().put("state", state).put("today", today.toString())
                 .put("nowMs", now).put("command", command));
     }
     private void persist(JSONObject state) throws Exception {

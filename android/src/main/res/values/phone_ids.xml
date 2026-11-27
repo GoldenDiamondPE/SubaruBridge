@@ -26,6 +26,9 @@
     <item name="garage_search" type="id" />
     <item name="garage_edit_vehicle" type="id" />
     <item name="garage_reminders" type="id" />
+    <item name="garage_analytics" type="id" />
+    <item name="garage_chart_mode" type="id" />
+    <item name="garage_month_details" type="id" />
     <item name="garage_export" type="id" />
     <item name="garage_import" type="id" />
     <item name="garage_csv" type="id" />

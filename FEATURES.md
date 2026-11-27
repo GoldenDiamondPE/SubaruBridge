@@ -18,6 +18,7 @@ is evidence that the independent app works on the Subaru.
 | Service book | Multi-item visits, dates/ranges, DIY/provider, parts/labor/tax breakdown, owner-recorded part numbers, warranty notes, search and printable history | Receipt/photo/PDF attachments and richer part records |
 | Maintenance reminders | Opt-in daily Android inexact alarm and local notification; configurable lead times and snoozes; saved changes trigger checks; unknown history and archived vehicles excluded | Notification delivery after device power management/reboot; iOS adapter |
 | Trips / fuel / expenses | Completed manual trips, reconciled estimates, full/partial/missed fills and derived operating/financing totals; editable records | Automatic GPS, routes, richer analytics and safeguards for auto recording |
+| Ownership summaries | Shared monthly/yearly calculations, native distance/cost charts and monthly details; corrected readings and undated costs remain explicit | Forecasts, configurable analytics widgets, trend comparisons and cost-per-mile coverage logic |
 | Data ownership | User-chosen JSON export/additive restore, CSV history and escaped printable offline HTML service report | Attachments, encrypted backups, conflict-resolution UI and CSV/GPX import |
 | Themes / app SDK | Editable original dashboard configuration/templates | Versioned sandboxed packages, permissions and richer simulator |
 | Media skins / virtual CDs | Planned on the common provider model | Provider APIs, content rights, actual rendering and verified parked restrictions |
@@ -29,7 +30,7 @@ is evidence that the independent app works on the Subaru.
 
 | System | Next deliverable and dependency |
 | --- | --- |
-| Ownership analytics | Monthly/yearly mileage, cost and fuel charts with measured/estimated labels; shared aggregation and date-boundary tests |
+| Ownership analytics | Monthly/yearly recorded trip/cost charts and fuel-cycle details are implemented; extend with forecasts, comparisons and user-arranged widgets |
 | Maintenance references | Exact severe-service notes, fluids/capacities/torques and parts; authoritative model-specific review before publishing facts |
 | Attachments and backups | Private receipt/photo/PDF storage, bundled restoration, encrypted export and conflict review; transactional file/schema tests |
 | Automatic trips | Explicit location/background permission, vehicle selection, battery-efficient GPS, route/parking storage and GPX; platform and device checks |

@@ -26,8 +26,6 @@ import java.util.concurrent.*;
 /** Native ownership workspace. Vehicle connectivity is never needed to open or use it. */
 public final class GarageActivity extends Activity {
     private static final ExecutorService WORK = Executors.newSingleThreadExecutor();
-    private static final DateTimeFormatter TIME = new DateTimeFormatterBuilder().appendPattern("uuuu-MM-dd HH:mm")
-            .optionalStart().appendPattern(":ss").optionalEnd().toFormatter(Locale.ROOT).withResolverStyle(ResolverStyle.STRICT);
     private static final int EXPORT = 810, IMPORT = 811;
     private OwnershipStore store;
     // Process-local instrumentation injection; never read from intents or protocol messages.
@@ -40,6 +38,16 @@ public final class GarageActivity extends Activity {
     private String selected = "", section = "Overview", formKind, editingId = "", itemId = "", historyFilter = "All";
     private String draftId = UUID.randomUUID().toString();
     private String historyQuery = "";
+    private ZoneId formZone = ZoneId.systemDefault();
+    private boolean clockRegistered;
+    private int analyticsYear = LocalDate.now().getYear();
+    private boolean costChart;
+    private final BroadcastReceiver clockChange = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+            if (formKind == null && !busy) perform(() -> store.view(), false);
+            if (!isolated) GarageReminders.refresh(getApplicationContext());
+        }
+    };
     private int historyLimit = 50;
     private boolean busy;
     private Form form;
@@ -59,6 +67,8 @@ public final class GarageActivity extends Activity {
             formKind = saved.getString("form"); editingId = saved.getString("editing", ""); itemId = saved.getString("item", "");
             draftId = saved.getString("draftId", draftId);
             historyQuery = saved.getString("historyQuery", "");
+            analyticsYear = saved.getInt("analyticsYear", analyticsYear); costChart = saved.getBoolean("costChart");
+            try { formZone = ZoneId.of(saved.getString("formZone", formZone.getId())); } catch (DateTimeException ignored) { formZone = ZoneId.systemDefault(); }
             restoredDraft = saved.getBundle("draft"); exportKind = saved.getString("export", "backup");
         }
         beginPage("Garage", "Opening your saved vehicle records…");
@@ -69,9 +79,18 @@ public final class GarageActivity extends Activity {
         out.putString("form", formKind); out.putString("editing", editingId); out.putString("item", itemId);
         out.putString("draftId", draftId);
         out.putString("historyQuery", historyQuery);
+        out.putInt("analyticsYear", analyticsYear); out.putBoolean("costChart", costChart);
+        out.putString("formZone", formZone.getId());
         out.putString("export", exportKind); if (form != null) out.putBundle("draft", form.draft());
     }
     private boolean alive() { return !isFinishing() && !isDestroyed(); }
+    @Override protected void onResume() {
+        super.onResume(); IntentFilter filter = new IntentFilter(); filter.addAction(Intent.ACTION_DATE_CHANGED); filter.addAction(Intent.ACTION_TIME_CHANGED); filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+        if (!clockRegistered) { if (Build.VERSION.SDK_INT >= 33) registerReceiver(clockChange, filter, Context.RECEIVER_NOT_EXPORTED); else registerReceiver(clockChange, filter); clockRegistered = true; }
+        if (snapshot != null && formKind == null && !busy) perform(() -> store.view(), false);
+        if (!isolated) GarageReminders.refresh(getApplicationContext());
+    }
+    @Override protected void onPause() { if (clockRegistered) { unregisterReceiver(clockChange); clockRegistered = false; } super.onPause(); }
     private void perform(Task task, boolean saved) {
         if (busy) return; busy = true; if (form != null) form.enable(false);
         WORK.execute(() -> {
@@ -160,7 +179,7 @@ public final class GarageActivity extends Activity {
                 link.setOnClickListener(v -> { section = title; historyLimit = 50; render(); }); links.addView(link);
             }
             navigation.addView(links); page.addView(navigation);
-            switch (section) { case "Maintenance": maintenance(); break; case "History": history(); break; case "More": more(); break; default: overview(); }
+            switch (section) { case "Maintenance": maintenance(); break; case "History": history(); break; case "More": more(); break; case "Analytics": analytics(); break; default: overview(); }
         } catch (Exception error) { beginPage("Garage", "Your records were preserved."); showError(safeError(error)); }
     }
     private boolean metric() { return vehicle != null && vehicle.optString("units").equals("metric"); }
@@ -169,7 +188,8 @@ public final class GarageActivity extends Activity {
     private String money(long cents) { return OwnershipNumbers.money(cents, vehicle.optString("currency", "USD")); }
     private String inputDistance(long mm) { return BigDecimal.valueOf(mm).divide(new BigDecimal(metric() ? "1000000" : "1609344"), 6, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString(); }
     private static String when(long millis) { return Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss", Locale.ROOT)); }
-    private static long timestamp(String text) { try { return LocalDateTime.parse(text.trim(), TIME).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(); } catch (Exception error) { throw new IllegalArgumentException("Use YYYY-MM-DD HH:mm or YYYY-MM-DD HH:mm:ss for the time"); } }
+    private String formWhen(long millis) { return OwnershipTime.format(millis, formZone); }
+    private long timestamp(String text) { return OwnershipTime.parse(text, formZone); }
     private static String day(String text, boolean optional) { if (optional && text.trim().isEmpty()) return ""; try { LocalDate date = LocalDate.parse(text.trim()); if (!date.toString().equals(text.trim())) throw new IllegalArgumentException(); return date.toString(); } catch (Exception error) { throw new IllegalArgumentException("Use YYYY-MM-DD for a valid date"); } }
     private void overview() throws Exception {
         JSONObject mileage = summary.getJSONObject("mileage"); TextView number = label(mileage.isNull("currentMm") ? "Add an odometer reading" : distance(mileage.getLong("currentMm")), 32, palette.text, true); number.setId(R.id.garage_mileage);
@@ -272,6 +292,7 @@ public final class GarageActivity extends Activity {
     }
     private void more() throws Exception {
         button("Edit vehicle profile", R.id.garage_edit_vehicle, () -> openForm("vehicle", selected, ""));
+        button("Ownership summaries", R.id.garage_analytics, () -> { section = "Analytics"; render(); });
         button("Maintenance reminders", R.id.garage_reminders, this::reminders);
         heading("Recorded costs"); JSONObject costs = summary.getJSONObject("costs");
         row("Fuel", money(costs.getLong("fuelCents")), null); row("Services", money(costs.getLong("serviceCents")), null);
@@ -280,6 +301,53 @@ public final class GarageActivity extends Activity {
         note("Fuel and service costs are included automatically. Do not enter the same purchase again as an expense. Purchase price is kept on the profile and excluded from these recorded operating totals.");
         heading("Data & privacy"); dataButtons();
         note("Vehicle records stay in this app's private storage and are excluded from connection reports. Export a backup before uninstalling or clearing app data. Backups are unencrypted JSON; choose their destination carefully.");
+    }
+    private JSONObject period(String id, String label, LocalDate start, LocalDate end) throws Exception {
+        ZoneId zone = ZoneId.systemDefault();
+        return new JSONObject().put("id", id).put("label", label).put("startDate", start.toString()).put("endDate", end.toString())
+                .put("startMs", start.atStartOfDay(zone).toInstant().toEpochMilli()).put("endMs", end.atStartOfDay(zone).toInstant().toEpochMilli());
+    }
+    private void loadAnalytics() {
+        if (busy) return;
+        try {
+            int year = analyticsYear; LocalDate start = LocalDate.of(year, 1, 1); JSONArray periods = new JSONArray().put(period("year-" + year, Integer.toString(year), start, start.plusYears(1)));
+            for (int month = 1; month <= 12; month++) { LocalDate day = LocalDate.of(year, month, 1); periods.put(period(day.toString().substring(0, 7), day.format(DateTimeFormatter.ofPattern("MMM", Locale.getDefault())), day, day.plusMonths(1))); }
+            JSONObject command = new JSONObject().put("type", "analyze").put("periods", periods); perform(() -> store.execute(command), false);
+        } catch (Exception error) { showError(safeError(error)); }
+    }
+    private void analytics() throws Exception {
+        heading("Ownership summaries · " + analyticsYear);
+        LinearLayout years = new LinearLayout(this);
+        Button previous = new Button(this); previous.setText("‹ Previous year"); previous.setAllCaps(false); previous.setTextColor(palette.accent); previous.setEnabled(analyticsYear > 1900);
+        Button next = new Button(this); next.setText("Next year ›"); next.setAllCaps(false); next.setTextColor(palette.accent); next.setEnabled(analyticsYear < Math.min(LocalDate.now().getYear(), 2199));
+        previous.setOnClickListener(v -> { if (!busy) { analyticsYear--; loadAnalytics(); } }); next.setOnClickListener(v -> { if (!busy) { analyticsYear++; loadAnalytics(); } });
+        years.addView(previous, new LinearLayout.LayoutParams(0, -2, 1)); years.addView(next, new LinearLayout.LayoutParams(0, -2, 1)); page.addView(years);
+        JSONArray data = summary.getJSONArray("analytics");
+        if (data.length() != 13 || !data.getJSONObject(0).getJSONObject("period").getString("id").equals("year-" + analyticsYear)) { note("Calculating your recorded history…"); loadAnalytics(); return; }
+        JSONObject total = data.getJSONObject(0), costs = total.getJSONObject("costs");
+        row(total.getInt("recordedTrips") + " recorded trips", distance(total.getLong("tripDistanceMm")) + " · " + duration(total.getLong("tripDurationMs")), null);
+        if (total.isNull("confirmedGrowthMm")) note("Confirmed odometer growth needs two active confirmed readings within this year.");
+        else row("Confirmed odometer growth: " + distance(total.getLong("confirmedGrowthMm")), when(total.getLong("growthStartMs")) + " to " + when(total.getLong("growthEndMs")) + ". This covers those readings, not unrecorded portions of the year.", null);
+        row(money(costs.getLong("operatingCents")), "Recorded operating costs · financing " + money(costs.getLong("financingCents")), null);
+        note("Trips are grouped by completion date, using their full logged distance. These totals do not establish complete driving coverage or live vehicle measurements.");
+        button(costChart ? "Show recorded trip distance" : "Show recorded operating costs", R.id.garage_chart_mode, () -> { costChart = !costChart; render(); });
+        long[] values = new long[12]; String[] labels = new String[12];
+        for (int i = 0; i < 12; i++) { JSONObject month = data.getJSONObject(i + 1); values[i] = costChart ? month.getJSONObject("costs").getLong("operatingCents") : month.getLong("tripDistanceMm"); labels[i] = month.getJSONObject("period").getString("label"); }
+        OwnershipChart chart = new OwnershipChart(this, values, labels, palette, costChart, metric(), vehicle.optString("currency", "USD")); page.addView(chart, new LinearLayout.LayoutParams(-1, dp(210)));
+        button("Read monthly details", R.id.garage_month_details, () -> new AlertDialog.Builder(this).setTitle("Recorded month").setItems(labels, (d, index) -> { try { monthDetails(data.getJSONObject(index + 1)); } catch (Exception error) { showError(safeError(error)); } }).show());
+        if (total.getInt("undatedServiceCount") > 0) note(total.getInt("undatedServiceCount") + " service records have no date. " + money(total.getLong("undatedServiceCents")) + " in undated services is kept in lifetime costs and is not assigned to a month or year.");
+        note("Service and expense dates use their saved civil dates. Fill-ups and trip times use actual local time-zone boundaries, including daylight-saving changes. Fuel economy uses complete full-to-full cycles inside the selected period.");
+    }
+    private static String duration(long ms) { return ms / 3600000 + " h " + (ms / 60000) % 60 + " min"; }
+    private void monthDetails(JSONObject month) throws Exception {
+        JSONObject costs = month.getJSONObject("costs"), fuel = month.getJSONObject("fuel");
+        String text = month.getInt("recordedTrips") + " recorded trips · " + distance(month.getLong("tripDistanceMm")) + "\nRecorded driving duration: " + duration(month.getLong("tripDurationMs"))
+                + "\nFuel: " + money(costs.getLong("fuelCents")) + "\nServices: " + money(costs.getLong("serviceCents")) + "\nOther operating: " + money(costs.getLong("otherOperatingCents")) + "\nFinancing: " + money(costs.getLong("financingCents"));
+        if (!month.isNull("averageTripMm")) text += "\nAverage trip: " + distance(month.getLong("averageTripMm")) + "\nLongest trip: " + distance(month.getLong("longestTripMm"));
+        text += "\n\nFuel cycles wholly inside month: " + fuel.getInt("completedCycles");
+        if (metric() && !fuel.isNull("litresPer100Km")) text += String.format(Locale.getDefault(), "\n%.1f L/100 km", fuel.getDouble("litresPer100Km"));
+        if (!metric() && !fuel.isNull("mpgUs")) text += String.format(Locale.getDefault(), "\n%.1f MPG (US)", fuel.getDouble("mpgUs"));
+        new AlertDialog.Builder(this).setTitle(month.getJSONObject("period").getString("label") + " " + analyticsYear).setMessage(text).setPositiveButton("Close", null).show();
     }
     private void dataButtons() {
         button("Export garage backup", R.id.garage_export, () -> export("backup"));
@@ -323,7 +391,7 @@ public final class GarageActivity extends Activity {
     }
     private void toast(String value) { Toast.makeText(this, value, Toast.LENGTH_SHORT).show(); }
 
-    private void openForm(String kind, String id, String item) { if (busy) return; formKind = kind; editingId = id; itemId = item; draftId = UUID.randomUUID().toString(); restoredDraft = null; buildFormSafely(); }
+    private void openForm(String kind, String id, String item) { if (busy) return; formKind = kind; editingId = id; itemId = item; draftId = UUID.randomUUID().toString(); formZone = ZoneId.systemDefault(); restoredDraft = null; buildFormSafely(); }
     private void buildFormSafely() { try { buildForm(); } catch (Exception failure) { formKind = null; form = null; render(); showError(safeError(failure)); } }
     private void buildForm() throws Exception {
         beginPage(formKind.equals("vehicle") ? (editingId.isEmpty() ? "Add vehicle" : "Vehicle profile") : formKind.equals("interval") ? "Service interval" : formKind.equals("custom") ? "Owner maintenance item" : formKind.equals("preferences") ? "Reminder lead times" : editingId.isEmpty() ? "Log " + formKind : formKind.equals("reading") ? "Correct odometer" : "Edit " + formKind, "");
@@ -420,7 +488,7 @@ public final class GarageActivity extends Activity {
     }
     private void readingForm(JSONObject existing) throws Exception {
         form.number("distance", "Odometer (" + unit() + ")", editingId.isEmpty() ? "" : inputDistance(existing.getLong("distanceMm")), R.id.garage_distance);
-        form.text("at", "Reading time (" + ZoneId.systemDefault() + ")", when(editingId.isEmpty() ? System.currentTimeMillis() : existing.getLong("atMs")), false, R.id.garage_time);
+        form.text("at", "Reading time (" + formZone + ")", formWhen(editingId.isEmpty() ? System.currentTimeMillis() : existing.getLong("atMs")), false, R.id.garage_time);
         if (!editingId.isEmpty()) note("Correcting the reading from " + when(existing.getLong("atMs")) + ". The original stays in history.");
         form.check("approximate", "This reading is approximate", existing.optString("confidence").equals("approximate")); notes(editingId.isEmpty() ? existing : new JSONObject());
         if (!editingId.isEmpty()) note("A correction reason is required in Notes.");
@@ -465,7 +533,7 @@ public final class GarageActivity extends Activity {
         });
     }
     private void fuelForm(JSONObject existing) throws Exception {
-        form.text("at", "Fill-up time (" + ZoneId.systemDefault() + ")", editingId.isEmpty() ? when(System.currentTimeMillis()) : when(existing.getLong("atMs")), false, R.id.garage_time);
+        form.text("at", "Fill-up time (" + formZone + ")", formWhen(editingId.isEmpty() ? System.currentTimeMillis() : existing.getLong("atMs")), false, R.id.garage_time);
         form.number("distance", "Odometer (" + unit() + ")", editingId.isEmpty() ? "" : inputDistance(existing.getLong("distanceMm")), R.id.garage_distance);
         String volume = editingId.isEmpty() ? "" : BigDecimal.valueOf(existing.getLong("volumeMl")).divide(new BigDecimal(metric() ? "1000" : "3785.411784"), 6, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
         form.number("volume", "Fuel purchased (" + (metric() ? "litres" : "US gallons") + ")", volume, R.id.garage_volume);
@@ -492,8 +560,8 @@ public final class GarageActivity extends Activity {
         form.save(() -> command("addExpense", "updateExpense", "expense", record(existing).put("date", day(form.text("date"), false)).put("category", form.text("category")).put("costCents", OwnershipNumbers.cents(form.text("cost"))).put("financing", form.checked("financing")).put("notes", form.text("notes"))));
     }
     private void tripForm(JSONObject existing) throws Exception {
-        form.text("start", "Trip start (" + ZoneId.systemDefault() + ")", editingId.isEmpty() ? when(System.currentTimeMillis() - 3600000) : when(existing.getLong("startedMs")), false, R.id.garage_trip_start);
-        form.text("end", "Trip end", editingId.isEmpty() ? when(System.currentTimeMillis()) : when(existing.getLong("endedMs")), false, R.id.garage_trip_end);
+        form.text("start", "Trip start (" + formZone + ")", formWhen(editingId.isEmpty() ? System.currentTimeMillis() - 3600000 : existing.getLong("startedMs")), false, R.id.garage_trip_start);
+        form.text("end", "Trip end", formWhen(editingId.isEmpty() ? System.currentTimeMillis() : existing.getLong("endedMs")), false, R.id.garage_trip_end);
         form.number("distance", "Completed distance (" + unit() + ")", editingId.isEmpty() ? "" : inputDistance(existing.getLong("distanceMm")), R.id.garage_distance); notes(existing);
         note("Manual trip entry. Completed trips after your latest odometer reading contribute to estimated mileage. Overlaps are rejected. This does not record GPS or read the car's odometer.");
         form.save(() -> command("addTrip", "updateTrip", "trip", record(existing).put("startedMs", timestamp(form.text("start"))).put("endedMs", timestamp(form.text("end"))).put("distanceMm", OwnershipNumbers.distance(form.text("distance"), metric())).put("source", existing.optString("source", "manual")).put("notes", form.text("notes"))));

@@ -2,6 +2,7 @@
 pub mod date;
 pub mod model;
 pub mod maintenance;
+pub mod analytics;
 use date::Date;
 use model::*;
 use serde::{Deserialize, Serialize};
@@ -28,6 +29,7 @@ pub enum Command {
     RecordFillUp{entry:Fuel,reading:Reading},
     AddCustomItem{item:CustomItem},UpdateCustomItem{item:CustomItem},SetPreferences{preferences:MaintenancePreferences},
     SnoozeReminder{value:ReminderSnooze},ClearSnooze{vehicle_id:String,item_id:String},
+    Analyze{periods:Vec<analytics::Period>},
 }
 #[derive(Debug,Serialize)]
 #[serde(rename_all="camelCase")]
@@ -70,7 +72,10 @@ pub fn mileage(state:&Garage,id:&str)->Mileage {
 #[serde(rename_all="camelCase")]
 pub struct FuelSummary {pub completed_cycles:u32,pub distance_mm:u64,pub volume_ml:u64,pub mpg_us:Option<f64>,pub litres_per_100_km:Option<f64>}
 pub fn fuel_summary(state:&Garage,id:&str)->FuelSummary {
-    let mut entries:Vec<_>=state.fuel.iter().filter(|e|e.vehicle_id==id).collect();entries.sort_by_key(|e|(e.at_ms,&e.id));
+    fuel_entries(state.fuel.iter().filter(|e|e.vehicle_id==id).collect())
+}
+pub fn fuel_entries(mut entries:Vec<&Fuel>)->FuelSummary {
+    entries.sort_by_key(|e|(e.at_ms,&e.id));
     let mut out=FuelSummary{completed_cycles:0,distance_mm:0,volume_ml:0,mpg_us:None,litres_per_100_km:None};
     let mut anchor:Option<u64>=None;let mut volume=0;
     for e in entries {
@@ -224,8 +229,14 @@ pub fn execute(request:Request)->Result<Value,String>{
     let mut state=request.state;validate(&state,&request.today,request.now_ms)?;
     if request.due_soon_mm.is_some_and(|v|v>100_000*MM_PER_MILE) || request.due_soon_days.is_some_and(|v|!(0..=3650).contains(&v)){return Err("Invalid due-soon thresholds".into());}
     let original=state.clone();
+    let mut periods=Vec::new();
     match request.command {
         Command::View=>(),Command::AddVehicle{vehicle}=>state.vehicles.push(vehicle),
+        Command::Analyze{periods:requested}=>{
+            if requested.is_empty() || requested.len()>24{return Err("Choose one to 24 analytics periods".into());}
+            let mut ids=BTreeSet::new();for period in &requested{period.validate()?;if !ids.insert(&period.id){return Err("Duplicate analytics period identifier".into());}}
+            periods=requested;
+        },
         Command::UpdateVehicle{vehicle}=>{
             let old=state.vehicles.iter_mut().find(|v|v.id==vehicle.id).ok_or("Vehicle not found")?;
             let recorded_costs=state.services.iter().any(|v|v.vehicle_id==vehicle.id) || state.fuel.iter().any(|v|v.vehicle_id==vehicle.id) || state.expenses.iter().any(|v|v.vehicle_id==vehicle.id);
@@ -297,7 +308,8 @@ pub fn execute(request:Request)->Result<Value,String>{
         let financing:u64=state.expenses.iter().filter(|e|e.vehicle_id==vehicle.id && e.financing).map(|e|e.cost_cents).sum();
         summaries.push(json!({"vehicleId":vehicle.id,"mileage":miles,"maintenance":due,"fuel":fuel_summary(&state,&vehicle.id),
             "costs":{"currency":vehicle.currency,"fuelCents":fuel_cost,"serviceCents":service_cost,"otherOperatingCents":other,"financingCents":financing,"recordedOperatingCents":fuel_cost+service_cost+other,"recordedTotalCents":fuel_cost+service_cost+other+financing},
-            "counts":{"readings":state.readings.iter().filter(|r|r.vehicle_id==vehicle.id).count(),"services":services.len(),"fuel":state.fuel.iter().filter(|e|e.vehicle_id==vehicle.id).count(),"expenses":state.expenses.iter().filter(|e|e.vehicle_id==vehicle.id).count(),"trips":state.trips.iter().filter(|e|e.vehicle_id==vehicle.id).count()}}));
+            "counts":{"readings":state.readings.iter().filter(|r|r.vehicle_id==vehicle.id).count(),"services":services.len(),"fuel":state.fuel.iter().filter(|e|e.vehicle_id==vehicle.id).count(),"expenses":state.expenses.iter().filter(|e|e.vehicle_id==vehicle.id).count(),"trips":state.trips.iter().filter(|e|e.vehicle_id==vehicle.id).count()},
+            "analytics":periods.iter().map(|period|analytics::summarize(&state,&vehicle.id,period)).collect::<Vec<_>>() }));
     }
     Ok(json!({"ok":true,"changed":changed,"state":state,"summaries":summaries,"schedule":schedule,"capabilities":crate::capabilities::registry()}))
 }

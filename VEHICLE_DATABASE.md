@@ -36,7 +36,8 @@ Input is capped at 4 MiB. Owned buffers must be freed exactly once using
 Commands are `view`, `addVehicle`, `updateVehicle`, `addReading`, `addService`,
 `updateService`, `addFuel`, `updateFuel`, `addExpense`, `updateExpense`, `addTrip`,
 `updateTrip`, `setOverride`, `resetOverride`, `recordFillUp`, `mergeBackup`,
-`addCustomItem`, `updateCustomItem`, `setPreferences`, `snoozeReminder` and `clearSnooze`.
+`addCustomItem`, `updateCustomItem`, `setPreferences`, `snoozeReminder`, `clearSnooze`
+and read-only `analyze`.
 Variant and field names are camelCase. `recordFillUp` takes `entry` and a matching
 confirmed manual `reading`; both are validated in one revision. Record edits may
 not move a history record between vehicles. Currency changes with saved costs
@@ -59,3 +60,11 @@ Backup restoration into an empty garage adopts its reminder preferences. A
 non-empty garage rejects conflicting preferences, snoozes, intervals or record
 IDs instead of silently choosing a winner. Custom items must be included with
 the service records that refer to them.
+
+`analyze` accepts 1–24 `periods`, each containing `id`, `label`, `startMs`, `endMs`,
+`startDate` and `endDate`. Native code supplies actual local calendar boundaries,
+including offset changes. Ends are exclusive. Each vehicle summary returns an
+`analytics` array with trip counts/distance/duration, confirmed-reading growth and
+coverage, fuel cycles wholly within the period, dated costs and unassigned services.
+Analysis never changes the garage revision. Trip distance is attributed by trip
+completion; undated services remain in lifetime totals and are not assigned a period.

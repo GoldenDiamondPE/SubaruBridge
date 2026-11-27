@@ -40,6 +40,9 @@ coolant intervals, calendar and mileage thresholds, severe-condition gaps, owner
 overrides, odometer correction cycles, a 10,000-record correction chain, GPS
 confidence, trip reconciliation, ambiguous service ordering, partial fuel fills,
 zero-distance consumption, idempotent imports and conflicting backups.
+Six additional analytics regressions cover empty data, completion-time attribution,
+exclusive period ends, corrected/approximate readings, financing, undated service
+costs, wholly-contained fuel cycles, clock-boundary tolerance and read-only execution.
 
 The JSON C function is `sb_ownership_execute`. Input is bounded at 4 MiB; callers
 free its owned output with `sb_core_buffer_free`. It performs no I/O. Native
@@ -76,6 +79,10 @@ Service-book details support DIY, owner-recorded part numbers, warranty notes
 and exact parts/labor/tax amounts. A supplied breakdown must equal the total;
 overflow or a mismatch is rejected before persistence.
 
+Android also exposes read-only yearly/monthly summaries and native distance/cost
+charts. Local date/time changes refresh maintenance; drafts keep their original
+zone and reject nonexistent/ambiguous times unless a valid explicit offset is supplied.
+
 Next: native iOS persistence/UI using this API, attachments,
-backup conflict review, analytics, permission-based GPS and optional read-only
+backup conflict review, advanced analytics, permission-based GPS and optional read-only
 diagnostics. Android-only notification/RFCOMM capabilities are not implied for iOS.
