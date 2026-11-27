@@ -76,6 +76,7 @@ public final class StarlinkActivity extends Activity {
             enableInFlight = saved.getBoolean("enableInFlight");
             manualSetup = saved.getBoolean("manualSetup");
         }
+        openRequestedScreen();
         try (RustCore ignored = new RustCore(1)) { coreReady = true; }
         catch (IOException | LinkageError unavailable) { localIssue = "App components unavailable. Reinstall this build."; }
         try { StarlinkRuntime.get(this).startPreview(); }
@@ -190,6 +191,8 @@ public final class StarlinkActivity extends Activity {
         LinearLayout shortcuts = card(page);
         row(shortcuts, "Garage", "Mileage, maintenance, fuel and ownership records", "home", R.id.phone_garage, () -> startActivity(new Intent(this, GarageActivity.class)));
         divider(shortcuts);
+        row(shortcuts, "Record & diagnose", "On-device recorder, USB status and phone checks", "tools", R.id.phone_recorder, () -> startActivity(new Intent(this, DeveloperActivity.class)));
+        divider(shortcuts);
         row(shortcuts, "Apps & integrations", "Music, Google Maps, phone and messages", "grid", View.NO_ID, () -> startActivity(new Intent(this, IntegrationsActivity.class)));
         divider(shortcuts); row(shortcuts, "Review phone action", "Confirm a prepared call, direction or reply", "phone", View.NO_ID, () -> startActivity(new Intent(this, PhoneActionActivity.class)));
         divider(shortcuts);
@@ -222,6 +225,8 @@ public final class StarlinkActivity extends Activity {
         }); add(pauseArea, pauseButton); add(controls, pauseArea);
         section(page, "DIAGNOSTICS");
         LinearLayout diagnostics = card(page);
+        row(diagnostics, "Record & diagnose", "Record a car test and inspect it on this phone", "tools", R.id.phone_developer, () -> startActivity(new Intent(this, DeveloperActivity.class)));
+        divider(diagnostics);
         row(diagnostics, "App integrations", "Permissions, favorites and dashboard order", "grid", View.NO_ID, () -> startActivity(new Intent(this, IntegrationsActivity.class)));
         divider(diagnostics);
         row(diagnostics, "Run connection check", "Four checks, confirmed on your phone", "check", View.NO_ID, () -> showDashboard("/subarubridge-diag/basic?screen=1"));
@@ -287,7 +292,8 @@ public final class StarlinkActivity extends Activity {
             if (explicit && asked && !shouldShowRequestPermissionRationale(Manifest.permission.BLUETOOTH_CONNECT)) {
                 startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()))); return;
             }
-            ArrayList<String> permissions = new ArrayList<>(); permissions.add(Manifest.permission.BLUETOOTH_CONNECT);
+            ArrayList<String> permissions = new ArrayList<>();
+            if(Build.VERSION.SDK_INT>=31)permissions.add(Manifest.permission.BLUETOOTH_CONNECT);
             if (Build.VERSION.SDK_INT >= 33 && !preferences.getBoolean("askedNotifications", false)) {
                 permissions.add(Manifest.permission.POST_NOTIFICATIONS); preferences.edit().putBoolean("askedNotifications", true).apply();
             }
@@ -298,6 +304,7 @@ public final class StarlinkActivity extends Activity {
             if (!explicit && bluetoothPrompted) return;
             bluetoothPrompted = true; enableInFlight = true;
             try { startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), ENABLE_BT); }
+            catch (SecurityException denied) { enableInFlight=false;localIssue="Allow Nearby devices in Android settings, then try again."; }
             catch (RuntimeException unavailable) { enableInFlight = false; localIssue = "Open Bluetooth settings to turn Bluetooth on."; }
             return;
         }
@@ -352,26 +359,22 @@ public final class StarlinkActivity extends Activity {
     }
     private void exportReport() {
         if (exporting) return; exporting = true; refreshStatus();
-        new Thread(() -> {
-            Uri destination = null;
-            try {
-                ContentValues values = new ContentValues(); values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME, "subarubridge-report-" + System.currentTimeMillis() + ".zip");
-                values.put(android.provider.MediaStore.Downloads.MIME_TYPE, "application/zip"); values.put(android.provider.MediaStore.Downloads.IS_PENDING, 1);
-                destination = getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
-                if (destination == null) throw new IOException("No export destination");
-                try (java.io.OutputStream out = getContentResolver().openOutputStream(destination, "w")) { StarlinkRuntime.get(this).router.exportReport(out); }
-                ContentValues ready = new ContentValues(); ready.put(android.provider.MediaStore.Downloads.IS_PENDING, 0); getContentResolver().update(destination, ready, null, null);
-                handler.post(() -> Toast.makeText(getApplicationContext(), "Private report saved in Downloads", Toast.LENGTH_LONG).show());
-            } catch (IOException | RuntimeException error) {
-                if (destination != null) getContentResolver().delete(destination, null, null);
-                handler.post(() -> Toast.makeText(getApplicationContext(), "Export failed. Your original data is safe.", Toast.LENGTH_LONG).show());
-            } finally { handler.post(() -> { exporting = false; refreshStatus(); }); }
-        }, "bridge-export").start();
+        PrivateReport.save(this, saved -> {
+            exporting=false;refreshStatus();
+            Toast.makeText(getApplicationContext(),saved?"Private report saved in Downloads":"Export failed. Your original data is safe.",Toast.LENGTH_LONG).show();
+        });
+    }
+    private void openRequestedScreen() {
+        String path=getIntent().getStringExtra("dashboardPath");
+        if("/subarubridge-diag/basic?screen=1".equals(path)){tab=1;previewPath=path;getIntent().removeExtra("dashboardPath");}
     }
     private void back() { if (tab != 0) select(0); else finish(); }
+    // API 30–32 hardware/legacy back. API 33+ uses the native dispatcher registered above.
+    @android.annotation.SuppressLint("GestureBackNavigation")
     @Override public void onBackPressed() { back(); }
     @Override public void onNewIntent(Intent intent) {
         super.onNewIntent(intent); setIntent(intent); paused = false; startRequested = false;
+        if(intent.hasExtra("dashboardPath")){openRequestedScreen();buildUi();}
         if (intent.getBooleanExtra("start", false)) begin(true);
         else handler.postDelayed(() -> { if (autoEnabled() && !isFinishing()) begin(false); }, 200);
     }

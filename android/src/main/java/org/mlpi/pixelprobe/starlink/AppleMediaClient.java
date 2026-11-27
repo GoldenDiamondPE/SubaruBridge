@@ -80,7 +80,9 @@ final class AppleMediaClient {
         Operation(BluetoothGattCharacteristic c,String v,String t){characteristic=c;descriptor=null;verb=v;target=t;value=new byte[]{(byte)AppleMediaState.commandId(v)};}
         Operation(BluetoothGattDescriptor d,byte[] v){descriptor=d;characteristic=null;value=v;verb=null;target=null;}
         boolean valid(){if(verb==null)return true;PhoneIntegrations phone=PhoneIntegrations.get(context);return phone.unlocked() && phone.enabled("music") && phone.prefs().getString("musicSource","android").equals("iphone") && media.permits(verb,target);}
-        @SuppressWarnings("deprecation") boolean start() {
+        @SuppressWarnings("deprecation") boolean start() throws SecurityException {
+            if(Build.VERSION.SDK_INT>=31&&context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)!=PackageManager.PERMISSION_GRANTED)
+                throw new SecurityException("Nearby devices permission revoked");
             if(verb!=null)value[0]=(byte)media.offeredCommand(verb);
             if(descriptor!=null) {
                 if(Build.VERSION.SDK_INT>=33)return gatt.writeDescriptor(descriptor,value)==BluetoothStatusCodes.SUCCESS;
@@ -102,7 +104,9 @@ final class AppleMediaClient {
         catch(RuntimeException unavailable){close("iPhone media operation failed locally. No control was retried.");return;}
         handler.postDelayed(()->{if(inFlight==op)close("iPhone media operation timed out. No control was retried.");},timeouts,10000);
     }
-    private boolean subscribe(BluetoothGattCharacteristic c) {
+    private boolean subscribe(BluetoothGattCharacteristic c) throws SecurityException {
+        if(Build.VERSION.SDK_INT>=31&&context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)!=PackageManager.PERMISSION_GRANTED)
+            throw new SecurityException("Nearby devices permission revoked");
         if(c==null)return false;
         int properties=c.getProperties();boolean notify=(properties & BluetoothGattCharacteristic.PROPERTY_NOTIFY)!=0;
         if(!notify && (properties & BluetoothGattCharacteristic.PROPERTY_INDICATE)==0)return false;

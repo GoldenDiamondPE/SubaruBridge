@@ -13,6 +13,11 @@ It also includes a native, offline Garage for mileage, maintenance, service
 history, fuel, manual trips, expenses and ownership summaries. You can use those
 features without connecting to a vehicle or creating an account.
 
+Android 0.57 brings the dashboard, Garage, integrations and on-device recorder
+into [one app]({{ '/unified-android.html' | relative_url }}), with an original new
+icon and optional developer tools. Start and save a diagnostic recording entirely
+on the phone; no laptop arming helper is required.
+
 [Explore the phone and head-unit designs]({{ '/demo.html' | relative_url }}) in
 the interactive demo. Compare themes and layouts, open the dashboard apps and
 browse real Android screenshots with clearly labeled sample data.

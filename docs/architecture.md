@@ -36,8 +36,8 @@ The local launcher handles the observed lookup, timestamp and absolute-form POST
 without calling a retired cloud service. This is a new local application, not a
 reimplementation of vendor identity or credential validation. Queries and bootstrap
 bodies are not logged; event journals store only explicit diagnostic fields.
-The private journal is capped at 1 MiB and reports storage failure rather than
-claiming an unsaved result succeeded.
+The private journal is capped at 1 MiB, rotates one previous journal and reports
+storage failure rather than claiming an unsaved result succeeded.
 
 An additional app-owned metadata journal is separately capped at 1 MiB. It stores
 connection stages, byte counts, allowlisted route categories and response status,
@@ -53,6 +53,27 @@ The native iOS companion is developed separately. A small dependency-free Rust
 AMS decoder also exposes a C API for the Android JNI adapter and future platform
 adapters. It validates bounded entity updates without opening sockets or reading
 device data itself.
+
+## Unified diagnostic recording
+
+`DeveloperActivity` provides the recorder and optional developer view within the
+same APK. `RecorderService` is a user-started, ten-minute data-sync foreground
+service for local log processing. A bounded partial wake lock keeps the chosen
+test sampling while the screen sleeps; it is released on stop and expires after
+the test limit. `SessionRecorder` stores schema-1 JSON/JSONL in app-private files,
+caps each run at one MiB and retains twelve runs. Process death is recovered as
+interrupted. Transport/check events, passive five-second samples and manual notes
+remain distinguishable. No raw Bluetooth/USB capture is represented as collected.
+
+`BoundedJournal` flushes the latest current/previous metadata and connection-check
+journals. Report export includes those bounded files and the diagnostic sessions;
+it excludes Garage storage, preview credentials and system captures. The phone
+self-check uses isolated engine state and loopback requests; it sends nothing to
+the physical vehicle. See [the unified Android guide](unified-android.md) for the
+feature mapping, older-app boundary and portable event format.
+
+Android's foreground-service requirements are documented by
+[Android Developers](https://developer.android.com/develop/background-work/services/fgs/service-types).
 
 ## Vehicle ownership
 

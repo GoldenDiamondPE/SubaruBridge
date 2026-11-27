@@ -14,6 +14,8 @@ milestone is a parked-car display, touch and reconnect test.
 - Original paired Bluetooth Classic RFCOMM listener; no root is needed for the app.
 - An original Rust core for bounded SLIP, IPv4, ICMP echo, TCP and HTTP framing.
 - Original local HTTP routes, battery/clock diagnostics, private result journal.
+- One Android app for Garage, the dashboard, integrations and on-device recording;
+  no laptop arming helper is needed. See [the unified app guide](docs/unified-android.md).
 - A script-free HTML dashboard with three themes, two layouts and editable templates.
 - Phone preview, Android component tests and native protocol regressions.
 - A stable C interface for shared protocol work.
@@ -42,6 +44,8 @@ for recording approximate history, correcting readings and keeping a backup.
 
 1. Follow [the build guide](docs/build.md) for Android Studio/CLI and the pinned toolchain.
 2. Install your locally built APK. Open SubaruBridge and use the phone preview first.
+   **Home → Record & diagnose** contains phone self-checks, the private recorder,
+   saved event timelines and the optional developer view.
 3. Pair the Android phone using the car's normal Bluetooth settings.
 4. With the car parked, close other STARLINK listener apps, open SubaruBridge, grant Nearby devices permission, wait for Ready, and open **Apps â†’ STARLINK** on the head unit.
 5. Follow [the test guide](docs/testing.md). A successful laptop test does not prove car compatibility.

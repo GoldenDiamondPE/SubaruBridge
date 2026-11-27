@@ -15,6 +15,7 @@ public final class BridgeCoreSmoke extends Instrumentation {
         Bundle result=new Bundle();int code=run(getTargetContext(),result);
         if(code==Activity.RESULT_OK){try{GarageChecks.run(this,getTargetContext(),result);}catch(Throwable error){result.putString("garage","FAIL: "+error);code=Activity.RESULT_CANCELED;}}
         if(code==Activity.RESULT_OK){try{MediaChecks.run(getTargetContext(),result);}catch(Throwable error){result.putString("appleMedia","FAIL: "+error);code=Activity.RESULT_CANCELED;}}
+        if(code==Activity.RESULT_OK){try{RecorderChecks.run(this,getTargetContext(),result);}catch(Throwable error){result.putString("recorder","FAIL: "+error);code=Activity.RESULT_CANCELED;}}
         if(code==Activity.RESULT_OK && apps){try{AppIntegrationChecks.run(getTargetContext(),result);}catch(Throwable error){result.putString("apps","FAIL: "+error);code=Activity.RESULT_CANCELED;}}
         if(code==Activity.RESULT_OK) {
             try {

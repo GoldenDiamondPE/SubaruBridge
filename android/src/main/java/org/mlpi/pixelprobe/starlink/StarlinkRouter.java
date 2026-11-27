@@ -22,6 +22,7 @@ public final class StarlinkRouter {
     private final DiagnosticEngine engine;
     private final DashboardApps apps;
     private final String instance = UUID.randomUUID().toString();
+    private final ThreadLocal<String> requestSource=ThreadLocal.withInitial(()->"unknown");
 
     public StarlinkRouter(Context context) {
         this.context = context.getApplicationContext();
@@ -31,9 +32,10 @@ public final class StarlinkRouter {
             if (!directory.isDirectory() && !directory.mkdirs()) throw new IOException("Journal directory unavailable");
             File file = new File(directory,"events.jsonl");
             event.put("instance",instance);
+            event.put("source",requestSource.get());
             byte[] bytes = (new JSONObject(event).toString()+"\n").getBytes(StandardCharsets.UTF_8);
-            if(file.length()+bytes.length>1024*1024)throw new IOException("Journal capacity reached");
-            try(FileOutputStream out=new FileOutputStream(file,true)){out.write(bytes);out.getFD().sync();}
+            BoundedJournal.append(file,new File(directory,"events-previous-private.jsonl"),bytes);
+            SessionRecorder.get(this.context).record("connection_check",event);
             Log.i("SubaruBridgeDiag","Saved "+event.get("action")+" screen="+event.get("screen")+" run="+event.get("run")+" seq="+event.get("seq"));
         });
     }
@@ -114,7 +116,8 @@ public final class StarlinkRouter {
         return html(new CarUi(context).basic(run,screen,state,screen==3?nativeStatus(run):null,form.toString()),request.close);
     }
     public LocalHttp.Response handle(LocalHttp.Request request) { return handle(request,"preview"); }
-    private LocalHttp.Response handle(LocalHttp.Request request,String source) {
+    LocalHttp.Response handle(LocalHttp.Request request,String source) {
+        requestSource.set(source);
         if(request==null)return error(400,"Missing request",true);
         String loggedPath="invalid";
         LocalHttp.Response response;
@@ -163,6 +166,7 @@ public final class StarlinkRouter {
         catch(LocalHttp.Error e){response=error(e.status,e.getMessage(),request.close);}
         catch(java.net.URISyntaxException e){response=error(400,"Invalid request target",true);}
         catch(Exception e){Log.w("SubaruBridgeHttp","Local handler failed: "+e.getClass().getSimpleName());response=error(500,"Local handler unavailable",true);}
+        finally{requestSource.remove();}
         Log.i("SubaruBridgeHttp",request.method+" "+loggedPath+" status="+response.status+" bytes="+response.wire.length);
         LinkDiagnostics.http(context,source,request.method,loggedPath,response.status,response.wire.length);
         return response;
@@ -181,9 +185,12 @@ public final class StarlinkRouter {
                 metadata.put("connection",StarlinkService.state());metadata.put("androidApi",android.os.Build.VERSION.SDK_INT);
                 metadata.put("transport",LinkDiagnostics.snapshot());
                 metadata.put("iPhoneMedia",AppleMediaClient.get(context).diagnostics());
+                metadata.put("recordings",SessionRecorder.get(context).list().size());
+                metadata.put("recordingScope","Opt-in app metadata and user observations; 12 sessions, 1 MiB each, 10 minutes each");
                 metadata.put("scope","Original app events only. No raw Bluetooth or USB capture included.");
                 zip.putNextEntry(new ZipEntry("report.json"));zip.write(new JSONObject(metadata).toString().getBytes(StandardCharsets.UTF_8));zip.closeEntry();
-                for(String name:new String[]{"events.jsonl","transport-private.jsonl"}) {
+                SessionRecorder.get(context).export(zip);
+                for(String name:new String[]{"events.jsonl","events-previous-private.jsonl","transport-private.jsonl","transport-previous-private.jsonl"}) {
                 File journal=new File(context.getFilesDir(),"subarubridge-diagnostics/"+name);
                 if(journal.isFile()) {
                     if(journal.length()>1024*1024)throw new IOException("Journal size limit");
