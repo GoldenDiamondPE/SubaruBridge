@@ -71,6 +71,9 @@ public final class PhoneIntegrations {
     }
     synchronized void removed(String key) { messages.remove(key);notifications.remove(key); if(navigation!=null && navigation.key.equals(key)) navigation=null; }
     public synchronized void clearNotifications() { messages.clear();notifications.clear();navigation=null; }
+    synchronized void replaceNotifications(StatusBarNotification[] active) {
+        clearNotifications();if(active!=null)for(StatusBarNotification record:active)posted(record);
+    }
     public synchronized List<Notice> notifications() {
         if(!enabled("notifications") || !hasAccess() || !unlocked()){notifications.clear();return Collections.emptyList();}
         notifications.entrySet().removeIf(e -> SystemClock.elapsedRealtime()-e.getValue().received>30*60*1000);

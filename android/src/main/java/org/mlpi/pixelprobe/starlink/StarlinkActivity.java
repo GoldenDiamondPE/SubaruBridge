@@ -250,7 +250,8 @@ public final class StarlinkActivity extends Activity {
             }
         });
         pageHost.addView(preview, new LinearLayout.LayoutParams(-1, 0, 1));
-        preview.loadUrl(local(previewPath));
+        CookieManager.getInstance().setCookie("http://127.0.0.1:"+StarlinkRuntime.PREVIEW_PORT,
+                StarlinkRuntime.get(this).previewCookie(), accepted -> { if(preview!=null)preview.loadUrl(local(previewPath)); });
     }
 
     private String local(String path) { return "http://127.0.0.1:" + StarlinkRuntime.PREVIEW_PORT + (path.startsWith("/subarubridge-diag/") ? path : HOME_PATH); }

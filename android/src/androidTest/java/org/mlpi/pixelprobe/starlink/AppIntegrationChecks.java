@@ -74,6 +74,8 @@ final class AppIntegrationChecks {
             for(int i=0;i<25;i++)phone.posted(new StatusBarNotification("org.example.fixture","org.example.fixture",100+i,null,android.os.Process.myUid(),0,0,general,android.os.Process.myUserHandle(),System.currentTimeMillis()));
             check(phone.notifications().size()==20,"General notification store unbounded");
             phone.prefs().edit().putBoolean("notifications",false).apply();check(phone.notifications().isEmpty(),"Disabled general notification contents retained");
+            phone.prefs().edit().putBoolean("notifications",true).apply();phone.replaceNotifications(new StatusBarNotification[]{update});
+            check(phone.notifications().size()==1,"Enabling sharing did not restore an existing active notification");
             AtomicInteger replies=new AtomicInteger();java.util.concurrent.atomic.AtomicReference<String> replyText=new java.util.concurrent.atomic.AtomicReference<>();
             String replyAction=context.getPackageName()+".SYNTHETIC_REPLY";
             BroadcastReceiver receiver=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent intent){Bundle answers=RemoteInput.getResultsFromIntent(intent);if(answers!=null){replyText.set(answers.getString("text"));replies.incrementAndGet();}}};
@@ -95,7 +97,7 @@ final class AppIntegrationChecks {
             } finally {delivery.cancel();context.unregisterReceiver(receiver);}
             java.io.ByteArrayOutputStream report=new java.io.ByteArrayOutputStream();router.exportReport(report);
             java.util.zip.ZipInputStream zip=new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(report.toByteArray()));
-            java.util.zip.ZipEntry entry;while((entry=zip.getNextEntry())!=null){java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream();byte[] block=new byte[4096];int count;while((count=zip.read(block))!=-1)bytes.write(block,0,count);String text=bytes.toString("UTF-8");check(!text.contains("Private fixture body") && !text.contains("Fixture sender") && !text.contains("+12025550100"),"Personal app content leaked into diagnostic report");}
+            java.util.zip.ZipEntry entry;while((entry=zip.getNextEntry())!=null){java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream();byte[] block=new byte[4096];int count;while((count=zip.read(block))!=-1)bytes.write(block,0,count);String text=bytes.toString("UTF-8");check(!text.contains("Private fixture body") && !text.contains("Fixture sender") && !text.contains("+12025550100") && !text.contains("Private general body") && !text.contains("Synthetic reply only") && !text.contains("Main & Second") && !text.contains("Fixture <track>"),"Personal app content leaked into diagnostic report");}
             result.putString("apps","PASS: real Android media callback; one confirmed RemoteInput reply and stale/replay rejection; Maps encoding; dialer/SMS intents; bounded notification feed; report privacy");
         } finally {
             session.release();PhoneIntegrations.Pending pending=phone.pending();if(pending!=null)phone.cancel(pending.id);phone.clearNotifications();

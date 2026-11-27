@@ -34,6 +34,9 @@ numbers and destinations are excluded from diagnostic journals and exports.
 Media actions use expiring, one-use, action-bound form grants; GET requests do not
 change playback, place calls or send messages. Repeating an old form is rejected.
 Pending phone confirmations expire after two minutes.
+Personal app routes on the phone preview require an app-private session. The
+paired car uses the separately authenticated Bluetooth connection. Enabling
+sharing also reads the currently active notifications, subject to the filters.
 
 ## iOS companion
 

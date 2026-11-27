@@ -5,10 +5,15 @@ import android.service.notification.StatusBarNotification;
 
 /** Only explicitly enabled categories are retained; never written to diagnostics. */
 public final class BridgeNotificationListener extends NotificationListenerService {
+    private static volatile BridgeNotificationListener connected;
     @Override public void onListenerConnected() {
-        PhoneIntegrations integrations = PhoneIntegrations.get(this);
-        integrations.clearNotifications();
-        try { StatusBarNotification[] active=getActiveNotifications();if(active!=null)for(StatusBarNotification notification:active) integrations.posted(notification); }
+        connected=this;
+        refresh();
+    }
+    static void refresh() {
+        BridgeNotificationListener service=connected;if(service==null)return;
+        PhoneIntegrations integrations = PhoneIntegrations.get(service);
+        try { integrations.replaceNotifications(service.getActiveNotifications()); }
         catch(RuntimeException unavailable) { integrations.clearNotifications(); }
     }
     @Override public void onNotificationPosted(StatusBarNotification notification) {
@@ -16,5 +21,5 @@ public final class BridgeNotificationListener extends NotificationListenerServic
         catch(RuntimeException malformed) { PhoneIntegrations.get(this).removed(notification.getKey()); }
     }
     @Override public void onNotificationRemoved(StatusBarNotification notification) { PhoneIntegrations.get(this).removed(notification.getKey()); }
-    @Override public void onListenerDisconnected() { PhoneIntegrations.get(this).clearNotifications(); }
+    @Override public void onListenerDisconnected() { if(connected==this)connected=null;PhoneIntegrations.get(this).clearNotifications(); }
 }

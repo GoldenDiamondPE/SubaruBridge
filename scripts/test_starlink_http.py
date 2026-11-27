@@ -25,9 +25,10 @@ def main():
     args=p.parse_args();args.output.mkdir(parents=True,exist_ok=False)
     port=int(subprocess.check_output([args.adb,'-s',args.serial,'forward','tcp:0','tcp:'+str(args.device_port)],text=True))
     c=http.client.HTTPConnection('127.0.0.1',port,timeout=15);results=[]
+    preview_token=None
     def request(name,method,path,status=200,form=None,raw=None):
         c.request(method,path,urlencode(form).encode() if form is not None else raw,
-                  {'Host':'192.168.1.1','Content-Type':'application/x-www-form-urlencoded'})
+                  dict({'Host':'192.168.1.1','Content-Type':'application/x-www-form-urlencoded'},**({'X-Bridge-Preview':preview_token} if preview_token else {})))
         r=c.getresponse();data=r.read()
         assert r.status==status,(name,r.status,data[:200])
         assert int(r.getheader('Content-Length'))==len(data),name
@@ -47,6 +48,9 @@ def main():
                 c.close()
                 if time.monotonic()>=deadline:raise
                 time.sleep(0.1)
+        request('personal-apps-require-session','GET',prefix+'apps/messages',403)
+        preview_token=subprocess.check_output([args.adb,'-s',args.serial,'shell','run-as','org.subarubridge.app','cat','no_backup/preview-session'],text=True).strip()
+        assert re.fullmatch('[0-9a-f]{48}',preview_token),'Debug preview session unavailable'
         v=json.loads(request('version','GET','/version'));assert v['build']=='0.53-dev' and v['transport']=='original-rust-rfcomm'
         assert request('launcher-lookup','GET','/kvs/launcher_url_vehicle/')=='http://192.168.1.1/smartaccess/launcher/subarubridge-demo.html'
         assert re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d{4}',request('timestamp-before-post','GET','/timestamp/'))

@@ -40,7 +40,7 @@ final class DashboardApps {
                     String track=metadata==null?"":PhoneIntegrations.clean(metadata.getText(MediaMetadata.METADATA_KEY_TITLE),160);
                     String artist=metadata==null?"":PhoneIntegrations.clean(metadata.getText(MediaMetadata.METADATA_KEY_ARTIST),160);
                     body.append("<h2>").append(HtmlView.escape(track.isEmpty()?"Music session":track)).append("</h2><p class=\"muted\">").append(HtmlView.escape(artist)).append("</p><p class=\"small\">")
-                        .append(state!=null && state.getState()==PlaybackState.STATE_PLAYING?"Playing":"Paused or idle").append(" · ").append(HtmlView.escape(controller.getPackageName())).append("</p>");
+                        .append(state!=null && state.getState()==PlaybackState.STATE_PLAYING?"Playing":"Paused or idle").append(" Â· ").append(HtmlView.escape(controller.getPackageName())).append("</p>");
                     long actions=state==null?0:state.getActions();
                     String[] verbs={"previous","play","pause","next"},labels={"Previous","Play","Pause","Next"};
                     long[] bits={PlaybackState.ACTION_SKIP_TO_PREVIOUS,PlaybackState.ACTION_PLAY,PlaybackState.ACTION_PAUSE,PlaybackState.ACTION_SKIP_TO_NEXT};
@@ -51,14 +51,14 @@ final class DashboardApps {
                 title="Directions";subtitle="Google Maps direction card";
                 PhoneIntegrations.Notice navigation=phone.navigation();
                 if(navigation==null)body.append("<h2>No current directions</h2><p>Start Google Maps navigation on your unlocked phone. Enable navigation and notification access in Integrations.</p>");
-                else body.append("<h2>").append(HtmlView.escape(navigation.title)).append("</h2><p>").append(HtmlView.escape(navigation.text)).append("</p><p class=\"small\">Google Maps notification · ").append((SystemClock.elapsedRealtime()-navigation.received)/1000).append(" seconds since update</p>");
+                else body.append("<h2>").append(HtmlView.escape(navigation.title)).append("</h2><p>").append(HtmlView.escape(navigation.text)).append("</p><p class=\"small\">Google Maps notification Â· ").append((SystemClock.elapsedRealtime()-navigation.received)/1000).append(" seconds since phone read</p>");
                 body.append(form("navigate","","Prepare favorite destination")).append("<p class=\"small\">Directions are read from Android notifications. A live map is not embedded. Refresh for the latest instruction.</p>");break;
             case "calls":
                 title="Phone";subtitle="Your car's normal hands-free calling";
                 body.append("<h2>Call your favorite</h2><p>Set a favorite number in phone Integrations. Prepare it here, then confirm on your phone.</p>").append(form("dial","","Prepare dialer"))
                     .append("<p class=\"small\">Place, answer and end calls using your phone or the Subaru's factory hands-free controls. SubaruBridge does not replace the default dialer or report a call as connected.</p>");break;
             case "messages":
-                title="Messages";subtitle="Recent Android notifications · optional sharing";
+                title="Messages";subtitle="Recent Android notifications Â· optional sharing";
                 List<PhoneIntegrations.Notice> notices=phone.messages();
                 if(notices.isEmpty())body.append("<h2>No shared messages</h2><p>Message sharing is off by default. Enable it in phone Integrations and keep the phone unlocked. Android may withhold sensitive notifications.</p>");
                 for(PhoneIntegrations.Notice notice:notices){
@@ -67,7 +67,7 @@ final class DashboardApps {
                 }
                 body.append(form("compose","","Prepare new SMS")).append("<p class=\"small\">Every reply requires confirmation on your phone. Message contents are not written to diagnostic reports.</p>");break;
             case "notifications":
-                title="Notifications";subtitle="Recent Android app notifications · optional sharing";
+                title="Notifications";subtitle="Recent Android app notifications Â· optional sharing";
                 List<PhoneIntegrations.Notice> notifications=phone.notifications();
                 if(notifications.isEmpty())body.append("<h2>No shared notifications</h2><p>Enable general notification sharing in phone Integrations and keep the phone unlocked. Android may withhold sensitive content.</p>");
                 for(PhoneIntegrations.Notice notice:notifications)body.append("<article class=\"message-card\"><div class=\"small\">").append(HtmlView.escape(notice.source)).append("</div><h2>").append(HtmlView.escape(notice.title)).append("</h2><p>").append(HtmlView.escape(notice.text)).append("</p></article>");

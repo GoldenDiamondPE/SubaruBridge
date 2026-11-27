@@ -44,3 +44,27 @@ research runtime is not proof that this new app passes those checks.
 This is a development preview. It is not feature parity with the discontinued
 STARLINK app, and music, calls, messages, navigation and an iOS application are
 not implemented by this release.
+
+
+## 0.53 dashboard app development
+
+- Android app and instrumentation builds complete for arm64 and x86-64.
+- Emulator integration fixtures reached a real Android MediaSession callback and
+  delivered exactly one confirmed RemoteInput reply to a synthetic receiver.
+  Repeated and stale confirmations were rejected. No real SMS or call was sent.
+- Intent construction, Maps query encoding, general-notification bounds and
+  filtering, disabled-sharing cleanup, existing-notification reseeding and private
+  report exclusion have targeted component checks.
+- The local-route suite passes 61 checks on both the emulator and physical Pixel.
+  Personal preview routes require an app-private session.
+- Pause, leave and launcher-reopen reached Ready on the emulator.
+- The legacy browser preview renders the dashboard at 800 by 480 without scripts.
+- macOS CI passes ten Swift component tests, an unsigned Apple SDK simulator
+  build and a cold iPhone-simulator launch. See the
+  [iOS check run](https://github.com/GoldenDiamondPE/SubaruBridge/actions/runs/45930187043).
+
+These are component and bench observations. Actual Spotify account playback,
+Google Maps notifications, Bluetooth audio, phone/SMS delivery, physical iPhone
+behavior and the new independent transport on the Subaru still need separate
+verification. The earlier private research adapter's car result is not a result
+for this implementation.
