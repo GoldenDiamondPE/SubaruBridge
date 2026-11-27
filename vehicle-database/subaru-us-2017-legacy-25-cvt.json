@@ -1,0 +1,247 @@
+{
+  "schemaVersion": 1,
+  "profile": "subaru-us-2017-legacy-25-cvt",
+  "market": "US",
+  "vehicle": "2017 Subaru Legacy 2.5i CVT",
+  "sourceUrl": "https://contactus.subaru.com/_entity/annotation/5a65d58d-ed51-ec11-8c62-0022482a2d61",
+  "sourceSha256": "b408b8a024f6a1d9ff7a12ad3ee117fe298c17fadb0e242e68d4e3556a3e5830",
+  "sourcePage": "Official 2017 maintenance attachment, page 1; row references retained",
+  "verifiedDate": "2026-11-27",
+  "limitations": "Schedule table only. Referenced booklet notes, severe exceptions, specifications and parts are not included in this attachment and have not been imported. Severe mode requires a verified exception or an explicit owner override. No vehicle service history is assumed.",
+  "rules": [
+    {
+      "id": "engine-oil",
+      "title": "Oil service",
+      "action": "replace",
+      "normal": {
+        "miles": 6000,
+        "months": 6
+      },
+      "sourceRow": "1",
+      "noteRefs": [
+        1
+      ]
+    },
+    {
+      "id": "oil-filter",
+      "title": "Oil filter service",
+      "action": "replace",
+      "normal": {
+        "miles": 6000,
+        "months": 6
+      },
+      "sourceRow": "2",
+      "noteRefs": [
+        1
+      ]
+    },
+    {
+      "id": "spark-plugs",
+      "title": "Ignition plugs",
+      "action": "replace",
+      "normal": {
+        "miles": 60000,
+        "months": 60
+      },
+      "sourceRow": "3",
+      "noteRefs": []
+    },
+    {
+      "id": "drive-belt",
+      "title": "Accessory belt check",
+      "action": "inspect",
+      "normal": {
+        "miles": 30000,
+        "months": 30
+      },
+      "sourceRow": "4",
+      "noteRefs": []
+    },
+    {
+      "id": "fuel-lines",
+      "title": "Fuel plumbing check",
+      "action": "inspect",
+      "normal": {
+        "miles": 30000,
+        "months": 30
+      },
+      "sourceRow": "6",
+      "noteRefs": [
+        6,
+        7
+      ]
+    },
+    {
+      "id": "fuel-filter",
+      "title": "Fuel filtration service",
+      "action": "replace",
+      "normal": {
+        "miles": 72000,
+        "months": 72
+      },
+      "sourceRow": "7",
+      "noteRefs": [
+        2,
+        7
+      ]
+    },
+    {
+      "id": "engine-air-filter",
+      "title": "Intake filter",
+      "action": "replace",
+      "normal": {
+        "miles": 30000,
+        "months": 30
+      },
+      "sourceRow": "8",
+      "noteRefs": [
+        8
+      ]
+    },
+    {
+      "id": "cooling-hoses",
+      "title": "Coolant hose check",
+      "action": "inspect",
+      "normal": {
+        "miles": 30000,
+        "months": 30
+      },
+      "sourceRow": "9",
+      "noteRefs": [
+        10
+      ]
+    },
+    {
+      "id": "coolant",
+      "title": "Long-life coolant",
+      "action": "replace",
+      "normal": {
+        "miles": 75000,
+        "months": 72
+      },
+      "sourceRow": "10",
+      "noteRefs": [
+        10
+      ],
+      "initial": {
+        "miles": 137500,
+        "months": 132
+      }
+    },
+    {
+      "id": "cvt-fluid",
+      "title": "CVT inspection",
+      "action": "inspect",
+      "normal": {
+        "miles": 30000,
+        "months": 30
+      },
+      "sourceRow": "13",
+      "noteRefs": [
+        4
+      ]
+    },
+    {
+      "id": "differentials",
+      "title": "Axle lubricant inspection",
+      "action": "inspect",
+      "normal": {
+        "miles": 30000,
+        "months": 30
+      },
+      "sourceRow": "14",
+      "noteRefs": [
+        3
+      ]
+    },
+    {
+      "id": "brake-lines",
+      "title": "Hydraulic and parking brake check",
+      "action": "inspect",
+      "normal": {
+        "miles": 12000,
+        "months": 12
+      },
+      "sourceRow": "15",
+      "noteRefs": [
+        6
+      ]
+    },
+    {
+      "id": "brake-fluid",
+      "title": "Hydraulic brake fluid",
+      "action": "replace",
+      "normal": {
+        "miles": 30000,
+        "months": 30
+      },
+      "sourceRow": "16",
+      "noteRefs": [
+        5
+      ]
+    },
+    {
+      "id": "brakes-and-boots",
+      "title": "Brake wear and axle boots",
+      "action": "inspect",
+      "normal": {
+        "miles": 12000,
+        "months": 12
+      },
+      "sourceRow": "17",
+      "noteRefs": [
+        6
+      ]
+    },
+    {
+      "id": "steering-suspension",
+      "title": "Steering and chassis check",
+      "action": "inspect",
+      "normal": {
+        "miles": 12000,
+        "months": 12
+      },
+      "sourceRow": "18",
+      "noteRefs": [
+        6
+      ]
+    },
+    {
+      "id": "wheel-bearings",
+      "title": "Hub bearing check",
+      "action": "inspect",
+      "normal": {
+        "miles": 60000,
+        "months": 60
+      },
+      "sourceRow": "19",
+      "noteRefs": []
+    },
+    {
+      "id": "tire-rotation",
+      "title": "Tire rotation and condition",
+      "action": "perform",
+      "normal": {
+        "miles": 6000,
+        "months": 6
+      },
+      "sourceRow": "20",
+      "noteRefs": [
+        9
+      ]
+    },
+    {
+      "id": "cabin-filter",
+      "title": "Ventilation filter",
+      "action": "replace",
+      "normal": {
+        "miles": 12000,
+        "months": 12
+      },
+      "sourceRow": "21",
+      "noteRefs": [
+        8
+      ]
+    }
+  ]
+}
