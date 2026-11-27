@@ -13,6 +13,7 @@ public final class BridgeCoreSmoke extends Instrumentation {
     private static void check(boolean condition,String message){if(!condition)throw new AssertionError(message);}
     @Override public void onStart() {
         Bundle result=new Bundle();int code=run(getTargetContext(),result);
+        if(code==Activity.RESULT_OK){try{MediaChecks.run(getTargetContext(),result);}catch(Throwable error){result.putString("appleMedia","FAIL: "+error);code=Activity.RESULT_CANCELED;}}
         if(code==Activity.RESULT_OK && apps){try{AppIntegrationChecks.run(getTargetContext(),result);}catch(Throwable error){result.putString("apps","FAIL: "+error);code=Activity.RESULT_CANCELED;}}
         if(code==Activity.RESULT_OK) {
             try {

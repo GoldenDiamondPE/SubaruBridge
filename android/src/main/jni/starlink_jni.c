@@ -25,6 +25,17 @@ JNIEXPORT jbyteArray JNICALL Java_org_mlpi_pixelprobe_ownership_OwnershipCore_na
 JNIEXPORT jlong JNICALL METHOD(nativeCreate)(JNIEnv *env, jclass cls, jlong seed) {
     (void)env; (void)cls; return (jlong)sb_core_create((uint64_t)seed);
 }
+JNIEXPORT jbyteArray JNICALL Java_org_mlpi_pixelprobe_starlink_AppleMediaCodec_nativeDecode(JNIEnv *env, jclass cls, jbyteArray input) {
+    (void)cls;
+    if (!input) return NULL;
+    jsize length=(*env)->GetArrayLength(env,input);
+    if (length>512) return NULL;
+    jbyte *data=(*env)->GetByteArrayElements(env,input,NULL);
+    if (!data) return NULL;
+    CoreBuffer buffer=sb_ams_decode((const uint8_t *)data,(size_t)length);
+    (*env)->ReleaseByteArrayElements(env,input,data,JNI_ABORT);
+    return result(env,buffer);
+}
 JNIEXPORT void JNICALL METHOD(nativeDestroy)(JNIEnv *env, jclass cls, jlong handle) {
     (void)env; (void)cls; sb_core_destroy((uint64_t)handle);
 }

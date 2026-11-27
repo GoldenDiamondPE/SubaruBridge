@@ -180,6 +180,7 @@ public final class StarlinkRouter {
                 metadata.put("serverTimeMs",System.currentTimeMillis());metadata.put("uptimeMs",SystemClock.elapsedRealtime());
                 metadata.put("connection",StarlinkService.state());metadata.put("androidApi",android.os.Build.VERSION.SDK_INT);
                 metadata.put("transport",LinkDiagnostics.snapshot());
+                metadata.put("iPhoneMedia",AppleMediaClient.get(context).diagnostics());
                 metadata.put("scope","Original app events only. No raw Bluetooth or USB capture included.");
                 zip.putNextEntry(new ZipEntry("report.json"));zip.write(new JSONObject(metadata).toString().getBytes(StandardCharsets.UTF_8));zip.closeEntry();
                 for(String name:new String[]{"events.jsonl","transport-private.jsonl"}) {

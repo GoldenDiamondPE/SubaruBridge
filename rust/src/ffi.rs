@@ -52,6 +52,15 @@ pub unsafe extern "C" fn sb_ownership_execute(data:*const u8,len:usize)->CoreBuf
     let input=if len==0{&[]}else{slice::from_raw_parts(data,len)};
     CoreBuffer::new(crate::ownership::execute_json(input))
 }
+/// Decode one bounded AMS entity notification without performing any I/O.
+#[no_mangle]
+pub unsafe extern "C" fn sb_ams_decode(data: *const u8, len: usize) -> CoreBuffer {
+    if len > 512 || (len != 0 && data.is_null()) {
+        return CoreBuffer::new(b"{\"ok\":false,\"error\":\"AMS Length\"}".to_vec());
+    }
+    let input = if len == 0 { &[] } else { slice::from_raw_parts(data, len) };
+    CoreBuffer::new(crate::apple_media::decode_json(input))
+}
 /// Free exactly once, using the unchanged buffer returned by this library.
 #[no_mangle]
 pub unsafe extern "C" fn sb_core_buffer_free(buffer: CoreBuffer) {

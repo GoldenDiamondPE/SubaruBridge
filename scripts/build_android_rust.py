@@ -22,7 +22,7 @@ def main():
     for abi in args.abi or ['arm64-v8a','x86_64']:
         triple='aarch64-linux-android' if abi=='arm64-v8a' else 'x86_64-linux-android'
         env=os.environ.copy(); prefix='CARGO_TARGET_'+triple.upper().replace('-','_')
-        env['RUSTUP_TOOLCHAIN']=os.environ.get('SUBARUBRIDGE_RUST_TOOLCHAIN','1.90.0')
+        env['RUSTUP_TOOLCHAIN']=env.get('SUBARUBRIDGE_RUST_TOOLCHAIN','1.90.0')
         env[prefix+'_LINKER']=str(ndk/'bin'/('clang.exe' if sys.platform=='win32' else 'clang'))
         env[prefix+'_RUSTFLAGS']='-C link-arg=--target='+triple+'30'
         command=[str(args.cargo),'test' if args.tests else 'build','--locked','--manifest-path',str(ROOT/'rust/Cargo.toml'),'--target',triple,'--release']

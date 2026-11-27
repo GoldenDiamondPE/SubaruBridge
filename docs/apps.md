@@ -21,7 +21,7 @@ appearance settings and private diagnostic export remain available.
 
 | Card | Implemented adapter | Limit |
 | --- | --- | --- |
-| Music | Active Android MediaSession metadata and supported play/pause/previous/next commands | Start Spotify or another compatible app on the phone. A command is not proof of playback or audio routing. |
+| Music | Select an Android MediaSession provider; track, artist, album, elapsed/duration snapshots and advertised controls | Start a compatible player. Toggle-only Play/Pause is offered only in a known appropriate state. Old forms cannot target a replacement session. |
 | Maps | Google Maps navigation-notification title/text; Maps URL for a favorite destination | Direction cards, not embedded interactive maps. Notification formatting can vary by app version. |
 | Phone | Prepare a favorite number, then open the system dialer after phone confirmation | Does not replace the default dialer or implement answering/hangup. Factory hands-free controls continue to handle calls. |
 | Messages | Optional recent message notifications; confirmed replies through an app's offered RemoteInput action; system SMS composer | No full inbox, delivery receipt or iPhone message access. Phone confirmation is required before replies. |
@@ -40,6 +40,31 @@ sharing also reads the currently active notifications, subject to the filters.
 
 ## iOS companion
 
+### Taurus and other iPhone players through the Pixel
+
+Android 0.54 adds an **experimental Apple Media Service client**. In **Apps &
+integrations**, enable Music controls, choose **iPhone media**, and select
+**Connect paired iPhone media**. The iPhone and Pixel must first be paired through
+their normal Bluetooth settings; the car connection service must be running.
+Start Taurus on the iPhone, then inspect the Music card in the Pixel preview.
+
+This reads the iPhone's reported active-player information and offers only its
+reported controls. It does not depend on a Spotify bundle identifier or Taurus
+internals. Taurus compatibility and service discovery still require physical
+iPhone verification. The iPhone may not expose this service for a particular
+pairing; an explicit failure is shown instead of falling back to Android music.
+
+Track information stays in memory. Disconnect clears it and invalidates old
+controls. Shortened Bluetooth text is marked. No audio relay, full playlist
+browsing, album artwork transfer, or automatic reconnection is implemented here.
+Use normal iPhone-to-car audio pairing. Simultaneous iPhone audio and Pixel
+STARLINK data on the target head unit still requires a parked-car test.
+
+See [the iPhone media test](iphone-media-testing.md) and
+[Apple's AMS specification](https://developer.apple.com/library/archive/documentation/CoreBluetooth/Reference/AppleMediaService_Reference/Specification/Specification.html).
+
+### Native iPhone actions
+
 The iOS source has native app cards, an Apple Music library player, a Spotify
 opening link, Google Maps URLs, a system calling prompt and the system message
 composer. It shares Android's dashboard configuration. These are phone-side
@@ -50,7 +75,7 @@ The Android RFCOMM transport cannot simply be used through Core Bluetooth.
 External Accessory requires a compatible, authorized accessory protocol. No
 protocol identity or accessory authorization is invented here.
 
-An authenticated iPhone-to-Pixel companion link is still a separate implementation
+An authenticated iPhone-to-Pixel general companion link is still a separate implementation
 milestone. Pairing an iPhone for factory media/calls while a Pixel supplies the
 STARLINK dashboard also needs a physical head-unit test.
 

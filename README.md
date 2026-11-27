@@ -21,6 +21,8 @@ milestone is a parked-car display, touch and reconnect test.
 - A native iOS companion source project and unsigned simulator build checks.
 - A typed shared ownership foundation for vehicle, mileage, maintenance, fuel,
   trip and expense records. See [its component status and next Android work](OWNERSHIP_FOUNDATION.md).
+- Generic Android music-player selection and an experimental paired-iPhone media
+  adapter for testing Taurus through Apple's public Media Service.
 
 This repository contains the complete standalone STARLINK-path app and its build
 sources. It contains no
@@ -42,6 +44,10 @@ The [customization guide](docs/customization.md) explains themes, layouts and ne
 application routes. The [architecture guide](docs/architecture.md) describes the
 transport boundary and its current limits. Published documentation is available
 at [the project site](https://goldendiamondpe.github.io/SubaruBridge/).
+
+For iPhone music through the Pixel, follow [the phone bench test](docs/iphone-media-testing.md)
+before a car test. See [feature status](FEATURES.md) and [the roadmap](ROADMAP.md)
+for implemented adapters, outstanding verification and the integrated ownership plan.
 
 No internet backend or paid API is used by the included screens. Keep vehicle
 firmware, accessory authentication and driving restrictions unchanged. Features
