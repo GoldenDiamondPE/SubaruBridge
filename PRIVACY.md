@@ -25,3 +25,17 @@ modify ECU settings, clear diagnostic codes or replay unknown messages to a car.
 
 Private packet captures, original vendor applications, credentials, signing
 material and extracted assets are not part of the public source repository.
+
+Opt-in diagnostic sessions contain app connection metadata, passive phone/USB
+state, manually marked observations and private notes. They do not collect
+raw packets, audio, GPS routes, notification bodies or Garage records. Recordings
+stop after ten minutes or one MiB, and the newest twelve sessions are retained.
+The recorder uses a time-bounded partial wake lock during the chosen test and a
+visible foreground service; notification display follows Android permissions.
+No recording begins on boot or requires a laptop helper, root or internet.
+
+Diagnostic ZIP exports go to Downloads only when chosen in the app. They include
+saved/current recordings, private notes and the current/previous bounded app
+journals. These exports are unencrypted and remain until the user deletes them.
+Android can expose Downloads through a user's chosen file/sync tools. Review
+reports before sharing. Older apps' sandboxes are not silently imported or erased.

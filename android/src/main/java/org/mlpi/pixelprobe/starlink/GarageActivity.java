@@ -159,6 +159,8 @@ public final class GarageActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("Discard this entry?").setMessage("Your saved records will stay as they are.")
                 .setNegativeButton("Keep editing", null).setPositiveButton("Discard", (d, w) -> { formKind = null; form = null; restoredDraft = null; render(); }).show();
     }
+    // API 30–32 fallback; modern gestures use the registered native OnBackInvokedDispatcher.
+    @android.annotation.SuppressLint("GestureBackNavigation")
     @Override public void onBackPressed() { back(); }
     private void render() {
         try {

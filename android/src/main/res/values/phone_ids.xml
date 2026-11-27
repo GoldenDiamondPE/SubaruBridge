@@ -1,5 +1,20 @@
 <resources>
     <item name="phone_home" type="id" />
+    <item name="phone_recorder" type="id" />
+    <item name="phone_developer" type="id" />
+    <item name="developer_back" type="id" />
+    <item name="developer_check" type="id" />
+    <item name="developer_check_result" type="id" />
+    <item name="developer_headunit" type="id" />
+    <item name="developer_enabled" type="id" />
+    <item name="developer_health" type="id" />
+    <item name="recorder_status" type="id" />
+    <item name="recorder_start" type="id" />
+    <item name="recorder_mark" type="id" />
+    <item name="recorder_note" type="id" />
+    <item name="recorder_stop" type="id" />
+    <item name="recorder_sessions" type="id" />
+    <item name="recorder_export" type="id" />
     <item name="phone_garage" type="id" />
     <item name="garage_retry" type="id" />
     <item name="garage_add_vehicle" type="id" />

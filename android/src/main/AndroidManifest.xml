@@ -7,14 +7,22 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <application android:label="SubaruBridge" android:icon="@mipmap/probe_icon" android:theme="@style/ProbeTheme"
-        android:allowBackup="false" android:networkSecurityConfig="@xml/local_network_security">
+    <queries>
+        <package android:name="org.mlpi.pixelprobe.dev" />
+        <package android:name="org.subarubridge.legacyresearch" />
+        <package android:name="com.subaru.global.infotainment.gen2" />
+    </queries>
+    <application android:label="SubaruBridge" android:icon="@mipmap/probe_icon" android:roundIcon="@mipmap/probe_icon" android:theme="@style/ProbeTheme"
+        android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true" android:networkSecurityConfig="@xml/local_network_security">
         <activity android:name=".starlink.StarlinkActivity" android:exported="true" android:launchMode="singleTop">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
         <activity android:name=".starlink.IntegrationsActivity" android:exported="false" />
+        <activity android:name=".starlink.DeveloperActivity" android:exported="false" />
         <activity android:name=".starlink.GarageActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".starlink.PhoneActionActivity" android:exported="false" />
         <receiver android:name=".ownership.GarageReminders" android:exported="false">
@@ -24,5 +32,6 @@
             <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>
         </service>
         <service android:name=".starlink.StarlinkService" android:exported="false" android:foregroundServiceType="connectedDevice" />
+        <service android:name=".starlink.RecorderService" android:exported="false" android:foregroundServiceType="dataSync" />
     </application>
 </manifest>

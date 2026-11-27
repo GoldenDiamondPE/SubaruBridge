@@ -33,12 +33,12 @@ public final class LinkDiagnostics {
     }
     private static void append(Context context,Map<String,Object> event){
         event.put("schema",1);event.put("build",DiagnosticEngine.BUILD);event.put("serverTimeMs",System.currentTimeMillis());event.put("uptimeMs",SystemClock.elapsedRealtime());
+        SessionRecorder.get(context).record("transport",event);
         File directory=new File(context.getFilesDir(),"subarubridge-diagnostics");
         if(!directory.isDirectory()&&!directory.mkdirs()){journalUnavailable=true;return;}
         File file=new File(directory,"transport-private.jsonl");
         byte[] bytes=(new JSONObject(event).toString()+"\n").getBytes(StandardCharsets.UTF_8);
-        if(file.length()+bytes.length>1024*1024){journalFull=true;return;}
-        try(FileOutputStream out=new FileOutputStream(file,true)){out.write(bytes);out.getFD().sync();}
-        catch(IOException e){journalUnavailable=true;android.util.Log.w("SubaruBridgeLink","Metadata journal unavailable");}
+        try{BoundedJournal.append(file,new File(directory,"transport-previous-private.jsonl"),bytes);journalFull=false;journalUnavailable=false;}
+        catch(IOException e){journalFull=file.length()+bytes.length>BoundedJournal.LIMIT;journalUnavailable=true;android.util.Log.w("SubaruBridgeLink","Metadata journal unavailable");}
     }
 }

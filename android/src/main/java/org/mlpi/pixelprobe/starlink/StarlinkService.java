@@ -57,7 +57,7 @@ public final class StarlinkService extends Service {
     private Notification notification(String summary) {
         PendingIntent open=PendingIntent.getActivity(this,0,new Intent(this,StarlinkActivity.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
         PendingIntent stop=PendingIntent.getService(this,1,new Intent(this,StarlinkService.class).setAction("STOP"),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
-        return new Notification.Builder(this,CHANNEL).setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
+        return new Notification.Builder(this,CHANNEL).setSmallIcon(org.mlpi.pixelprobe.R.drawable.bridge_notice)
                 .setContentTitle("SubaruBridge").setContentText(summary)
                 .setContentIntent(open).setOngoing(true).addAction(new Notification.Action.Builder(null,"Pause",stop).build()).build();
     }
@@ -106,7 +106,7 @@ public final class StarlinkService extends Service {
                 synchronized void tick() throws IOException{send(core.tick(SystemClock.elapsedRealtime()));}
             }
             Pump pump=new Pump();
-            clock.scheduleAtFixedRate(()->{try{pump.tick();}catch(IOException e){try{socket.close();}catch(IOException ignored){}}},100,100,TimeUnit.MILLISECONDS);
+            clock.scheduleWithFixedDelay(()->{try{pump.tick();}catch(IOException e){try{socket.close();}catch(IOException ignored){}}},100,100,TimeUnit.MILLISECONDS);
             byte[] bytes=new byte[8192];int count;
             while(!stopping && (count=socket.getInputStream().read(bytes))!=-1){if(count>0){LinkDiagnostics.received(count);pump.feed(Arrays.copyOf(bytes,count));}}
         }finally{clock.shutdownNow();if(awake.isHeld())awake.release();}

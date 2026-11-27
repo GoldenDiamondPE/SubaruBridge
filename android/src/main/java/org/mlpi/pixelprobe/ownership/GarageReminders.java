@@ -23,6 +23,9 @@ public final class GarageReminders extends BroadcastReceiver {
         Context app = context.getApplicationContext(); WORK.execute(() -> check(app));
     }
     @Override public void onReceive(Context context, Intent intent) {
+        if(intent==null||!(Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())
+                ||Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction())
+                ||"org.subarubridge.GARAGE_REMINDER".equals(intent.getAction())))return;
         PendingResult result = goAsync(); Context app = context.getApplicationContext();
         WORK.execute(() -> { try { check(app); } finally { result.finish(); } });
     }
@@ -54,7 +57,7 @@ public final class GarageReminders extends BroadcastReceiver {
             if (counts[0] == 0) { notifications.cancel(NOTICE); prefs.edit().remove("shown").apply(); return; }
             String key = LocalDate.now() + ":" + counts[0] + ":" + counts[1]; if (key.equals(prefs.getString("shown", ""))) return;
             PendingIntent open = PendingIntent.getActivity(context, NOTICE, new Intent(context, GarageActivity.class), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-            Notification notice = new Notification.Builder(context, CHANNEL).setSmallIcon(R.drawable.probe_icon_foreground)
+            Notification notice = new Notification.Builder(context, CHANNEL).setSmallIcon(R.drawable.bridge_notice)
                     .setContentTitle("Maintenance reminder").setContentText(counts[0] + (counts[0] == 1 ? " item needs" : " items need") + " attention. " + counts[1] + " overdue based on saved records.")
                     .setContentIntent(open).setAutoCancel(true).setVisibility(Notification.VISIBILITY_PRIVATE).setCategory(Notification.CATEGORY_REMINDER).build();
             notifications.notify(NOTICE, notice); prefs.edit().putString("shown", key).apply();

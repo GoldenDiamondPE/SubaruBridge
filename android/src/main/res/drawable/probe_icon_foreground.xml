@@ -1,4 +1,5 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#6DE2CF" android:pathData="M28,58H80V64H28Z M34,40H40V74H34Z M68,40H74V74H68Z" />
-    <path android:fillColor="@android:color/transparent" android:strokeColor="#6DE2CF" android:strokeWidth="4" android:strokeLineCap="round" android:pathData="M29,52Q54,24 79,52 M39,43L47,58 M69,43L61,58" />
+    <!-- Original bridge and open-road symbol. Keep artwork inside the adaptive safe area. -->
+    <path android:fillColor="@android:color/transparent" android:strokeColor="#FFFFFF" android:strokeWidth="5.5" android:strokeLineCap="round" android:pathData="M30,55C41,32 67,32 78,55 M29,59H79 M34,49V68 M74,49V68" />
+    <path android:fillColor="#FFFFFF" android:fillType="evenOdd" android:pathData="M49,51H59L66,77H42Z M53,53H55V59H53Z M52.5,63H55.5V69H52.5Z M52,73H56V77H52Z" />
 </vector>

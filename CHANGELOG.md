@@ -1,5 +1,25 @@
 # Changes
 
+## 0.57-dev — Unified Android workspace
+
+- Keep Garage, the original STARLINK dashboard, integrations and diagnostic tools
+  in the existing app ID; add Home and Tools entries for Record & diagnose.
+- Replace laptop-armed test recording with an opt-in, no-root foreground recorder,
+  passive USB/phone sampling, event markers, private notes and saved timelines.
+- Bound sessions to ten minutes/one MiB and twelve retained runs; preserve partial
+  runs as interrupted, support explicit deletion and include sessions in ZIP export.
+- Add phone-only self-checks and a developer view with permission/USB/resource
+  state, system settings links and older-listener detection.
+- Rotate bounded diagnostic journals instead of silently dropping new events when
+  full. Keep the latest prior journal and propagate save/export failures.
+- Use one shared private-report exporter and an original blue bridge-and-road
+  adaptive icon, round icon and notification symbol, with Android themed-icon support.
+- Preserve old private data and experimental protocol source. No vendor runtime,
+  proprietary artwork or extracted application is included. iOS remains paused.
+- Guard revoked Bluetooth permissions, explicitly enable native gesture-back
+  callbacks, validate reminder broadcast actions and avoid timer catch-up bursts.
+  Exclude local app data from automatic Android cloud/device transfer.
+
 ## 0.56-dev — Ownership summaries and time handling
 
 - Add shared, read-only monthly/yearly aggregation and native trip-distance and

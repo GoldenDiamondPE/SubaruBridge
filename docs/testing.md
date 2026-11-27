@@ -38,6 +38,22 @@ Result code `-1` means success. The Rust native tests also check SLIP splitting,
 checksums, reordering, retransmission, sequence wrapping and bounded flows.
 They are targeted regressions, not a TCP conformance certification.
 
+## Unified recorder tests
+
+`BridgeCoreSmoke` runs `RecorderChecks` in an isolated cache directory. It checks
+duplicate starts, bounded/sanitized notes, rejection of unsafe identifiers and
+active deletion, saved ZIP contents, process-interruption recovery, the one-MiB
+limit, twelve-session retention, journal rotation, oversized-event preservation,
+symlink rejection, phone self-check results and the native recorder screen. It
+also renders the packaged adaptive/themed icon to a test-cache PNG for review.
+It does not replace the owner's live recordings or Garage.
+
+For a device journey, open Home → Record & diagnose, start a recording, add a
+note clearly stating that this is a phone-only bench test, leave the app and lock
+the phone, then return and stop/save. Inspect the timeline and ZIP, including the
+saved note and phone samples. Test notification denial, force-stop interruption
+and a filled journal separately. Exact head-unit results still require the car.
+
 ## Garage tests
 
 `BridgeCoreSmoke` also runs isolated Garage storage/form checks. It uses synthetic

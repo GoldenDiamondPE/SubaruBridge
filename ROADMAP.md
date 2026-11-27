@@ -3,6 +3,13 @@
 Preserve the working Android, basic iOS and earlier private research paths.
 Build the ownership system into SubaruBridge; do not create a separate tracker.
 
+Android 0.57 consolidates everyday Garage, dashboard, integrations and diagnostic
+recording in one app. The former root-ADB-armed recorder is replaced by bounded,
+opt-in app metadata recording. Duplicate research apps can remain disabled with
+their private data preserved. The original icon, recorder guide and remaining
+experimental migration boundary are documented in [One Android app](docs/unified-android.md).
+iOS development is paused at the owner's request while Android is the focus.
+
 1. **Media and STARLINK reliability:** fix reproducible Android player/control
    faults; bench-test the iPhone AMS adapter with Taurus; then test independent
    Subaru display, touch, audio coexistence and reconnect. Record evidence per layer.

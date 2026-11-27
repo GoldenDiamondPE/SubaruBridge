@@ -7,6 +7,9 @@ is evidence that the independent app works on the Subaru.
 | Area | Current implementation | Verification still needed |
 | --- | --- | --- |
 | STARLINK | Independent Android RFCOMM / Rust SLIP-IP-TCP-HTTP, original script-free UI, touch/result routes, private export | Independent transport on the target physical head unit, touch and reconnect |
+| Unified Android workspace | One existing app ID for Garage, dashboard, integrations, head-unit checks, phone self-checks, original icon and developer mode | Earlier experimental MirrorLink/AirPlay/CarPlay receiver paths remain separate; iOS adapter remains paused |
+| On-device diagnostic recorder | No-root foreground recording, private notes/markers, event timelines, explicit ZIP export; 10-minute/1-MiB sessions, 12-session retention, interrupted-run recovery | Metadata only; exact Bluetooth/USB packets need privileged external capture. Android scheduling and power behavior vary |
+| Passive USB lab | USB state/accessory and interface counts, phone resource/permission samples, system settings links | Does not change USB functions or establish MirrorLink registration/certification |
 | Android music | Generic MediaSession provider selection, advertised controls, toggle-only support, session-bound forms, metadata/timing | Real music apps and audio routing; streaming-provider capabilities vary |
 | iPhone / Taurus music | Experimental Android AMS client; shared Rust decoder; separate source choice | Real iPhone pairing, service exposure, Taurus metadata/controls and car coexistence |
 | iPhone companion | Native phone-side apps, local diagnostics and app-owned notifications, included in this branch | Native Garage adapter, car transport and a general phone-to-phone app channel |

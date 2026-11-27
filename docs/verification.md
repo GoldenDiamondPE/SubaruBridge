@@ -3,7 +3,36 @@ layout: default
 title: Verified results
 ---
 
-# Verified results — 0.51-dev
+# Verified results
+
+## Android 0.57 consolidation — 2026-11-27
+
+The existing Android Garage, media adapters and independent STARLINK dashboard
+now share the original app ID with an on-device recorder and developer view.
+The old private apps are not bundled or required. Earlier protocol experiments
+remain preserved separately; this is not a claim of complete MirrorLink, AirPlay,
+CarPlay or iPhone parity.
+
+| Check | Observed result |
+| --- | --- |
+| Android builds and lint | Both ABIs and test APK build; lint passes with no errors (existing advisory warnings remain) |
+| Pixel 6 and x86-64 emulator component suites | Core, Garage, Apple-media decoder, Android integration, recorder and native navigation suites pass |
+| HTTP contract | 61/61 on Pixel and 61/61 on emulator |
+| Recorder regressions | Duplicate start, note sanitization, safe IDs, active-delete rejection, ZIP scope, interruption, byte/count limits and journal rotation pass |
+| Phone-only recorder journey on Pixel | Start, private bench-test note, background operation, stop/save and actual Downloads ZIP verified; interrupted/saved outcomes stay distinct |
+| Screen-off emulator recording | Fifteen passive samples over 70.7 seconds; bounded wake lock held during the test and released after the UI stop/save |
+| Real Windows-to-Pixel Bluetooth bench | Five complete HTTP 200 responses, with earlier listener apps disabled |
+| Wireshark cross-check | 157 RFCOMM frames in the test interval; 107 reconstructed IPv4 packets decode all five successful HTTP responses |
+| Packaged launcher icon | Original adaptive icon rendered from the installed APK; round/themed resource available and reviewed |
+| Private-data preservation | Older Lab/research data and current app records backed up before duplicates were disabled; no app data was cleared |
+| Publication boundary | Ten regression cases pass; original-source audit excludes vendor applications, SDKs, captures, credentials and unreviewed binaries |
+
+The radio peer is a synthetic Windows client, not the Subaru. The vehicle's
+independent bootstrap, display, input, audio coexistence and reconnection remain
+hardware checks. iPhone/Taurus playback and direct iOS transport are not verified
+by these Android component tests. iOS development remains paused.
+
+## Earlier results — 0.51-dev
 
 Recorded 2026-11-26. Raw evidence remains private; only results are summarized here.
 
