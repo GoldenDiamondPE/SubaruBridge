@@ -1,8 +1,9 @@
 # Shared vehicle ownership foundation
 
-This branch provides a typed, versioned Rust model and calculation API. It is
-component tested. Native persistent storage, phone forms, local reminders and
-backup file pickers are the next work; this is not yet a released tracker UI.
+This branch provides a typed, versioned Rust model and calculation API plus the
+native Android Garage. It includes atomic local storage, vehicle and history
+forms, local reminders and explicit file export/import. See [the owner guide](docs/garage.md).
+The native iOS Garage adapter is still planned.
 
 The existing Android transport remains separate. No vehicle connection, ECU
 command, account, server or location permission is needed by this model.
@@ -34,7 +35,7 @@ calendar-month arithmetic, including month-end and leap-year handling.
 cargo +1.90.0 test --manifest-path rust/Cargo.toml --locked
 ```
 
-Ownership regressions cover unknown/approximate history, first and subsequent
+34 ownership regressions cover unknown/approximate history, first and subsequent
 coolant intervals, calendar and mileage thresholds, severe-condition gaps, owner
 overrides, odometer correction cycles, a 10,000-record correction chain, GPS
 confidence, trip reconciliation, ambiguous service ordering, partial fuel fills,
@@ -46,10 +47,25 @@ adapters must write only successful results atomically, serialize transactions,
 preserve corrupt/unknown-version files for recovery and keep vehicle records out
 of protocol diagnostic exports.
 
-## Next Android slice
+## Android persistence and workflows
 
-Add a Garage destination inside SubaruBridge, atomic app-private storage, manual
-vehicle/odometer/service/fuel forms and an explicit export/import workflow. Test
-failed writes, process restart and schema rejection before calling it durable.
-Then expose the same model to native iOS; do not duplicate maintenance logic or
-claim Android-only notification/RFCOMM access is available on iOS.
+`OwnershipStore` serializes load/validate/change/commit transactions in this
+process. Each mutation reloads the committed file. `AtomicFile`, explicit file
+sync and a post-commit read check protect against partial writes. Corrupt or
+future-schema files are never replaced with an empty garage. The state is capped
+at 1.5 MiB so two states fit within the Rust merge limit. It is a bounded first
+implementation, rather than a second database beside shared state.
+
+Garage component tests use isolated cache files, covering restart, interrupted
+and failed saves, rejected writes, schema rejection, concurrent writers, import
+conflicts and escaped exports. An optional fill-up odometer is one transaction;
+failure rejects both records.
+
+Service, fuel, trip and expense edits retain their IDs and rerun validation.
+Odometer corrections append a reasoned replacement and preserve the original.
+Changing currency after cost records exist is rejected, because amounts are
+never silently relabeled or converted. Units can change without changing data.
+
+Next: native iOS persistence/UI using this API, custom maintenance, attachments,
+backup conflict review, analytics, permission-based GPS and optional read-only
+diagnostics. Android-only notification/RFCOMM capabilities are not implied for iOS.

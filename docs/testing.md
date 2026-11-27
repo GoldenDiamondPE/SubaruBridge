@@ -38,6 +38,23 @@ Result code `-1` means success. The Rust native tests also check SLIP splitting,
 checksums, reordering, retransmission, sequence wrapping and bounded flows.
 They are targeted regressions, not a TCP conformance certification.
 
+## Garage tests
+
+`BridgeCoreSmoke` also runs isolated Garage storage/form checks. It uses synthetic
+cache files, with a process-local store injection for native UI forms. No intent,
+HTTP request or external app can select that test store. Tests do not seed or
+replace the owner's real garage. They cover restart, interrupted/failed writes,
+concurrent writers, corruption/unknown-schema preservation, validation rejection,
+backup idempotence/conflicts, units/money, export escaping and reminder filtering.
+
+Run the shared tests using `cargo +1.90.0 test --manifest-path rust/Cargo.toml --locked`.
+The Garage schema/calc suite has 34 cases; the existing media and protocol suites
+remain included. For manual checks, use an emulator and a clearly labeled test
+vehicle. Log an odometer, approximate service, full/partial fill, expense and
+completed trip. Restart the app, inspect history and export/import a backup.
+Verify the native system file picker and actual notification delivery separately
+from component tests. Extended idle/reboot reminder delivery remains outstanding.
+
 ## Parked-car test
 
 1. Park, keep the vehicle stationary and use normal accessory power.

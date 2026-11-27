@@ -8,13 +8,18 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application android:label="SubaruBridge" android:icon="@mipmap/probe_icon" android:theme="@style/ProbeTheme"
         android:allowBackup="false" android:networkSecurityConfig="@xml/local_network_security">
         <activity android:name=".starlink.StarlinkActivity" android:exported="true" android:launchMode="singleTop">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
         <activity android:name=".starlink.IntegrationsActivity" android:exported="false" />
+        <activity android:name=".starlink.GarageActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".starlink.PhoneActionActivity" android:exported="false" />
+        <receiver android:name=".ownership.GarageReminders" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter>
+        </receiver>
         <service android:name=".starlink.BridgeNotificationListener" android:exported="true" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>
         </service>

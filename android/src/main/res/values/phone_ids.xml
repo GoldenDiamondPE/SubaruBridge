@@ -1,5 +1,42 @@
 <resources>
     <item name="phone_home" type="id" />
+    <item name="phone_garage" type="id" />
+    <item name="garage_retry" type="id" />
+    <item name="garage_add_vehicle" type="id" />
+    <item name="garage_switch" type="id" />
+    <item name="garage_overview" type="id" />
+    <item name="garage_maintenance" type="id" />
+    <item name="garage_history" type="id" />
+    <item name="garage_more" type="id" />
+    <item name="garage_mileage" type="id" />
+    <item name="garage_log_odometer" type="id" />
+    <item name="garage_log_service" type="id" />
+    <item name="garage_log_fuel" type="id" />
+    <item name="garage_log_expense" type="id" />
+    <item name="garage_log_trip" type="id" />
+    <item name="garage_filter" type="id" />
+    <item name="garage_edit_vehicle" type="id" />
+    <item name="garage_reminders" type="id" />
+    <item name="garage_export" type="id" />
+    <item name="garage_import" type="id" />
+    <item name="garage_csv" type="id" />
+    <item name="garage_report" type="id" />
+    <item name="garage_error" type="id" />
+    <item name="garage_save" type="id" />
+    <item name="garage_vehicle_name" type="id" />
+    <item name="garage_profile_details" type="id" />
+    <item name="garage_distance" type="id" />
+    <item name="garage_time" type="id" />
+    <item name="garage_date" type="id" />
+    <item name="garage_service_low" type="id" />
+    <item name="garage_service_items" type="id" />
+    <item name="garage_service_high" type="id" />
+    <item name="garage_cost" type="id" />
+    <item name="garage_volume" type="id" />
+    <item name="garage_category" type="id" />
+    <item name="garage_trip_start" type="id" />
+    <item name="garage_trip_end" type="id" />
+    <item name="garage_reset_interval" type="id" />
     <item name="phone_dashboard" type="id" />
     <item name="phone_tools" type="id" />
     <item name="phone_connection_status" type="id" />

@@ -54,6 +54,22 @@ AMS decoder also exposes a C API for the Android JNI adapter and future platform
 adapters. It validates bounded entity updates without opening sockets or reading
 device data itself.
 
+## Vehicle ownership
+
+The native Android Garage is independent of the Bluetooth service and HTML
+router. `OwnershipStore` loads the sole versioned JSON state from the app's
+no-backup private directory and sends a bounded command through JNI to
+`sb_ownership_execute`. Rust validates the entire state, applies the command,
+calculates summaries and returns the new state. Only successful changes are
+committed atomically. App worker threads serialize file transactions; forms do
+not perform disk or Rust work on the main thread.
+
+No vehicle records enter HTTP routes or connection report journals. The owner
+explicitly chooses backup/import destinations through Android's document picker.
+Local notifications use a separate opt-in receiver and deferred daily inexact
+alarm. They contain counts, rather than vehicle identifiers or private notes.
+See [the shared model](../VEHICLE_DATABASE.md) and [ownership details](../OWNERSHIP_FOUNDATION.md).
+
 ## Media providers
 
 The head-unit music page consumes a provider-neutral snapshot: source, opaque

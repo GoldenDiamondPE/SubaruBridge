@@ -188,6 +188,8 @@ public final class StarlinkActivity extends Activity {
         gap(connection, 20); primary = button("Open dashboard", R.id.phone_primary_action, true, this::primaryAction); add(connection, primary);
         section(page, "YOUR WORKSPACE");
         LinearLayout shortcuts = card(page);
+        row(shortcuts, "Garage", "Mileage, maintenance, fuel and ownership records", "home", R.id.phone_garage, () -> startActivity(new Intent(this, GarageActivity.class)));
+        divider(shortcuts);
         row(shortcuts, "Apps & integrations", "Music, Google Maps, phone and messages", "grid", View.NO_ID, () -> startActivity(new Intent(this, IntegrationsActivity.class)));
         divider(shortcuts); row(shortcuts, "Review phone action", "Confirm a prepared call, direction or reply", "phone", View.NO_ID, () -> startActivity(new Intent(this, PhoneActionActivity.class)));
         divider(shortcuts);

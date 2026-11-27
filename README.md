@@ -20,8 +20,9 @@ milestone is a parked-car display, touch and reconnect test.
 - Android Music, Maps, Phone, Messages and Notifications dashboard cards with explicit permission and confirmation boundaries.
 - A native basic iOS companion with app-owned local notifications, native UI
   journeys, simulator checks and development-device packaging scripts.
-- A typed shared ownership foundation for vehicle, mileage, maintenance, fuel,
-  trip and expense records. See [its component status and next Android work](OWNERSHIP_FOUNDATION.md).
+- A native Android Garage for vehicle profiles, mileage, maintenance, services,
+  fill-ups, expenses, manual trips, local reminders and explicit backups.
+  The calculations and versioned records live in shared Rust for the iOS port.
 - Generic Android music-player selection and an experimental paired-iPhone media
   adapter for testing Taurus through Apple's public Media Service.
 
@@ -34,6 +35,10 @@ does not implement a direct iPhone-to-car transport, full CarPlay feature parity
 certification. See [dashboard apps and limits](docs/apps.md) for the implemented adapters. It is not affiliated with Subaru, Fujitsu Ten, Apple or Google.
 
 ## Build and use
+
+For ownership tracking, open **Home → Garage → Add vehicle**. No car connection,
+location access or account is required. See [the Garage guide](docs/garage.md)
+for recording approximate history, correcting readings and keeping a backup.
 
 1. Follow [the build guide](docs/build.md) for Android Studio/CLI and the pinned toolchain.
 2. Install your locally built APK. Open SubaruBridge and use the phone preview first.

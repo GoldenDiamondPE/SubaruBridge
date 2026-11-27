@@ -20,11 +20,13 @@ pub struct Request {
 }
 fn default_soon_mm()->u64{500*MM_PER_MILE}fn default_soon_days()->i64{30}
 #[derive(Deserialize)]
-#[serde(tag="type",rename_all="camelCase",deny_unknown_fields)]
+#[serde(tag="type",rename_all="camelCase",rename_all_fields="camelCase",deny_unknown_fields)]
 pub enum Command {
     View,AddVehicle{vehicle:Vehicle},UpdateVehicle{vehicle:Vehicle},AddReading{reading:Reading},
     AddService{service:Service},AddFuel{entry:Fuel},AddExpense{expense:Expense},AddTrip{trip:Trip},
-    SetOverride{value:Override},MergeBackup{backup:Garage},
+    SetOverride{value:Override},ResetOverride{vehicle_id:String,item_id:String},MergeBackup{backup:Garage},
+    UpdateService{service:Service},UpdateFuel{entry:Fuel},UpdateExpense{expense:Expense},UpdateTrip{trip:Trip},
+    RecordFillUp{entry:Fuel,reading:Reading},
 }
 #[derive(Debug,Serialize)]
 #[serde(rename_all="camelCase")]
@@ -200,16 +202,35 @@ pub fn validate(state:&Garage,today:&Date,now:u64)->Result<(),String>{
 fn merge<T:Clone+PartialEq>(current:&mut Vec<T>,incoming:Vec<T>,key:impl Fn(&T)->&str)->Result<(),String>{
     for value in incoming {if let Some(old)=current.iter().find(|v|key(v)==key(&value)){if old!=&value{return Err("Backup contains conflicting records; nothing was imported".into());}}else{current.push(value);}}Ok(())
 }
+fn replace<T>(records:&mut [T],value:T,key:impl Fn(&T)->(&str,&str))->Result<(),String>{
+    let record=records.iter_mut().find(|r|key(r).0==key(&value).0).ok_or("Record not found")?;
+    if key(record).1!=key(&value).1{return Err("A record cannot be moved to another vehicle".into());}
+    *record=value;Ok(())
+}
 pub fn execute(request:Request)->Result<Value,String>{
     let mut state=request.state;validate(&state,&request.today,request.now_ms)?;
     if request.due_soon_mm>100_000*MM_PER_MILE || !(0..=3650).contains(&request.due_soon_days){return Err("Invalid due-soon thresholds".into());}
     let original=state.clone();
     match request.command {
         Command::View=>(),Command::AddVehicle{vehicle}=>state.vehicles.push(vehicle),
-        Command::UpdateVehicle{vehicle}=>{let old=state.vehicles.iter_mut().find(|v|v.id==vehicle.id).ok_or("Vehicle not found")?;*old=vehicle;},
+        Command::UpdateVehicle{vehicle}=>{
+            let old=state.vehicles.iter_mut().find(|v|v.id==vehicle.id).ok_or("Vehicle not found")?;
+            let recorded_costs=state.services.iter().any(|v|v.vehicle_id==vehicle.id) || state.fuel.iter().any(|v|v.vehicle_id==vehicle.id) || state.expenses.iter().any(|v|v.vehicle_id==vehicle.id);
+            if old.currency!=vehicle.currency && recorded_costs{return Err("Currency cannot change after cost records are saved; recorded amounts are never silently converted".into());}
+            *old=vehicle;
+        },
         Command::AddReading{reading}=>state.readings.push(reading),Command::AddService{service}=>state.services.push(service),
         Command::AddFuel{entry}=>state.fuel.push(entry),Command::AddExpense{expense}=>state.expenses.push(expense),Command::AddTrip{trip}=>state.trips.push(trip),
+        Command::RecordFillUp{entry,reading}=>{
+            if entry.vehicle_id!=reading.vehicle_id || entry.at_ms!=reading.at_ms || entry.distance_mm!=reading.distance_mm || reading.confidence!=Confidence::Confirmed || reading.source!=DistanceSource::Manual || reading.supersedes.is_some(){return Err("A fill-up odometer must be a matching confirmed manual reading".into());}
+            state.fuel.push(entry);state.readings.push(reading);
+        },
+        Command::UpdateService{service}=>replace(&mut state.services,service,|v|(&v.id,&v.vehicle_id))?,
+        Command::UpdateFuel{entry}=>replace(&mut state.fuel,entry,|v|(&v.id,&v.vehicle_id))?,
+        Command::UpdateExpense{expense}=>replace(&mut state.expenses,expense,|v|(&v.id,&v.vehicle_id))?,
+        Command::UpdateTrip{trip}=>replace(&mut state.trips,trip,|v|(&v.id,&v.vehicle_id))?,
         Command::SetOverride{value}=>{if let Some(old)=state.overrides.iter_mut().find(|v|v.vehicle_id==value.vehicle_id && v.item_id==value.item_id){*old=value;}else{state.overrides.push(value);}},
+        Command::ResetOverride{vehicle_id,item_id}=>{state.overrides.retain(|v|v.vehicle_id!=vehicle_id || v.item_id!=item_id);},
         Command::MergeBackup{backup}=>{
             validate(&backup,&request.today,request.now_ms)?;
             merge(&mut state.vehicles,backup.vehicles,|v|&v.id)?;merge(&mut state.readings,backup.readings,|v|&v.id)?;

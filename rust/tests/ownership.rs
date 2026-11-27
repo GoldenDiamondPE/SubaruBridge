@@ -1,5 +1,40 @@
 use subarubridge_core::ownership::{self as own,date::Date,model::*,maintenance};
 use serde_json::{json,Value};
+
+#[test]fn fuel_and_optional_odometer_are_validated_as_one_transaction(){
+ let mut s=garage();s.readings.push(reading("anchor",1,80000));let f=fuel("f",2,81000,40000,true);let r=reading("fuel-reading",2,81000);
+ let out=execute(&s,json!({"type":"recordFillUp","entry":f,"reading":r}));assert_eq!(out["ok"],true);assert_eq!(out["state"]["revision"],1);assert_eq!(out["state"]["fuel"].as_array().unwrap().len(),1);assert_eq!(out["summaries"][0]["mileage"]["currentMm"],81000*MM_PER_MILE);
+ let mismatched=reading("fuel-reading",2,80999);assert_eq!(execute(&s,json!({"type":"recordFillUp","entry":f,"reading":mismatched}))["ok"],false);
+ let decreasing=fuel("f",2,79000,40000,true);let low=reading("fuel-reading",2,79000);let bad=execute(&s,json!({"type":"recordFillUp","entry":decreasing,"reading":low}));assert_eq!(bad["ok"],false);assert!(bad.get("state").is_none());
+}
+
+#[test]fn record_edits_recalculate_without_adding_a_second_cost(){
+ let mut s=garage();let mut old=service("paid","engine-oil",Some((70000,74000)),None);old.cost_cents=5000;s.services.push(old.clone());
+ let mut fixed=old;fixed.date=Some(date("2026-10-01"));fixed.mileage=Some(DistanceRange{low_mm:80000*MM_PER_MILE,high_mm:80000*MM_PER_MILE});fixed.cost_cents=6000;
+ s.readings.push(reading("r",100,81000));let out=execute(&s,json!({"type":"updateService","service":fixed}));assert_eq!(out["ok"],true);assert_eq!(out["state"]["services"].as_array().unwrap().len(),1);
+ assert_eq!(out["summaries"][0]["costs"]["serviceCents"],6000);let due=out["summaries"][0]["maintenance"].as_array().unwrap().iter().find(|v|v["itemId"]=="engine-oil").unwrap();assert_eq!(due["status"],"upToDate");
+}
+#[test]fn record_edits_cannot_move_between_vehicles_or_create_missing_ids(){
+ let mut s=garage();s.services.push(service("s","engine-oil",Some((80000,80000)),Some("2026-10-01")));let mut other=vehicle();other.id="second".into();s.vehicles.push(other);
+ let mut changed=s.services[0].clone();changed.vehicle_id="second".into();assert_eq!(execute(&s,json!({"type":"updateService","service":changed}))["ok"],false);
+ changed.vehicle_id="car".into();changed.id="missing".into();assert_eq!(execute(&s,json!({"type":"updateService","service":changed}))["ok"],false);
+}
+#[test]fn fuel_trip_and_expense_edits_preserve_validation(){
+ let mut s=garage();s.fuel=vec![fuel("a",1,80000,40000,true),fuel("b",2,80300,40000,true)];let mut changed=s.fuel[1].clone();changed.distance_mm=79900*MM_PER_MILE;
+ assert_eq!(execute(&s,json!({"type":"updateFuel","entry":changed}))["ok"],false);changed.distance_mm=80400*MM_PER_MILE;assert_eq!(execute(&s,json!({"type":"updateFuel","entry":changed}))["ok"],true);
+ let trip=Trip{id:"t".into(),vehicle_id:"car".into(),started_ms:10,ended_ms:20,distance_mm:MM_PER_MILE,source:DistanceSource::Manual,notes:String::new()};s.trips.push(trip.clone());let mut invalid=trip;invalid.ended_ms=9;
+ assert_eq!(execute(&s,json!({"type":"updateTrip","trip":invalid}))["ok"],false);
+ let expense=Expense{id:"e".into(),vehicle_id:"car".into(),date:date("2026-11-01"),category:"Parking".into(),cost_cents:100,financing:false,notes:String::new()};s.expenses.push(expense.clone());let mut edited=expense;edited.cost_cents=200;
+ assert_eq!(execute(&s,json!({"type":"updateExpense","expense":edited}))["summaries"][0]["costs"]["otherOperatingCents"],200);
+}
+#[test]fn currency_changes_never_relabel_existing_costs(){
+ let mut s=garage();let mut changed=vehicle();changed.currency="CAD".into();assert_eq!(execute(&s,json!({"type":"updateVehicle","vehicle":changed}))["ok"],true);
+ s.fuel.push(fuel("f",1,80000,40000,true));assert_eq!(execute(&s,json!({"type":"updateVehicle","vehicle":changed}))["ok"],false);
+}
+#[test]fn owner_intervals_can_be_restored_without_losing_service_records(){
+ let mut s=garage();s.overrides.push(Override{vehicle_id:"car".into(),item_id:"engine-oil".into(),interval:Interval{miles:Some(4000),months:None},disabled:false});s.services.push(service("s","engine-oil",Some((80000,80000)),Some("2026-10-01")));
+ let out=execute(&s,json!({"type":"resetOverride","vehicleId":"car","itemId":"engine-oil"}));assert_eq!(out["ok"],true);assert!(out["state"]["overrides"].as_array().unwrap().is_empty());assert_eq!(out["state"]["services"].as_array().unwrap().len(),1);
+}
 fn date(s:&str)->Date{Date::parse(s).unwrap()}
 fn vehicle()->Vehicle{serde_json::from_value(json!({"id":"car","nickname":"Legacy","make":"Subaru","model":"Legacy","year":2017,"engine":"2.5L","transmission":"CVT","maintenanceProfile":"subaru-us-2017-legacy-25-cvt"})).unwrap()}
 fn garage()->Garage{let mut s=Garage::empty();s.vehicles.push(vehicle());s}

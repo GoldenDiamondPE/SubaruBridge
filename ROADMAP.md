@@ -6,15 +6,18 @@ Build the ownership system into SubaruBridge; do not create a separate tracker.
 1. **Media and STARLINK reliability:** fix reproducible Android player/control
    faults; bench-test the iPhone AMS adapter with Taurus; then test independent
    Subaru display, touch, audio coexistence and reconnect. Record evidence per layer.
-2. **Ownership foundation:** finish and test the preserved shared Rust vehicle,
-   odometer, uncertain service history, maintenance, fuel and expense models.
-   Add bounded atomic persistence, migrations and Android garage/maintenance
-   screens, followed by a native iOS adapter. Ownership remains usable without a car.
+2. **Ownership foundation:** the Android Garage now uses shared Rust vehicle,
+   odometer, uncertain service history, maintenance, fuel and expense models,
+   with atomic storage and explicit backup/restore. Next add a native iOS storage
+   and UI adapter using the same engine, then migrations and record attachments.
+   Ownership remains usable without a car.
 3. **Authoritative maintenance:** complete manufacturer schedule notes, provenance,
    severe-service applicability and verified parts/fluid references for the exact
    initial vehicle. Unknown history stays unknown; estimates stay labeled.
-4. **Everyday companion:** local reminders, export/restore, fuel and service history,
-   expenses and analytics. Add manual trips before optional automatic GPS tracking.
+4. **Everyday companion:** verify reminder delivery through reboot/power management,
+   improve backup conflict review, add custom maintenance, receipts, richer costs
+   and mileage charts. Manual trips are implemented; automatic GPS/routes follow
+   explicit permission and battery-budget testing. Do not infer live ECU data.
 5. **Infotainment framework:** capability-driven dashboard/widgets, provider-specific
    media features, configurable themes, virtual CDs, notifications and static
    fallbacks. Gate distracting features on reliable parked status.
