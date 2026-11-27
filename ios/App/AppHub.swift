@@ -8,12 +8,14 @@ struct DashboardView: View {
     var body: some View {
         TabView {
             AppHub().tabItem { Label("Apps", systemImage: "square.grid.2x2") }
-            ConnectionLabView().tabItem { Label("Connection lab", systemImage: "wrench.and.screwdriver") }
+            ConnectionLabView().tabItem { Label("Tools", systemImage: "wrench.and.screwdriver") }
         }.tint(.blue)
     }
 }
 
 struct AppHub: View {
+    private enum FavoriteField: Hashable { case number, destination, reply }
+    @FocusState private var favoriteFocus: FavoriteField?
     @AppStorage("favoriteNumber") private var number = ""
     @AppStorage("favoriteDestination") private var destination = ""
     @AppStorage("quickReply") private var quickReply = "I'm on my way."
@@ -35,19 +37,19 @@ struct AppHub: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Your phone. Your Subaru.").font(.title2.bold())
                         Label("iPhone companion preview", systemImage: "iphone").foregroundStyle(.blue)
-                        Text("Phone actions work locally. A direct Subaru or Pixel companion connection has not been implemented.")
+                        Text("Music, directions and phone actions. Car connectivity is still in development.")
                             .font(.callout).foregroundStyle(.secondary)
                     }.padding(.vertical, 8)
                 }
                 Section("Your apps") {
                     ForEach(orderedApps) { app in
-                        NavigationLink { appPage(app.id) } label: { Label(app.title, systemImage: symbol(app.id)) }
+                        NavigationLink { appPage(app.id) } label: { Label(app.title, systemImage: symbol(app.id)) }.accessibilityIdentifier("app-" + app.id)
                     }
                 }
                 Section("Favorites") {
-                    TextField("Phone number", text: $number).keyboardType(.phonePad)
-                    TextField("Google Maps destination", text: $destination)
-                    TextField("Quick reply", text: $quickReply)
+                    TextField("Phone number", text: $number).keyboardType(.phonePad).focused($favoriteFocus, equals: .number).accessibilityIdentifier("favorite-number")
+                    TextField("Google Maps destination", text: $destination).focused($favoriteFocus, equals: .destination).accessibilityIdentifier("favorite-destination")
+                    TextField("Quick reply", text: $quickReply).focused($favoriteFocus, equals: .reply).accessibilityIdentifier("favorite-reply")
                     Toggle("Navigation first", isOn: $navigationFirst)
                 }
                 Section("Widgets") {
@@ -57,6 +59,8 @@ struct AppHub: View {
                     LabeledContent("Connection", value: "Local phone only")
                 }
             }.navigationTitle(configuration?.brand ?? "SubaruBridge")
+                .scrollDismissesKeyboard(.interactively)
+                .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { favoriteFocus = nil } } }
                 .task { do { configuration = try DashboardConfiguration.bundled() } catch { issue = "Dashboard configuration could not be loaded." } }
                 .sheet(isPresented: $composer) { MessageComposer(number: number, text: quickReply) }
                 .alert("Phone action", isPresented: Binding(get: { issue != nil }, set: { if !$0 { issue = nil } })) {
@@ -87,11 +91,7 @@ struct AppHub: View {
                 }.disabled(!CompanionActions.validPhoneNumber(number))
                 Text("Call audio and answering use normal iPhone and Subaru hands-free controls.").foregroundStyle(.secondary)
             }.navigationTitle("Phone")
-        case "notifications":
-            Form {
-                Text("iOS does not give this app access to other apps' notifications. Android's optional notification feed is available on the Pixel dashboard.")
-                Text("System-wide iPhone notification mirroring has not been implemented.").foregroundStyle(.secondary)
-            }.navigationTitle("Notifications")
+        case "notifications": LocalNotificationsView()
         default:
             Form {
                 Text("Messages stay in the system composer. This app cannot read the iPhone's system-wide message inbox.").foregroundStyle(.secondary)
@@ -126,13 +126,24 @@ private struct MessageComposer: UIViewControllerRepresentable {
     @Published var title = "Choose music on this iPhone"
     @Published var artist = ""
     @Published var playing = false
+    @Published var hasTrack = false
     init() {
         player.beginGeneratingPlaybackNotifications()
         NotificationCenter.default.addObserver(self, selector: #selector(update), name: .MPMusicPlayerControllerNowPlayingItemDidChange, object: player)
         NotificationCenter.default.addObserver(self, selector: #selector(update), name: .MPMusicPlayerControllerPlaybackStateDidChange, object: player)
         update()
     }
-    @objc func update() { title = player.nowPlayingItem?.title ?? "Choose music on this iPhone"; artist = player.nowPlayingItem?.artist ?? ""; playing = player.playbackState == .playing }
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+        player.endGeneratingPlaybackNotifications()
+    }
+    @objc func update() {
+        guard MPMediaLibrary.authorizationStatus() == .authorized else {
+            title = "Choose music on this iPhone"; artist = ""; playing = false; hasTrack = false; return
+        }
+        title = player.nowPlayingItem?.title ?? "Choose music on this iPhone"; artist = player.nowPlayingItem?.artist ?? ""
+        playing = player.playbackState == .playing; hasTrack = player.nowPlayingItem != nil
+    }
     func choose(_ items: MPMediaItemCollection) { player.setQueue(with: items); player.play(); update() }
 }
 
@@ -147,14 +158,14 @@ private struct NativeMusicView: View {
                 Text(music.title).font(.headline); Text(music.artist).foregroundStyle(.secondary)
                 Button("Choose library music") {
                     MPMediaLibrary.requestAuthorization { status in
-                        DispatchQueue.main.async { if status == .authorized { picker = true } else { issue = "Music library access was not granted." } }
+                        DispatchQueue.main.async { if status == .authorized { music.update(); picker = true } else { issue = "Music library access was not granted." } }
                     }
                 }
                 HStack {
                     Button("Previous") { music.player.skipToPreviousItem() }
                     Button(music.playing ? "Pause" : "Play") { if music.playing { music.player.pause() } else { music.player.play() }; music.update() }
                     Button("Next") { music.player.skipToNextItem() }
-                }.buttonStyle(.bordered).disabled(music.player.nowPlayingItem == nil)
+                }.buttonStyle(.bordered).disabled(!music.hasTrack)
             }
             Section("Spotify") {
                 Button("Open Spotify on iPhone") { openURL(URL(string: "https://open.spotify.com/")!) }

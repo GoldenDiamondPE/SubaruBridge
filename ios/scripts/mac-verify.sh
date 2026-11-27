@@ -15,6 +15,7 @@ uname -m
 xcode-select -p
 xcodebuild -version
 swift --version
+swift scripts/render-icon.swift App/Assets.xcassets/AppIcon.appiconset/AppIcon.png
 plutil -lint App/Info.plist SubaruBridge.xcodeproj/project.pbxproj
 swift test --scratch-path build/package-tests
 xcodebuild -project SubaruBridge.xcodeproj -scheme SubaruBridge -configuration Debug \

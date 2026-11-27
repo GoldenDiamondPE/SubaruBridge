@@ -18,7 +18,8 @@ milestone is a parked-car display, touch and reconnect test.
 - Phone preview, Android component tests and native protocol regressions.
 - A stable C interface for shared protocol work.
 - Android Music, Maps, Phone, Messages and Notifications dashboard cards with explicit permission and confirmation boundaries.
-- A native iOS companion source project and unsigned simulator build checks.
+- A native basic iOS companion with app-owned local notifications, native UI
+  journeys, simulator checks and development-device packaging scripts.
 
 This repository contains the complete standalone STARLINK-path app and its build
 sources. It contains no
