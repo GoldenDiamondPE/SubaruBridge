@@ -1,14 +1,17 @@
-# SubaruBridge iOS starter
+# SubaruBridge basic iPhone companion — 0.2.0
 
 This is the first iOS source branch alongside Android, targeting iOS 17 or later.
 **Apple SDK verification runs in the macOS CI job; physical iPhone and car validation remain required.** The Windows host can prepare the source,
 but the Mac is needed for Swift tests, Apple SDK validation and simulator work.
-This source is not a signed installable IPA or a verified Subaru connection.
+Device packaging is separate from simulator builds. Development signing uses
+your own Apple account and a profile permitting the intended phone. Signing
+material and prebuilt IPAs are excluded from this source.
 
 The companion now includes Music, Maps, Phone, Messages and Notifications cards.
 Apple Music library playback uses the native player; Spotify opens through its
 normal link. Maps opens a favorite destination, calling uses the iPhone prompt,
-and SMS uses MessageUI with user confirmation. System-wide iPhone notification
+and SMS uses MessageUI with user confirmation. The Notifications page requests
+permission explicitly and schedules an app-owned local test. System-wide iPhone notification
 access, Spotify remote control and an iPhone-to-Pixel transport are not implemented.
 See [the capability guide](../docs/apps.md).
 
@@ -21,8 +24,9 @@ The starter contains:
 - Explicit local-only status. Local UI taps are not described as car requests.
 - An on-demand list of accessories and protocol names that iOS exposes through
   External Accessory. No accessory protocol strings or identities are fabricated.
-- Ten Swift component tests, a local Swift package, a checked-in Xcode
-  app project, and an unsigned simulator-build script. CI runs the component suite and unsigned simulator build.
+- Ten Swift component tests, four native UI journeys, a local Swift package and a
+  checked-in Xcode project. CI builds and launches its own dedicated simulator.
+- An original icon generator and privacy manifest for app-owned preferences.
 
 ## Mac build
 
@@ -36,10 +40,34 @@ bash scripts/mac-verify.sh
 open SubaruBridge.xcodeproj
 ```
 
-The script runs `swift test` and builds for the simulator without device signing.
+The script generates the original icon, runs `swift test` and builds for the simulator without device signing.
 Choose an installed iPhone simulator in Xcode to launch the app. Physical iPhone
 installation needs a signing team and normal device trust/developer setup; no
 Apple account credentials or signing material are included here.
+
+Run the native UI suite separately:
+
+```sh
+bash scripts/test-basic-ui.sh
+```
+
+It creates an isolated iPhone 15 Plus simulator named SubaruBridge Basic QA,
+clears only this app on that simulator, then tests app navigation, disabled
+actions, favorite-number validation, keyboard dismissal, notification denial and
+the four-screen local check/export. Its screenshot and test result bundle stay
+under ignored `build/`. No real call or SMS is sent.
+
+For a signed device export after normal Xcode account/device setup:
+
+```sh
+DEVELOPMENT_TEAM=YOUR_TEAM_ID bash scripts/package-device.sh signed
+```
+
+Check that the embedded profile permits your phone. An IPA is not installed by
+opening it in Files. Use Xcode's normal device installation and enable Developer
+Mode when iOS requests it. The explicit `unsigned` packaging mode produces a file
+named `requires-signing`; it cannot be installed as-is. Never commit certificates,
+profiles, credentials or signed exports.
 
 The copied JSON resource is in
 `Sources/SubaruBridgeCore/Resources/dashboard.json`. The canonical Android UI
@@ -66,13 +94,15 @@ Primary references:
 - [Core Bluetooth Classic explanation](https://developer.apple.com/videos/play/wwdc2019/901/)
 - [Accessory protocol declaration](https://developer.apple.com/documentation/bundleresources/information-property-list/uisupportedexternalaccessoryprotocols)
 
-## Next verified milestones
+## Verification and remaining work
 
-1. Recover authorized Mac access and inventory macOS, CPU, Xcode, SDKs and runtimes.
-2. Run the written core tests and fix actual compiler/test failures.
-3. Launch the simulator and verify configuration, navigation, three touches,
-   phone data, local export and failure states.
-4. Sign for the owner's iPhone and inspect app-accessible accessories during a
-   parked-car pairing test. Preserve logs privately.
-5. Choose an evidenced direct or Pixel-companion transport before promising
-   a head-unit display or adding music/calling/message integrations.
+The Mac passed the ten component tests, all four UI journeys, an Apple SDK build
+and development archive/export. The owner reported successful physical iPhone
+launch and local notification delivery. This does not verify music-library
+playback, real calls/messages, car connectivity or an iPhone-to-Pixel transport.
+
+Next, test permission grant/denial and real library selection on a phone; open
+directions, cancel the phone and message prompts, and inspect the car's normally
+exposed accessories while parked. Keep logs private. Taurus media through the
+Pixel is developed as a separate Android accessory experiment rather than
+pretending the native iOS library player controls other apps.

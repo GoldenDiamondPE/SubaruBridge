@@ -5,19 +5,19 @@ permissions:
 jobs:
   ios:
     runs-on: macos-15
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Shared configuration matches Android
         run: cmp android/headunit-ui/dashboard.json ios/Sources/SubaruBridgeCore/Resources/dashboard.json
       - name: Swift component tests and unsigned simulator build
         run: bash ios/scripts/mac-verify.sh
-      - name: Cold launch on an iPhone simulator
+      - name: Native journeys on an isolated iPhone simulator
         timeout-minutes: 10
-        run: bash ios/scripts/simulator-smoke.sh
+        run: bash ios/scripts/test-basic-ui.sh
       - name: Save simulator preview
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ios-simulator-preview
-          path: ios/build/ios-home.png
+          path: ios/build/ios-basic-home.png
           retention-days: 7
