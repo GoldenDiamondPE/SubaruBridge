@@ -23,7 +23,7 @@ public final class LinkDiagnostics {
     public static synchronized void state(Context context,String state){
         if(state.startsWith("Connected:"))connections++;
         Map<String,Object> event=snapshot();event.put("event","state");
-        event.put("state",state.startsWith("Ready:")?"ready":state.startsWith("Connected:")?"connected":state.startsWith("Disconnected:")?"disconnected":"stopped");append(context,event);
+        event.put("state",state.startsWith("Ready:")?"ready":state.startsWith("Connected:")?"connected":state.startsWith("Disconnected:")?"disconnected":state.startsWith("Starting:")?"starting":"stopped");append(context,event);
     }
     public static synchronized void http(Context context,String source,String method,String route,int status,int bytes){
         requests++;Map<String,Object> event=snapshot();event.put("event","http");

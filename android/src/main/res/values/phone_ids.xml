@@ -1,0 +1,14 @@
+<resources>
+    <item name="phone_home" type="id" />
+    <item name="phone_dashboard" type="id" />
+    <item name="phone_tools" type="id" />
+    <item name="phone_connection_status" type="id" />
+    <item name="phone_connection_detail" type="id" />
+    <item name="phone_primary_action" type="id" />
+    <item name="phone_preview" type="id" />
+    <item name="phone_auto_connect" type="id" />
+    <item name="phone_pause" type="id" />
+    <item name="phone_export" type="id" />
+    <item name="phone_diagnostics" type="id" />
+    <item name="phone_pair" type="id" />
+</resources>

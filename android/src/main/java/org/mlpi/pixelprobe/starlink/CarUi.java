@@ -98,7 +98,7 @@ public final class CarUi {
     private String frame(String title, String body, String active, String run) throws IOException {
         Map<String, String> values = urls(run);
         StringBuilder dock = new StringBuilder();
-        String[] ids = {"home", "test", "settings"}, symbols = {"home", "results", "settings"}, labels = {"Home", "Check", "Style"};
+        String[] ids = {"home", "test", "settings"}, symbols = {"home", "results", "settings"}, labels = {"Home", "Check", "Appearance"};
         String[] targets = {url("dashboard", run), stepUrl(1, run), url("settings", run)};
         for (int i = 0; i < ids.length; i++) dock.append("<a id=\"dock-").append(ids[i]).append("\" class=\"dock-link")
                 .append(ids[i].equals(active) ? " current" : "").append("\" href=\"").append(HtmlView.escape(targets[i])).append("\">")
@@ -126,7 +126,7 @@ public final class CarUi {
     }
     public String basic(String run, int screen, Map<String, Object> state, Map<String, Object> phone, String form) throws IOException {
         Map<String, String> values = urls(run);
-        String[] labels = {"Display", "Touch", "Pixel", "Results"};
+        String[] labels = {"Display", "Touch", "Phone", "Results"};
         StringBuilder steps = new StringBuilder();
         for (int i = 1; i <= 4; i++) steps.append("<a id=\"basic-nav").append(i).append("\" class=\"step-link")
                 .append(i == screen ? " current" : "").append("\" href=\"").append(HtmlView.escape(stepUrl(i, run))).append("\">")
@@ -140,8 +140,8 @@ public final class CarUi {
         boolean saved = Boolean.TRUE.equals(state.get("summarySaved"));
         boolean complete = ((Number) state.get("screensSeen")).intValue() == 4 && ((Number) state.get("touches")).intValue() >= 3 && ((Number) state.get("dataChecks")).intValue() >= 1;
         values.put("saved", "" + saved); values.put("savedLabel", saved ? "Yes" : "No");
-        values.put("resultTitle", saved && complete ? "All set. Saved on Pixel." : saved ? "Saved. A little more to check." : "Here's where we are.");
-        values.put("resultSubtitle", saved ? "Your observations are in the private journal." : "Save your result when you are ready.");
+        values.put("resultTitle", saved && complete ? "Check complete" : saved ? "Saved. More checks remaining" : "Your results");
+        values.put("resultSubtitle", saved ? "Your result is saved on your phone." : "Save your result when you are ready.");
         values.put("panel", template(new String[] {"display", "touch", "phone", "results"}[screen-1], values));
         return frame(labels[screen-1], template("basic", values), "test", run);
     }
@@ -163,6 +163,6 @@ public final class CarUi {
     }
     public String developer(String run, String state) throws IOException {
         Map<String, String> values = urls(run); values.put("state", HtmlView.escape(state));
-        return frame("Developer", template("developer", values), "developer", run);
+        return frame("Tools", template("developer", values), "developer", run);
     }
 }

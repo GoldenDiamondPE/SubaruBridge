@@ -19,16 +19,26 @@ public final class StarlinkService extends Service {
     private static final int NOTICE=5101;
     private static volatile String state="Stopped";
     private static volatile boolean running;
+    private static StarlinkService owner;
     private volatile boolean stopping;
     private volatile BluetoothServerSocket server;
     private volatile BluetoothSocket peer;
     private Thread worker;
+    private boolean foreground;
 
     public static String state(){return state;}
     public static boolean running(){return running;}
     private void state(String value){
-        state=value;Log.i("SubaruBridgeLink",value);
+        synchronized(StarlinkService.class) {
+            if(owner!=this)return;
+            state=value;
+        }
+        Log.i("SubaruBridgeLink",value);
         LinkDiagnostics.state(this,value);
+        if (foreground) {
+            String summary=value.startsWith("Connected:")?"Bluetooth connected · dashboard available":value.startsWith("Ready:")?"Ready for your paired car":value.startsWith("Starting:")?"Preparing your connection":"Connection paused";
+            getSystemService(NotificationManager.class).notify(NOTICE,notification(summary));
+        }
         android.util.AtomicFile file=new android.util.AtomicFile(new File(getFilesDir(),"bridge-link-state.txt"));
         FileOutputStream out=null;
         try{out=file.startWrite();out.write((value+"\n"+System.currentTimeMillis()+"\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));file.finishWrite(out);}
@@ -39,14 +49,17 @@ public final class StarlinkService extends Service {
         if(intent!=null && "STOP".equals(intent.getAction())){stopSelf();return START_NOT_STICKY;}
         NotificationManager manager=getSystemService(NotificationManager.class);
         manager.createNotificationChannel(new NotificationChannel(CHANNEL,"Car connection",NotificationManager.IMPORTANCE_LOW));
+        startForeground(NOTICE,notification("Preparing your connection"));foreground=true;
+        if(worker==null){synchronized(StarlinkService.class){owner=this;running=true;}state("Starting: preparing Bluetooth");worker=new Thread(this::listen,"bridge-rfcomm");worker.start();}
+        else if(!stopping && worker.isAlive()){synchronized(StarlinkService.class){owner=this;running=true;}}
+        return START_NOT_STICKY;
+    }
+    private Notification notification(String summary) {
         PendingIntent open=PendingIntent.getActivity(this,0,new Intent(this,StarlinkActivity.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
         PendingIntent stop=PendingIntent.getService(this,1,new Intent(this,StarlinkService.class).setAction("STOP"),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
-        Notification notice=new Notification.Builder(this,CHANNEL).setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
-                .setContentTitle("SubaruBridge connection").setContentText("Listening for a paired device. Tap to view or stop.")
-                .setContentIntent(open).setOngoing(true).addAction(new Notification.Action.Builder(null,"Stop",stop).build()).build();
-        startForeground(NOTICE,notice);
-        if(worker==null){running=true;worker=new Thread(this::listen,"bridge-rfcomm");worker.start();}
-        return START_NOT_STICKY;
+        return new Notification.Builder(this,CHANNEL).setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
+                .setContentTitle("SubaruBridge").setContentText(summary)
+                .setContentIntent(open).setOngoing(true).addAction(new Notification.Action.Builder(null,"Pause",stop).build()).build();
     }
     private void listen() {
         try {
@@ -67,7 +80,7 @@ public final class StarlinkService extends Service {
                 finally{try{socket.close();}catch(IOException ignored){}peer=null;}
             }
         }catch(IOException | SecurityException | LinkageError e){if(!stopping)state("Stopped: "+(e instanceof IOException?e.getMessage():e.getClass().getSimpleName()));}
-        finally{running=false;stopSelf();}
+        finally{synchronized(StarlinkService.class){if(owner==this)running=false;}stopSelf();}
     }
     private void session(BluetoothSocket socket,StarlinkRouter router) throws IOException {
         PowerManager power=getSystemService(PowerManager.class);
@@ -99,11 +112,13 @@ public final class StarlinkService extends Service {
         }finally{clock.shutdownNow();if(awake.isHeld())awake.release();}
     }
     @Override public void onDestroy() {
-        stopping=true;running=false;
+        stopping=true;
+        synchronized(StarlinkService.class){if(owner==this)running=false;}
+        foreground=false;
         try{if(peer!=null)peer.close();}catch(IOException ignored){}
         try{if(server!=null)server.close();}catch(IOException ignored){}
         if(worker!=null)worker.interrupt();
-        if(!state.startsWith("Stopped:"))state("Stopped");
+        synchronized(StarlinkService.class){if(owner==this){if(!state.startsWith("Stopped:"))state("Stopped");owner=null;}}
         stopForeground(STOP_FOREGROUND_REMOVE);super.onDestroy();
     }
 }

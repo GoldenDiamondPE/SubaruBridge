@@ -14,7 +14,7 @@ runtime do not certify it.
 1. Install your APK and open SubaruBridge.
 2. The **Rust core** status should say ready. No Bluetooth permissions are needed
    for the phone preview.
-3. The dashboard loads under **Preview · JavaScript off**. Use Check to visit
+3. The dashboard loads under **Preview Â· JavaScript off**. Use Check to visit
    Display, Touch, Phone and Results. Send three touches, read phone data and
    save the result. Change themes and layouts under Style, then reload.
 4. With the app open, run the HTTP regression against that selected device:
@@ -42,15 +42,14 @@ They are targeted regressions, not a TCP conformance certification.
 
 1. Park, keep the vehicle stationary and use normal accessory power.
 2. Pair the Android phone using the head unit's ordinary Bluetooth setup.
-3. Close other STARLINK or research listener apps. In SubaruBridge press
-   **Start car connection**, allow Nearby devices and notifications, and wait
+3. Close other STARLINK or research listener apps. In SubaruBridge open the app, allow Nearby devices, and wait
    for **Ready: waiting for paired car Bluetooth**.
-4. Connect the car's Bluetooth and choose **Apps → STARLINK** on the head unit.
+4. Connect the car's Bluetooth and choose **Apps â†’ STARLINK** on the head unit.
 5. Record exactly what appears. If the dashboard opens, visit Display, Touch,
    Phone and Results. Send three separate touches, read phone data, save the
    result and photograph the results screen. Wait for each response.
 6. Disconnect and reconnect Bluetooth once. Record whether the dashboard reloads.
-7. Stop the car connection on the phone. Record head-unit model/software, Android
+7. Pause the connection in Tools on the phone. Record head-unit model/software, Android
    version, app revision, whether each screen worked and any error text.
 
 The app records confirmed events in its private

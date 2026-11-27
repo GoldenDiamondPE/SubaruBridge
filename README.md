@@ -31,8 +31,7 @@ certification. It is not affiliated with Subaru, Fujitsu Ten, Apple or Google.
 1. Follow [the build guide](docs/build.md) for Android Studio/CLI and the pinned toolchain.
 2. Install your locally built APK. Open SubaruBridge and use the phone preview first.
 3. Pair the Android phone using the car's normal Bluetooth settings.
-4. With the car parked, close other STARLINK listener apps, press **Start car connection**,
-   grant Nearby devices permission, and open **Apps → STARLINK** on the head unit.
+4. With the car parked, close other STARLINK listener apps, open SubaruBridge, grant Nearby devices permission, wait for Ready, and open **Apps â†’ STARLINK** on the head unit.
 5. Follow [the test guide](docs/testing.md). A successful laptop test does not prove car compatibility.
 
 The [customization guide](docs/customization.md) explains themes, layouts and new

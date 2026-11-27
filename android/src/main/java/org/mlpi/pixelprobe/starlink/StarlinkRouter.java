@@ -107,7 +107,7 @@ public final class StarlinkRouter {
             form.append("<form method=\"post\" action=\"/subarubridge-diag/basic\">");
             for(Map.Entry<String,String> entry:f.entrySet())form.append(HtmlView.hidden(entry.getKey(),entry.getValue()));
             form.append("<button id=\"basic-submit\" class=\"primary-button\" type=\"submit\">")
-                    .append(screen==2?"Send touch to Pixel":screen==3?"Read live Pixel data":"Save result on Pixel").append("</button></form>");
+                    .append(screen==2?"Send test touch":screen==3?"Read phone data":"Save result").append("</button></form>");
         }
         return html(new CarUi(context).basic(run,screen,state,screen==3?nativeStatus(run):null,form.toString()),request.close);
     }
@@ -137,12 +137,12 @@ public final class StarlinkRouter {
             }else if(path.equals(PREFIX+"basic"))response=basic(request,query);
             else if(path.equals(PREFIX+"dashboard")) {method(request,"GET");response=html(new CarUi(context).home(run(query,false)),request.close);}
             else if(path.equals(PREFIX+"settings")) {
-                method(request,"GET","POST");String run=run(query,false),notice="Choose a look. Your connection test stays the same.";CarUi ui=new CarUi(context);
+                method(request,"GET","POST");String run=run(query,false),notice="Choose a shared look for your phone and car.";CarUi ui=new CarUi(context);
                 if(request.method.equals("POST")) {
                     Map<String,String> f=body(request,512);
                     if(f.size()!=2 || !ui.validTheme(f.get("theme")) || !CarUi.validLayout(f.get("layout")))throw new LocalHttp.Error(400,"Unknown appearance choice");
                     if(!ui.save(f.get("theme"),f.get("layout")))throw new LocalHttp.Error(507,"Appearance could not be saved");
-                    ui=new CarUi(context);notice="Saved on your Pixel. Make yourself at home.";
+                    ui=new CarUi(context);notice="Saved. Your phone and car now share this look.";
                 }response=html(ui.settings(run,notice),request.close);
             }else if(path.equals(PREFIX+"developer")) {
                 method(request,"GET");String run=run(query,false);Map<String,Object> value=new LinkedHashMap<>();value.put("build",DiagnosticEngine.BUILD);value.put("instance",instance);value.put("transport","Original Rust core; no legacy runtime");value.put("test",run==null?"Open a connection check to inspect its run":nativeStatus(run));

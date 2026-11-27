@@ -35,7 +35,7 @@ def main():
         return data.decode('utf-8')
     prefix='/subarubridge-diag/'
     try:
-        v=json.loads(request('version','GET','/version'));assert v['build']=='0.51-dev' and v['transport']=='original-rust-rfcomm'
+        v=json.loads(request('version','GET','/version'));assert v['build']=='0.52-dev' and v['transport']=='original-rust-rfcomm'
         assert request('launcher-lookup','GET','/kvs/launcher_url_vehicle/')=='http://192.168.1.1/smartaccess/launcher/subarubridge-demo.html'
         assert re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d{4}',request('timestamp-before-post','GET','/timestamp/'))
         # Same HTTP connection: the car may send timestamp and launcher POST in sequence.
@@ -60,15 +60,15 @@ def main():
         for i in range(1,4):
             form=Form(page).fields;assert form['action']=='touch'
             page=request('touch-'+str(i),'POST',basic,form=form)
-            assert 'Pixel-confirmed touches: '+str(i) in page
+            assert 'Touches received: '+str(i) in page
             replay=request('idempotent-'+str(i),'POST',basic,form=form)
-            assert 'Pixel-confirmed touches: '+str(i) in replay
+            assert 'Touches received: '+str(i) in replay
             request('conflicting-'+str(i),'POST',basic,409,form=dict(form,action='data',screen=3))
         page=request('phone-page','GET',basic+'?'+urlencode({'run':run,'screen':3}))
         request('read-phone','POST',basic,form=Form(page).fields)
         page=request('result-page','GET',basic+'?'+urlencode({'run':run,'screen':4}))
         page=request('save-result','POST',basic,form=Form(page).fields)
-        assert all(s in page for s in ('Basic screens seen: 4/4','Phone-confirmed touches: 3','Data reads: 1','Summary saved: true'))
+        assert all(s in page for s in ('Screens checked: 4/4','Confirmed touches: 3','Data reads: 1','Saved: true'))
         s=json.loads(request('native-status','GET',prefix+'status?run='+run));assert s['touches']==3 and s['summarySaved'] and s['dataChecks']==1
         request('settings-empty','POST',prefix+'settings',400,raw=b'')
         request('settings-large','POST',prefix+'settings',413,raw=b'x'*513)

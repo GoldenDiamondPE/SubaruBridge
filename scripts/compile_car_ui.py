@@ -82,7 +82,7 @@ def compile_ui(source, output, landing, previews=None):
         urls = {'homeUrl': '/subarubridge-diag/dashboard', 'settingsUrl': '/subarubridge-diag/settings', 'developerUrl': '/subarubridge-diag/developer', 'startUrl': basic + '1'}
         body = template('home', dict(urls, tiles=tiles, arrowIcon=icon('arrow'), **{k: html.escape(config[k]) for k in ('eyebrow', 'homeTitle', 'homeSubtitle')}))
         dock = ''.join('<a id="dock-' + key + '" class="dock-link' + (' current' if key == 'home' else '') + '" href="' + url + '">' + icon(symbol) + '<span>' + text + '</span></a>' for key, symbol, text, url in (
-            ('home', 'home', 'Home', urls['homeUrl']), ('test', 'results', 'Check', basic + '1'), ('settings', 'settings', 'Style', urls['settingsUrl'])))
+            ('home', 'home', 'Home', urls['homeUrl']), ('test', 'results', 'Check', basic + '1'), ('settings', 'settings', 'Appearance', urls['settingsUrl'])))
         return template('shell', dict(urls, pageTitle='Home', brand=html.escape(config['brand']), css=(output / ('theme-' + theme + '.css')).read_text(), theme=theme, layout=layout, dock=dock, devCurrent='', toolsIcon=icon('tools'), body=body))
     landing.parent.mkdir(parents=True, exist_ok=True)
     landing.write_text(home(config['defaultTheme'], config['defaultLayout']), encoding='utf-8')
