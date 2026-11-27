@@ -29,7 +29,7 @@ import XCTest
             if id == "calls" { XCTAssertFalse(app.buttons["Open iPhone calling prompt"].isEnabled) }
             if id == "messages" { XCTAssertFalse(app.buttons["Compose message"].isEnabled) }
             if id == "notifications" {
-                XCTAssertTrue(app.staticTexts["SubaruBridge notifications"].waitForExistence(timeout: 5))
+                XCTAssertTrue(app.staticTexts["notification-status"].waitForExistence(timeout: 5))
                 XCTAssertFalse(app.buttons["local-notification-test"].isEnabled)
             }
             app.navigationBars.buttons.element(boundBy: 0).tap()
