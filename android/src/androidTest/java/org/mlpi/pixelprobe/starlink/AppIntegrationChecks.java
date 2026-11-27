@@ -5,6 +5,7 @@ import android.content.*;
 import android.media.*;
 import android.media.session.*;
 import android.os.*;
+import android.view.KeyEvent;
 import android.service.notification.StatusBarNotification;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -36,11 +37,14 @@ final class AppIntegrationChecks {
         for(String invalid:new String[]{"tel:123","123;456","123#456","123\n456",""})check(!PhoneIntegrations.validNumber(invalid),"Dial string injection accepted");
         check(PhoneIntegrations.validNumber("+12025550100"),"Valid number refused");
         PhoneIntegrations phone=PhoneIntegrations.get(context);Map<String,?> original=phone.prefs().getAll();
-        MediaSession session=new MediaSession(context,"SubaruBridge synthetic regression");AtomicInteger paused=new AtomicInteger();
+        MediaSession session=new MediaSession(context,"SubaruBridge synthetic regression");AtomicInteger paused=new AtomicInteger(),toggles=new AtomicInteger();
         try {
-            phone.prefs().edit().putBoolean("music",true).putBoolean("navigation",true).putBoolean("messages",true).putString("number","+12025550100").putString("destination","Main & Second?api=evil").apply();
+            phone.prefs().edit().putBoolean("music",true).putBoolean("navigation",true).putBoolean("messages",true).putString("musicSource","android").putString("musicPackage","").putString("number","+12025550100").putString("destination","Main & Second?api=evil").apply();
             check(phone.hasAccess(),"Emulator fixture requires notification-listener access");check(phone.unlocked(),"Unlock the emulator for fixture tests");
-            session.setCallback(new MediaSession.Callback(){@Override public void onPause(){paused.incrementAndGet();}},new Handler(Looper.getMainLooper()));
+            session.setCallback(new MediaSession.Callback(){
+                @Override public void onPause(){paused.incrementAndGet();}
+                @Override public boolean onMediaButtonEvent(Intent intent){KeyEvent key=intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);if(key!=null && key.getKeyCode()==KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE){if(key.getAction()==KeyEvent.ACTION_DOWN)toggles.incrementAndGet();return true;}return super.onMediaButtonEvent(intent);}
+            },new Handler(Looper.getMainLooper()));
             session.setMetadata(new MediaMetadata.Builder().putString(MediaMetadata.METADATA_KEY_TITLE,"Fixture <track>").putString(MediaMetadata.METADATA_KEY_ARTIST,"Synthetic artist").build());
             session.setPlaybackState(new PlaybackState.Builder().setState(PlaybackState.STATE_PLAYING,0,1).setActions(PlaybackState.ACTION_PLAY|PlaybackState.ACTION_PAUSE).build());session.setActive(true);
             StarlinkRouter router=StarlinkRuntime.get(context).router;String music=page(router,"/subarubridge-diag/apps/music");
@@ -50,6 +54,22 @@ final class AppIntegrationChecks {
             check(paused.get()==1,"Media callback did not reach session");check(post(router,pause)==409,"Media replay not rejected");check(paused.get()==1,"Media replay duplicated command");
             check(post(router,"action=music-pause&subject=&ticket=missing")==409,"Forged ticket accepted");
             check(post(router,"action=music-pause&subject=&ticket=missing&extra=1")==400,"Unknown fields accepted");
+            String stale=form(page(router,"/subarubridge-diag/apps/music"),"music-pause");
+            phone.prefs().edit().putString("musicPackage","org.example.absent").apply();
+            check(phone.controller()==null && post(router,stale)==409,"Selected unavailable player silently fell back");
+            phone.prefs().edit().putString("musicPackage","").apply();
+            String replacementStale=form(page(router,"/subarubridge-diag/apps/music"),"music-pause");
+            MediaSession replacement=new MediaSession(context,"Synthetic replacement player");
+            try{
+                session.setActive(false);replacement.setPlaybackState(new PlaybackState.Builder().setState(PlaybackState.STATE_PLAYING,0,1).setActions(PlaybackState.ACTION_PAUSE).build());replacement.setActive(true);
+                check(post(router,replacementStale)==409,"Old page controlled a different media session");
+            }finally{replacement.release();session.setActive(true);}
+            session.setPlaybackState(new PlaybackState.Builder().setState(PlaybackState.STATE_PAUSED,0,0).setActions(PlaybackState.ACTION_PLAY_PAUSE).build());
+            String togglePlay=form(page(router,"/subarubridge-diag/apps/music"),"music-play");
+            check(post(router,togglePlay)==200,"Toggle-only player's Play control failed");
+            deadline=SystemClock.elapsedRealtime()+3000;while(toggles.get()==0 && SystemClock.elapsedRealtime()<deadline)Thread.sleep(20);
+            check(toggles.get()==1,"Toggle control did not reach the selected session exactly once");
+            check(post(router,togglePlay)==409 && toggles.get()==1,"Toggle command replay was accepted");
             String dial=form(page(router,"/subarubridge-diag/apps/calls"),"dial");check(post(router,dial)==200,"Dial preparation failed");
             PhoneIntegrations.Pending pending=phone.pending();check(pending!=null && pending.kind.equals("dial"),"Dial action not queued");
             Intent dialIntent=phone.confirm(pending.id);check(Intent.ACTION_DIAL.equals(dialIntent.getAction()),"Action would place an unconfirmed call");check(phone.pending()==null,"Confirmation did not consume request");

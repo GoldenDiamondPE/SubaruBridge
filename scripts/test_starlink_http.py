@@ -22,6 +22,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--serial',required=True);p.add_argument('--adb',default='adb')
     p.add_argument('--device-port',type=int,default=8009);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--expected-build',default='0.54-dev')
     args=p.parse_args();args.output.mkdir(parents=True,exist_ok=False)
     port=int(subprocess.check_output([args.adb,'-s',args.serial,'forward','tcp:0','tcp:'+str(args.device_port)],text=True))
     c=http.client.HTTPConnection('127.0.0.1',port,timeout=15);results=[]
@@ -51,7 +52,7 @@ def main():
         request('personal-apps-require-session','GET',prefix+'apps/messages',403)
         preview_token=subprocess.check_output([args.adb,'-s',args.serial,'shell','run-as','org.subarubridge.app','cat','no_backup/preview-session'],text=True).strip()
         assert re.fullmatch('[0-9a-f]{48}',preview_token),'Debug preview session unavailable'
-        v=json.loads(request('version','GET','/version'));assert v['build']=='0.53-dev' and v['transport']=='original-rust-rfcomm'
+        v=json.loads(request('version','GET','/version'));assert v['build']==args.expected_build and v['transport']=='original-rust-rfcomm'
         assert request('launcher-lookup','GET','/kvs/launcher_url_vehicle/')=='http://192.168.1.1/smartaccess/launcher/subarubridge-demo.html'
         assert re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d{4}',request('timestamp-before-post','GET','/timestamp/'))
         # Same HTTP connection: the car may send timestamp and launcher POST in sequence.

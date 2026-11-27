@@ -112,6 +112,7 @@ public final class StarlinkService extends Service {
         }finally{clock.shutdownNow();if(awake.isHeld())awake.release();}
     }
     @Override public void onDestroy() {
+        AppleMediaClient.stopIfStarted();
         stopping=true;
         synchronized(StarlinkService.class){if(owner==this)running=false;}
         foreground=false;

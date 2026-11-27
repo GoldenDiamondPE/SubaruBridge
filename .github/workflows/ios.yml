@@ -10,6 +10,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Shared configuration matches Android
         run: cmp android/headunit-ui/dashboard.json ios/Sources/SubaruBridgeCore/Resources/dashboard.json
+      - name: Shared Rust media core and iPhone target
+        run: |
+          rustup toolchain install 1.90.0 --profile minimal
+          rustup target add --toolchain 1.90.0 aarch64-apple-ios
+          cargo +1.90.0 test --manifest-path rust/Cargo.toml --locked
+          cargo +1.90.0 build --manifest-path rust/Cargo.toml --locked --release --target aarch64-apple-ios
       - name: Swift component tests and unsigned simulator build
         run: bash ios/scripts/mac-verify.sh
       - name: Cold launch on an iPhone simulator

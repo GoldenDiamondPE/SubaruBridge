@@ -68,3 +68,22 @@ Google Maps notifications, Bluetooth audio, phone/SMS delivery, physical iPhone
 behavior and the new independent transport on the Subaru still need separate
 verification. The earlier private research adapter's car result is not a result
 for this implementation.
+
+## 0.54 Android and Apple media foundation
+
+- Both Android ABIs compile. Android CLI identifies the artifact as 0.54-dev / 54.
+- The 26 Rust tests pass on Windows x86-64, native Apple-silicon macOS, the x86-64
+  Android emulator and the physical arm64 Pixel. Eight cover the new AMS decoder;
+  the 18 existing protocol regressions remain passing.
+- The same original Rust library compiles for the arm64 iPhone target. This is a
+  component build, not a new iPhone app or hardware transport test.
+- Android instrumentation on Pixel and emulator passes decoder/JNI lifetime,
+  metadata/capability/session cleanup and MediaSession tests, including controls
+  reaching a real synthetic Android session. Stale targets and replay are rejected.
+- The script-free local HTTP suite passes 61 checks on each Android device.
+- Notification access was initially off on the Pixel. After normal on-screen
+  permission setup, its full Android integration suite passed.
+
+The iPhone GATT client, normal LE pairing, Taurus playback and simultaneous car
+audio/data remain **hardware verification required**. No Taurus APK/IPA, patched
+player code, audio stream, credential or personal capture is part of this source.

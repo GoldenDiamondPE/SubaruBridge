@@ -49,4 +49,27 @@ when exact framing details are required.
 The shared Rust C API returns owned byte buffers; the adapter must free each
 once using the library function. Handles are registered rather than exposing raw
 engine pointers. JNI copies bytes and releases buffers on the Android boundary.
-The iOS application is outside the current development scope.
+The native iOS companion is developed separately. A small dependency-free Rust
+AMS decoder also exposes a C API for the Android JNI adapter and future platform
+adapters. It validates bounded entity updates without opening sockets or reading
+device data itself.
+
+## Media providers
+
+The head-unit music page consumes a provider-neutral snapshot: source, opaque
+session target, text metadata, timing, truncation state and offered commands.
+Android MediaSession and the experimental iPhone AMS client supply that model.
+Choosing iPhone media never falls back to an Android session. Action forms bind
+their one-use grant to the displayed session. Replacing the selected player or
+disconnecting invalidates the target.
+
+The iPhone adapter uses a user-selected bonded device and serialized GATT
+operations with connection/operation timeouts. Service changes clear the session
+and require rediscovery by reconnecting. Commands are rechecked immediately
+before sending and are never automatically retried. Stopping the car foreground
+service closes the iPhone connection. Raw attributes, track titles and device
+identifiers are excluded from the diagnostic journals.
+
+This is a metadata/control connection, not an audio bridge or a general iOS
+notification interface. Physical iPhone service exposure and car audio coexistence
+remain separate verification tasks.
