@@ -10,6 +10,12 @@ use serde_json::{json,Value};
 use std::collections::{BTreeSet,BTreeMap};
 
 pub const MAX_JSON:usize=4*1024*1024;
+/// Strict UTF-8 JSON, with serde's bounded nesting, before a native DOM parser.
+pub fn valid_document(input:&[u8])->bool {
+    if input.len()>MAX_JSON{return false;}
+    let payload=input.strip_prefix(b"\xef\xbb\xbf").unwrap_or(input);
+    serde_json::from_slice::<Value>(payload).is_ok()
+}
 pub fn schedule()->Schedule {serde_json::from_str(include_str!("../../../vehicle-database/subaru-us-2017-legacy-25-cvt.json")).expect("Reviewed bundled maintenance data must parse")}
 
 #[derive(Deserialize)]
@@ -119,6 +125,7 @@ fn range(value:&DistanceRange)->Result<(),String>{if value.low_mm>value.high_mm 
 fn interval(value:&Interval)->Result<(),String>{if value.miles.is_none() && value.months.is_none() || value.miles.is_some_and(|v|v==0 || v>1_000_000) || value.months.is_some_and(|v|v==0 || v>2400){Err("Invalid service interval".into())}else{Ok(())}}
 pub fn validate(state:&Garage,today:&Date,now:u64)->Result<(),String>{
     if state.schema_version!=1{return Err("Unsupported garage schema; data was not changed".into());}
+    if state.revision>MAX_REVISION{return Err("Garage revision exceeds the portable format limit; data was not changed".into());}
     if state.vehicles.len()>50 || state.readings.len()+state.services.len()+state.fuel.len()+state.expenses.len()+state.trips.len()>MAX_RECORDS || state.overrides.len()>1000 || state.custom_items.len()>1000 || state.snoozes.len()>1000{return Err("Garage capacity exceeded".into());}
     if state.preferences.due_soon_mm>100_000*MM_PER_MILE || !(0..=3650).contains(&state.preferences.due_soon_days){return Err("Invalid maintenance reminder thresholds".into());}
     let mut identifiers=BTreeSet::new();let mut vehicles=BTreeSet::new();
@@ -273,7 +280,7 @@ pub fn execute(request:Request)->Result<Value,String>{
     }
     validate(&state,&request.today,request.now_ms)?;
     let changed=state!=original;
-    if changed{state.revision=state.revision.checked_add(1).ok_or("Revision exhausted")?;}
+    if changed{state.revision=state.revision.checked_add(1).filter(|v|*v<=MAX_REVISION).ok_or("Revision exhausted; data was not changed")?;}
     let schedule=schedule();let mut summaries=Vec::new();
     let soon_mm=request.due_soon_mm.unwrap_or(state.preferences.due_soon_mm);let soon_days=request.due_soon_days.unwrap_or(state.preferences.due_soon_days);
     for vehicle in &state.vehicles {

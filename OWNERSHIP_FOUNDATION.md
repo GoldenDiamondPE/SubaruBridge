@@ -35,7 +35,7 @@ calendar-month arithmetic, including month-end and leap-year handling.
 cargo +1.90.0 test --manifest-path rust/Cargo.toml --locked
 ```
 
-42 ownership regressions cover unknown/approximate history, first and subsequent
+44 ownership regressions cover unknown/approximate history, first and subsequent
 coolant intervals, calendar and mileage thresholds, severe-condition gaps, owner
 overrides, odometer correction cycles, a 10,000-record correction chain, GPS
 confidence, trip reconciliation, ambiguous service ordering, partial fuel fills,
@@ -74,6 +74,9 @@ manufacturer profile. It is labeled as an owner interval, supports service
 history and cannot be attached to another vehicle's records. Configurable
 due-soon thresholds and reminder snoozes are included in the shared state and
 backups. Snoozing never changes a calculated maintenance status.
+Raw import/state documents pass bounded strict JSON validation in Rust before
+Android DOM parsing, preventing malformed or deeply nested files from exhausting
+the platform parser. UTF-8 BOM input is accepted without weakening schema checks.
 
 Service-book details support DIY, owner-recorded part numbers, warranty notes
 and exact parts/labor/tax amounts. A supplied breakdown must equal the total;

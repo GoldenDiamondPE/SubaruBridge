@@ -22,6 +22,14 @@ JNIEXPORT jbyteArray JNICALL Java_org_mlpi_pixelprobe_ownership_OwnershipCore_na
     (*env)->ReleaseByteArrayElements(env,input,data,JNI_ABORT);
     return bounded_result(env,buffer,16*1024*1024);
 }
+JNIEXPORT jboolean JNICALL Java_org_mlpi_pixelprobe_ownership_OwnershipCore_nativeJsonValid(JNIEnv *env,jclass cls,jbyteArray input) {
+    (void)cls;if(!input)return JNI_FALSE;
+    jsize length=(*env)->GetArrayLength(env,input);if(length>4*1024*1024)return JNI_FALSE;
+    jbyte *data=(*env)->GetByteArrayElements(env,input,NULL);if(!data)return JNI_FALSE;
+    uint8_t valid=sb_ownership_json_valid((const uint8_t*)data,(size_t)length);
+    (*env)->ReleaseByteArrayElements(env,input,data,JNI_ABORT);
+    return valid?JNI_TRUE:JNI_FALSE;
+}
 JNIEXPORT jlong JNICALL METHOD(nativeCreate)(JNIEnv *env, jclass cls, jlong seed) {
     (void)env; (void)cls; return (jlong)sb_core_create((uint64_t)seed);
 }

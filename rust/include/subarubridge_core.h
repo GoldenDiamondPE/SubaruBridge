@@ -15,6 +15,9 @@ void sb_core_buffer_free(CoreBuffer buffer);
 /* Versioned UTF-8 JSON ownership request; maximum input 4 MiB. Return is an
  * owned JSON result, freed with sb_core_buffer_free. No I/O or vehicle access. */
 CoreBuffer sb_ownership_execute(const uint8_t *data, size_t len);
+/* Strict bounded UTF-8 JSON validation, optional UTF-8 BOM; 1 means valid.
+ * Use before a platform DOM parser. No I/O; maximum input 4 MiB. */
+uint8_t sb_ownership_json_valid(const uint8_t *data, size_t len);
 /* Decode one AMS entity notification (3..512 bytes) to versioned UTF-8 JSON.
  * No Bluetooth I/O. Return is owned; free with sb_core_buffer_free. */
 CoreBuffer sb_ams_decode(const uint8_t *data, size_t len);

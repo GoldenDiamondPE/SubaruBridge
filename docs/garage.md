@@ -104,8 +104,9 @@ notifications when asked. The app checks saved changes and requests a daily
 inexact alarm; Android power management may defer delivery. No exact-alarm
 permission, server or push account is required. Unknown history and archived
 vehicles do not create overdue alerts. Notifications contain counts, without VINs,
-plates, private notes or message contents. Reboot and extended idle delivery need
-device-specific verification.
+plates, private notes or message contents. Immediate notification delivery and
+alarm restoration after reboot passed on the Android emulator. Extended idle
+delivery on physical phones still needs device-specific verification.
 
 **Export garage backup** opens Android's file picker. It exports all vehicles
 and ownership records as versioned JSON, including custom maintenance, lead times
@@ -130,3 +131,10 @@ history records. A failed or oversized save preserves the previous committed
 file. Future-schema or unreadable files are not reset to an empty garage.
 Attachments, encrypted backups, richer analytics and
 the native iOS Garage interface are subsequent work.
+
+## See the current screens
+
+The [design demo](demo.html) includes real Android 0.56 screenshots from a
+synthetic emulator vehicle. The mileage, service bill and trips shown there are
+examples, not the owner's private records. The head-unit preview uses the original
+app templates and does not access a vehicle, phone, notification feed or account.

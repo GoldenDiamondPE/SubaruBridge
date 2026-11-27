@@ -12,6 +12,13 @@ PRIVATE_PARTS={'bluetooth-private','captures','firmware','decompiled','smali','j
 SKIP={'.git','.gradle','.cxx','build','target','__pycache__','.local'}
 PNG=Path('android/src/main/assets/subarubridge-lab/pattern.png')
 PNG_SHA256='4bd97df4c282b97fba8a280df9e3504c4de0c38eb5cd10bacbe1ca0b0a60a6f9'
+REVIEWED_PNG={
+    PNG: PNG_SHA256,
+    Path('docs/assets/demo/analytics.png'): '18568bf052468fe34054ac13c69b5119a3f20a2ff24adf690210b6514ec26dfc',
+    Path('docs/assets/demo/garage.png'): '742eb6b0ca67deed7b5444ce2d1e01d4844a226b22b679fd560e70c14460ec6d',
+    Path('docs/assets/demo/home.png'): 'cb6bc27c3db7701ebb1fb747fd91ead75fdc578bb90d3dbcad530d938ad7796d',
+    Path('docs/assets/demo/maintenance.png'): '6565aa9da6bc30a15edf10bd4591c33ce4c501edce7dc57541ae68efd7681ca6',
+}
 
 
 def files(root):
@@ -33,14 +40,14 @@ def audit(root):
         if parts&PRIVATE_PARTS or any(p.lower().endswith('-private') for p in parts):errors.append(name+': private/proprietary directory');continue
         if file.name=='local.properties' or file.suffix.lower() in DENIED:errors.append(name+': prohibited artifact');continue
         if file.suffix.lower()=='.png':
-            if relative!=PNG:errors.append(name+': unreviewed image');continue
+            if relative not in REVIEWED_PNG:errors.append(name+': unreviewed image');continue
         elif file.suffix not in ALLOWED and file.name not in {'LICENSE','.gitignore','.gitattributes','.nojekyll'}:
             errors.append(name+': unreviewed file type');continue
         raw=file.read_bytes()
-        if relative==PNG and hashlib.sha256(raw).hexdigest()!=PNG_SHA256:
-            errors.append(name+': original pattern image hash changed; review provenance before updating');continue
+        if relative in REVIEWED_PNG and hashlib.sha256(raw).hexdigest()!=REVIEWED_PNG[relative]:
+            errors.append(name+': original image hash changed; review provenance before updating');continue
         if len(raw)>1024*1024:errors.append(name+': unexpected large file');continue
-        if relative!=PNG:
+        if relative not in REVIEWED_PNG:
             try:text=raw.decode('utf-8')
             except UnicodeDecodeError:errors.append(name+': unexpected binary');continue
             patterns=[r'gh' + r'[pousr]_[A-Za-z0-9]{30,}',r'github' + r'_pat_[A-Za-z0-9_]{30,}',r'-----BEGIN ' + r'(?:RSA |OPENSSH |EC )?PRIVATE KEY-----',
@@ -48,7 +55,7 @@ def audit(root):
             if any(re.search(pattern,text) for pattern in patterns):errors.append(name+': credential, identifier or proprietary source marker');continue
         # The repository declares LF text; verify the Git representation even
         # when a Windows editor has temporarily written CRLF in the worktree.
-        inventory[name]=hashlib.sha256(raw if relative==PNG else raw.replace(b'\r\n',b'\n')).hexdigest()
+        inventory[name]=hashlib.sha256(raw if relative in REVIEWED_PNG else raw.replace(b'\r\n',b'\n')).hexdigest()
     if errors:raise ValueError('\n'.join(errors))
     return inventory
 

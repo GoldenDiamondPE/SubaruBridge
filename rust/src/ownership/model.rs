@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 pub const MM_PER_MILE:u64=1_609_344;
 pub const MAX_DISTANCE:u64=MM_PER_MILE*3_000_000;
 pub const MAX_RECORDS:usize=10_000;
+/// Keep version counters exact across Rust, Java, Swift and JSON-based extensions.
+pub const MAX_REVISION:u64=9_007_199_254_740_991;
 
 #[derive(Clone,Debug,Default,PartialEq,Serialize,Deserialize)]
 #[serde(rename_all="camelCase",deny_unknown_fields)]

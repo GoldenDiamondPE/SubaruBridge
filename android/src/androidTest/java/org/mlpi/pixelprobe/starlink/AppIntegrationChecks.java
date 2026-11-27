@@ -40,7 +40,7 @@ final class AppIntegrationChecks {
         MediaSession session=new MediaSession(context,"SubaruBridge synthetic regression");AtomicInteger paused=new AtomicInteger(),toggles=new AtomicInteger();
         try {
             phone.prefs().edit().putBoolean("music",true).putBoolean("navigation",true).putBoolean("messages",true).putString("musicSource","android").putString("musicPackage","").putString("number","+12025550100").putString("destination","Main & Second?api=evil").apply();
-            check(phone.hasAccess(),"Emulator fixture requires notification-listener access");check(phone.unlocked(),"Unlock the emulator for fixture tests");
+            check(phone.hasAccess(),"Selected device fixture requires notification-listener access");check(phone.unlocked(),"Unlock the selected device for fixture tests");
             session.setCallback(new MediaSession.Callback(){
                 @Override public void onPause(){paused.incrementAndGet();}
                 @Override public boolean onMediaButtonEvent(Intent intent){KeyEvent key=intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);if(key!=null && key.getKeyCode()==KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE){if(key.getAction()==KeyEvent.ACTION_DOWN)toggles.incrementAndGet();return true;}return super.onMediaButtonEvent(intent);}

@@ -43,6 +43,13 @@ pub extern "C" fn sb_core_tick(handle: u64, now: u64) -> CoreBuffer {
     let Ok(mut r) = registry().lock() else { return CoreBuffer::empty(); };
     r.engines.get_mut(&handle).map(|e| CoreBuffer::new(e.tick(now).encode())).unwrap_or_else(CoreBuffer::empty)
 }
+/// Validate a bounded document before native DOM parsing; no I/O or owned buffer.
+#[no_mangle]
+pub unsafe extern "C" fn sb_ownership_json_valid(data:*const u8,len:usize)->u8 {
+    if len>crate::ownership::MAX_JSON || (len>0 && data.is_null()){return 0;}
+    let input=if len==0{&[]}else{slice::from_raw_parts(data,len)};
+    crate::ownership::valid_document(input) as u8
+}
 /// Read a bounded UTF-8 ownership command. No sockets, files or vehicle access.
 #[no_mangle]
 pub unsafe extern "C" fn sb_ownership_execute(data:*const u8,len:usize)->CoreBuffer {

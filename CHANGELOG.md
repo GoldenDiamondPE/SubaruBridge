@@ -10,6 +10,13 @@
   civil dates for services/expenses, including daylight-saving boundary tests.
 - Refresh maintenance on return and system date/time changes. Keep a draft's
   original time zone and explicitly handle repeated or missing local hours.
+- Guard portable revision counters and validate bounded strict JSON before native
+  document parsing; keep malformed, oversized or future-schema input intact.
+- Preserve recorded cents when the phone's locale uses a different currency format.
+- Match Garage navigation and chart controls to the shared palette, and keep
+  scrolling content clear of the phone's status and navigation bars.
+- Add a public design demo using real synthetic-emulator screenshots and original
+  head-unit templates, with three themes, two layouts and browser-only actions.
 - Keep the existing Android media, STARLINK fallback and basic iOS source intact.
 
 ## 0.55-dev — Android Garage

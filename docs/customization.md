@@ -48,6 +48,24 @@ firmware, authentication or driving restrictions. Music, calls, messages and
 navigation need their own platform permission and protocol research. Static
 sample data can support a UI prototype; label it clearly as sample data.
 
+## Maintain the public preview
+
+The [browser demo](demo.html) renders the original dashboard CSS, configuration,
+icons and templates in a script-blocked iframe. Its outer page handles example
+navigation and controls locally; the production head-unit assets remain script-free.
+There are no accounts, remote media requests, vehicle commands or private records.
+
+After changing a head-unit source asset, run:
+
+```sh
+python3 scripts/build_web_demo.py
+python3 scripts/build_web_demo.py --check
+```
+
+The check runs in CI so the preview cannot silently drift from the actual source.
+Phone images are separately reviewed synthetic-emulator screenshots, pinned by
+hash in the publication audit. Personal device screenshots remain excluded.
+
 ## Preparing for another platform
 
 The Rust core does not open Bluetooth sockets, read Android files or render an

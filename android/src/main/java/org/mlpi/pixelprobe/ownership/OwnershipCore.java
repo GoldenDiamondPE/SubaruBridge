@@ -10,6 +10,8 @@ public final class OwnershipCore {
     static { System.loadLibrary("subarubridge_core"); }
     private OwnershipCore() {}
     private static native byte[] nativeExecute(byte[] request);
+    private static native boolean nativeJsonValid(byte[] input);
+    public static boolean validDocument(byte[] input) { return input != null && input.length <= MAX_INPUT && nativeJsonValid(input); }
 
     public static JSONObject execute(JSONObject request) throws IOException {
         byte[] input = request.toString().getBytes(StandardCharsets.UTF_8);

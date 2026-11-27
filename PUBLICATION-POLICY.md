@@ -11,7 +11,7 @@ Never include:
 - Original, modified or repackaged SUBARU STARLINK APKs.
 - Decompiled Java, smali, extracted resources, vendor SDKs, libraries or signing material.
 - Vehicle firmware or update packages, downloaded specifications or archived vendor websites.
-- Raw USB/network/Bluetooth captures, device backups, bug reports, logs or screenshots.
+- Raw USB/network/Bluetooth captures, device backups, bug reports, logs or personal screenshots.
 - Personal identifiers, credentials, private research folders or their Git history.
 - Unreviewed binaries or generated application packages.
 
@@ -24,3 +24,9 @@ The public export script selects paths explicitly, rejects symlinks and prohibit
 file types, and creates a SHA-256 inventory. Its checks are an additional guard,
 not a substitute for reviewing source provenance. Use a separate export directory
 and new public Git history; never push the research repository to a public remote.
+
+The requested public design demo has a narrow image exception: original
+SubaruBridge screens captured on a synthetic Android emulator, visually reviewed
+for provenance and private information, and individually pinned by SHA-256 in
+the audit. `docs/assets/demo/README.md` records their origin. This does not allow
+personal phone, vehicle, vendor-app or capture screenshots to be published.

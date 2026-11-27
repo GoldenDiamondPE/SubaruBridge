@@ -87,3 +87,34 @@ for this implementation.
 The iPhone GATT client, normal LE pairing, Taurus playback and simultaneous car
 audio/data remain **hardware verification required**. No Taurus APK/IPA, patched
 player code, audio stream, credential or personal capture is part of this source.
+
+## 0.55–0.56 integrated Garage and ownership summaries
+
+Recorded 2026-11-27. Tests use isolated fixtures or explicitly synthetic emulator
+records. They do not add fictional history to the owner's phone Garage.
+
+| Check | Observed result |
+| --- | --- |
+| Shared Rust core | 76 cases passed on Windows, native Apple-silicon macOS, physical arm64 Pixel and x86-64 Android emulator: 44 ownership, 6 analytics, 8 Apple-media decoder and 18 protocol cases |
+| iPhone architecture | The same original Rust core compiled for arm64 iPhone; this is not a native iOS Garage screen or an iPhone transport result |
+| Android build | 0.56-dev / version code 56, both ABIs and test APK built; inspected and installed with Android CLI |
+| Full Android component/UI fixtures | Passed on Pixel and emulator: atomic persistence, interrupted/rejected writes, future/corrupt/deep JSON preservation, backup/conflict handling, concurrent saves, escaped exports, time-zone/unit/locale conversion, native forms and read-only summaries |
+| Existing integrations | Existing JNI lifetime, media callbacks, confirmed synthetic notification reply, stale/replay rejection, Maps/call/SMS intent construction and notification bounds remain passing; no real call or SMS was sent |
+| Script-free HTTP contracts | 61 passed on the final build on each Android device |
+| Normal emulator UI | Created a demo vehicle and confirmed reading, saved one two-item service visit, recorded a completed manual trip, and viewed estimated mileage and the native summary chart |
+| System file picker | Exported the demo Garage JSON and imported the same file; the saved revision and record counts did not change and the two-item visit was not duplicated |
+| Local reminders | A counts-only maintenance notification appeared for the sample overdue records; its daily alarm was registered and restored after emulator reboot; reminders were switched off afterward |
+| Visual inspection | Reviewed native phone screenshots and fixed unthemed navigation/chart controls plus content scrolling under the system status bar |
+| Public design demo | Original source templates rendered at desktop and phone widths; theme/layout selection, app navigation, browser-only play/pause, safe directions feedback and screenshot selection were checked |
+| Publication boundary | Ten regressions passed, including exact-byte enforcement for the individually reviewed synthetic screenshots; proprietary/private material stays excluded |
+
+The 18 normal-condition manufacturer rules retain their official Subaru table
+source and explicit applicability. Severe-condition footnotes, critical technical
+specifications and parts compatibility are not guessed. Unknown service history
+remains unknown; costs and mileage explain their recorded coverage.
+
+**Still outstanding:** independent physical Subaru bootstrap, rendering, touch
+and reconnect; iPhone/Taurus GATT playback; extended physical-phone idle reminder
+timing; native iOS Garage; automatic GPS trips; read-only OBD-II/live telemetry;
+receipt attachments and encrypted backups. The website is a design preview, not
+a connected vehicle test or a claim of complete CarPlay/STARLINK feature parity.

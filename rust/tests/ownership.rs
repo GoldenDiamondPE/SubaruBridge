@@ -1,6 +1,19 @@
 use subarubridge_core::ownership::{self as own,date::Date,model::*,maintenance};
 use serde_json::{json,Value};
 
+#[test]fn imported_documents_are_strict_and_nesting_is_bounded_before_native_parsing(){
+ assert!(own::valid_document(b"\xef\xbb\xbf{\"valid\":true}"));assert!(!own::valid_document(b"{'not':'json'}"));assert!(!own::valid_document(b"{} trailing"));
+ let deep=format!("{}0{}","[".repeat(1000),"]".repeat(1000));assert!(!own::valid_document(deep.as_bytes()));
+ let quoted=json!({"notes":"{".repeat(1000)}).to_string();assert!(own::valid_document(quoted.as_bytes()));
+ assert!(!own::valid_document(br#"{"notes":"\uD800"}"#));assert!(!own::valid_document(&vec![b' ';own::MAX_JSON+1]));
+}
+
+#[test]fn version_counters_remain_exact_across_native_and_json_adapters(){
+ let mut s=garage();s.revision=MAX_REVISION;assert!(valid(&s).is_ok());assert_eq!(execute(&s,json!({"type":"view"}))["ok"],true);
+ let value=Expense{id:"e".into(),vehicle_id:"car".into(),date:date("2026-11-01"),category:"Parking".into(),cost_cents:100,financing:false,notes:String::new()};
+ assert_eq!(execute(&s,json!({"type":"addExpense","expense":value}))["ok"],false);s.revision+=1;assert!(valid(&s).is_err());
+}
+
 #[test]fn service_cost_breakdown_uses_exact_minor_units_and_must_match_the_total(){
  let mut s=garage();let mut paid=service("s","engine-oil",Some((81000,81000)),Some("2026-11-01"));paid.cost_cents=12345;paid.cost_breakdown=Some(CostBreakdown{parts_cents:5000,labor_cents:7000,tax_cents:345});paid.diy=true;paid.part_numbers=vec!["Owner-recorded-part".into()];paid.warranty="12 months per owner receipt".into();s.services.push(paid);assert!(valid(&s).is_ok());assert_eq!(execute(&s,json!({"type":"view"}))["summaries"][0]["costs"]["serviceCents"],12345);
  s.services[0].cost_cents=12346;assert!(valid(&s).is_err());s.services[0].cost_breakdown=Some(CostBreakdown{parts_cents:u64::MAX,labor_cents:1,tax_cents:0});assert!(valid(&s).is_err());

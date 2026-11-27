@@ -48,8 +48,8 @@ concurrent writers, corruption/unknown-schema preservation, validation rejection
 backup idempotence/conflicts, units/money, export escaping and reminder filtering.
 
 Run the shared tests using `cargo +1.90.0 test --manifest-path rust/Cargo.toml --locked`.
-The Garage schema/calc suite has 42 cases plus 6 analytics cases; the existing
-8 media and 18 protocol cases remain included (74 shared tests). For manual
+The Garage schema/calc suite has 44 cases plus 6 analytics cases; the existing
+8 media and 18 protocol cases remain included (76 shared tests). For manual
 checks, use an emulator and a clearly labeled test
 vehicle. Log an odometer, approximate service, full/partial fill, expense and
 completed trip. Restart the app, inspect history and export/import a backup.
@@ -59,6 +59,19 @@ from component tests. Extended idle/reboot reminder delivery remains outstanding
 Native checks also exercise missing/repeated daylight-saving hours and explicit
 offset round-trips. Analytics screens are checked for read-only execution. A
 physical car is not required for any ownership calculation or storage test.
+
+Run the same Rust cases directly on the phone/emulator ABI with:
+
+```sh
+python3 scripts/test_android_core.py --sdk "$ANDROID_HOME" --serial YOUR_SERIAL --abi arm64-v8a --output .local/native-arm64
+```
+
+Use `--abi x86_64` for an x86-64 emulator. The utility verifies the selected
+device ABI, builds each test executable with the pinned NDK, runs it in a fresh
+temporary shell directory, checks the actual test-result lines and removes only
+the transferred files. It uses no root or vehicle connection. Output can contain
+local build paths and must remain private. Configure the pinned Rust/Cargo
+environment from the build guide first.
 
 ## Parked-car test
 

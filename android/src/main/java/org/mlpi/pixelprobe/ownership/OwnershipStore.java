@@ -43,9 +43,11 @@ public final class OwnershipStore {
         return bytes.toByteArray();
     }
     public static JSONObject parse(byte[] bytes) throws IOException {
+        if (!OwnershipCore.validDocument(bytes)) throw new IOException("Garage file is not valid UTF-8 JSON or is nested too deeply; the original was preserved");
         try {
             String text = StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
                     .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString();
+            if (text.startsWith("\ufeff")) text = text.substring(1);
             JSONTokener reader = new JSONTokener(text);
             Object object = reader.nextValue();
             if (!(object instanceof JSONObject) || reader.nextClean() != 0) throw new IOException("Expected one garage JSON document");

@@ -26,7 +26,7 @@ public final class OwnershipNumbers {
         return BigDecimal.valueOf(mm).divide(new BigDecimal(metric ? "1000000" : "1609344"), 1, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
     }
     public static String money(long cents, String currency) {
-        try { NumberFormat format = NumberFormat.getCurrencyInstance(Locale.getDefault()); format.setCurrency(Currency.getInstance(currency)); return format.format(BigDecimal.valueOf(cents, 2)); }
+        try { NumberFormat format = NumberFormat.getCurrencyInstance(Locale.getDefault()); format.setCurrency(Currency.getInstance(currency)); format.setMinimumFractionDigits(2); format.setMaximumFractionDigits(2); return format.format(BigDecimal.valueOf(cents, 2)); }
         catch (IllegalArgumentException error) { return currency + " " + BigDecimal.valueOf(cents, 2).toPlainString(); }
     }
 }

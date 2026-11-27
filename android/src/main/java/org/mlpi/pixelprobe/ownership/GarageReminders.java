@@ -55,7 +55,7 @@ public final class GarageReminders extends BroadcastReceiver {
             String key = LocalDate.now() + ":" + counts[0] + ":" + counts[1]; if (key.equals(prefs.getString("shown", ""))) return;
             PendingIntent open = PendingIntent.getActivity(context, NOTICE, new Intent(context, GarageActivity.class), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             Notification notice = new Notification.Builder(context, CHANNEL).setSmallIcon(R.drawable.probe_icon_foreground)
-                    .setContentTitle("Maintenance reminder").setContentText(counts[0] + " items need attention. " + counts[1] + " overdue based on saved records.")
+                    .setContentTitle("Maintenance reminder").setContentText(counts[0] + (counts[0] == 1 ? " item needs" : " items need") + " attention. " + counts[1] + " overdue based on saved records.")
                     .setContentIntent(open).setAutoCancel(true).setVisibility(Notification.VISIBILITY_PRIVATE).setCategory(Notification.CATEGORY_REMINDER).build();
             notifications.notify(NOTICE, notice); prefs.edit().putString("shown", key).apply();
         } catch (Exception | LinkageError ignored) { /* A corrupt or future schema is preserved; never infer a due state. */ }

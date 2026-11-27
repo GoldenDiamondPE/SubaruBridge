@@ -27,7 +27,7 @@ final class GarageChecks {
         File folder = new File(context.getCacheDir(), "garage-qa-" + UUID.randomUUID()); check(folder.mkdir(), "Fixture directory unavailable");
         try {
             persistence(folder); ui(instrumentation, context, folder);
-            result.putString("garage", "PASS: restart, rejected writes, corrupt/future data preservation, backup round-trip/conflict, concurrent saves, escaped exports, unit conversion and native Garage forms");
+            result.putString("garage", "PASS: restart, interrupted/rejected writes, corrupt/future/deep document preservation, backup round-trip/conflict, concurrent saves, escaped exports, unit/time-zone conversion, native forms and read-only analytics");
         } finally {
             GarageActivity.testStore = null;
             context.getSharedPreferences("garage-qa-selection", Context.MODE_PRIVATE).edit().clear().commit();
@@ -54,6 +54,9 @@ final class GarageChecks {
         JSONObject conflict = OwnershipStore.parse(backup); conflict.getJSONObject("garage").getJSONArray("vehicles").getJSONObject(0).put("nickname", "Conflicting name");
         rejected(() -> store.merge(conflict.toString().getBytes(StandardCharsets.UTF_8))); check(Arrays.equals(original, Files.readAllBytes(file.toPath())), "Conflicting backup partially applied");
         rejected(() -> store.merge((new String(backup, StandardCharsets.UTF_8) + " trailing").getBytes(StandardCharsets.UTF_8)));
+        rejected(() -> OwnershipStore.parse(("[".repeat(1000) + "0" + "]".repeat(1000)).getBytes(StandardCharsets.UTF_8)));
+        rejected(() -> OwnershipStore.parse("{'not':'json'}".getBytes(StandardCharsets.UTF_8)));
+        check(OwnershipStore.parse(("\ufeff" + new String(backup, StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8)).getString("format").equals("org.subarubridge.garage"), "UTF-8 BOM compatibility failed");
         JSONObject future = OwnershipStore.parse(backup); future.getJSONObject("garage").put("schemaVersion", 2); rejected(() -> store.merge(future.toString().getBytes(StandardCharsets.UTF_8)));
         File bad = new File(folder, "bad.json"); byte[] invalid = new byte[]{(byte)0xff, 1, 2}; Files.write(bad.toPath(), invalid);
         OwnershipStore broken = new OwnershipStore(bad, clock); rejected(() -> broken.view()); rejected(() -> broken.execute(cmd("addVehicle", "vehicle", car("new")))); check(Arrays.equals(invalid, Files.readAllBytes(bad.toPath())), "Corrupt data overwritten");
@@ -72,12 +75,27 @@ final class GarageChecks {
         store.execute(new JSONObject().put("type", "clearSnooze").put("vehicleId", "car").put("itemId", "engine-oil")); check(GarageReminders.counts(store.view())[0] == 1, "Cleared snooze still hid a reminder");
         store.execute(cmd("updateVehicle", "vehicle", car("car").put("archived", true))); check(GarageReminders.counts(store.view())[0] == 0, "Archived vehicle generated reminders");
         check(OwnershipNumbers.distance("1", false) == 1609344 && OwnershipNumbers.distance("1", true) == 1000000 && OwnershipNumbers.volume("1", false) == 3785 && OwnershipNumbers.cents("0.29") == 29, "Unit/money conversion wrong");
+        Locale originalLocale = Locale.getDefault();
+        try { Locale.setDefault(Locale.JAPAN); check(OwnershipNumbers.money(7450, "USD").contains("74.50"), "Phone locale rounded away recorded cents"); }
+        finally { Locale.setDefault(originalLocale); }
         rejected(() -> OwnershipNumbers.cents("0.001")); rejected(() -> OwnershipNumbers.distance("NaN", false)); rejected(() -> OwnershipNumbers.distance("-1", false));
         ZoneId zone = ZoneId.of("America/New_York");
         rejected(() -> OwnershipTime.parse("2026-03-08 02:30", zone)); rejected(() -> OwnershipTime.parse("2026-11-01 01:30", zone));
         long first = OwnershipTime.parse("2026-11-01 01:30 -04:00", zone), second = OwnershipTime.parse("2026-11-01 01:30 -05:00", zone);
         check(second - first == 3600000 && OwnershipTime.parse(OwnershipTime.format(second, zone), zone) == second, "Repeated-hour time was silently changed");
         rejected(() -> OwnershipTime.parse("2026-11-01 01:30 -06:00", zone));
+        TimeZone originalZone = TimeZone.getDefault();
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("America/Los_Angeles"));
+            java.lang.reflect.Constructor<OwnershipStore> constructor = OwnershipStore.class.getDeclaredConstructor(File.class, Clock.class, boolean.class); constructor.setAccessible(true);
+            OwnershipStore travelling = constructor.newInstance(new File(folder, "timezone.json"), Clock.fixed(Instant.parse("2026-11-27T00:30:00Z"), ZoneOffset.UTC), true);
+            travelling.execute(cmd("addVehicle", "vehicle", car("clock-car")));
+            JSONObject visit = new JSONObject().put("id", "clock-service").put("vehicleId", "clock-car").put("itemIds", new JSONArray().put("engine-oil")).put("date", "2026-11-27");
+            rejected(() -> travelling.execute(cmd("addService", "service", visit)));
+            TimeZone.setDefault(TimeZone.getTimeZone("Pacific/Auckland"));
+            travelling.execute(cmd("addService", "service", visit));
+            check(travelling.view().getJSONObject("state").getJSONArray("services").length() == 1, "Existing store retained an outdated phone time zone");
+        } finally { TimeZone.setDefault(originalZone); }
     }
     private static View await(Activity screen, Instrumentation instrumentation, int id) throws Exception {
         final View[] found = new View[1]; long until = System.currentTimeMillis() + 12000;

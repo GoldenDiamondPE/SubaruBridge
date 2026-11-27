@@ -25,6 +25,8 @@ never use binary floating-point arithmetic. Times are Unix milliseconds; civil
 service dates are strict ISO `YYYY-MM-DD`. Calendar intervals use month arithmetic.
 IDs are stable opaque strings, unique across history records. Revision increments
 only for a validated state change. Unsupported schemas are rejected.
+Revision counters are capped at the largest exactly representable JSON integer
+(`2^53 - 1`); advancing past that limit is rejected without changing the data.
 
 The C API `sb_ownership_execute` accepts a JSON object containing `state`,
 `today`, `nowMs`, `command` and optional due-soon distance/day thresholds. The
@@ -32,6 +34,9 @@ success object contains `ok`, `changed`, `state`, `summaries`, `schedule` and
 `capabilities`; a validation failure contains `ok:false,error` without a new state.
 Input is capped at 4 MiB. Owned buffers must be freed exactly once using
 `sb_core_buffer_free`.
+`sb_ownership_json_valid` validates strict UTF-8 JSON with bounded nesting before
+a platform DOM parser. It accepts an optional UTF-8 BOM and returns 1/0 without
+allocating a caller-owned buffer. Typed schema validation still runs afterward.
 
 Commands are `view`, `addVehicle`, `updateVehicle`, `addReading`, `addService`,
 `updateService`, `addFuel`, `updateFuel`, `addExpense`, `updateExpense`, `addTrip`,

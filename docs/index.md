@@ -9,6 +9,14 @@ SubaruBridge is an original, device-local Android app for experimenting with
 legacy STARLINK infotainment connections. Make your own dashboard, learn the
 transport, and build small integrations from readable source.
 
+It also includes a native, offline Garage for mileage, maintenance, service
+history, fuel, manual trips, expenses and ownership summaries. You can use those
+features without connecting to a vehicle or creating an account.
+
+[Explore the phone and head-unit designs]({{ '/demo.html' | relative_url }}) in
+the interactive demo. Compare themes and layouts, open the dashboard apps and
+browse real Android screenshots with clearly labeled sample data.
+
 **Experimental:** the independent transport is being tested. The new app still
 needs a parked Subaru display, touch and reconnect result. This is not a released
 replacement for all original STARLINK features.
@@ -22,6 +30,14 @@ replacement for all original STARLINK features.
 The included dashboard uses HTML links and forms with JavaScript off. Themes,
 icons, layouts and screens are editable. Its local clock, battery view and result
 journal need no cloud service or paid API.
+
+## Manage vehicle ownership
+
+Open **Home → Garage** in the Android app and follow the
+[Garage guide]({{ '/garage.html' | relative_url }}). Manufacturer maintenance is
+sourced for the US 2017 Legacy 2.5 CVT; other work can use clearly labeled owner
+intervals. Readings can be confirmed or approximate. Service history, notifications,
+backup/import and recorded distance/cost charts remain local.
 
 ## Independent by design
 
