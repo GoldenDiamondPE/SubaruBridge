@@ -16,7 +16,7 @@ struct GarageView: View {
     @Environment(\.scenePhase) private var phase
     @State private var page = 0
     @State private var route: GarageEditRoute?
-    @State private var exportDocument: GarageDocument?
+    @State private var exportDocument = GarageDocument(data: Data())
     @State private var exporting = false
     @State private var importing = false
     @State private var exportType = UTType.json
@@ -166,7 +166,9 @@ struct GarageView: View {
     private func export(_ type: UTType) {
         do {
             let bytes = type == .json ? try model.repository.backup() : type == .html ? try OwnershipReport.html(state: model.state, vehicle: model.vehicle) : try OwnershipReport.csv(state: model.state, vehicle: model.vehicle)
-            exportDocument = GarageDocument(data: bytes); exportType = type; exportName = type == .json ? "SubaruBridge-Garage" : "SubaruBridge-Service-History"; exporting = true
+            exportDocument = GarageDocument(data: bytes); exportType = type; exportName = type == .json ? "SubaruBridge-Garage" : "SubaruBridge-Service-History"
+            // Let the exporter receive the new document/type before requesting presentation.
+            DispatchQueue.main.async { exporting = true }
         } catch { model.issue = error.localizedDescription }
     }
 }
