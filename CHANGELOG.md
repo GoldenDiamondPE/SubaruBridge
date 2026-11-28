@@ -18,9 +18,13 @@
   fields. Shared regression coverage protects both platform adapters.
 - Direct Subaru accessory transport, Taurus control and other apps' iPhone
   notifications remain separate, unverified or platform-restricted capabilities.
-- Component tests and an Apple SDK simulator build pass. Five of six native UI
-  journeys pass; the Garage range-toggle interaction needs a rerun. Signed IPA
-  packaging is pending. No physical car result is inferred from local tests.
+- Pass 32 Swift component tests and all six native iPhone simulator journeys.
+  Verify saved uncertain service history, relaunch persistence and the native
+  export picker; archive/export and verify a development-signed arm64 IPA.
+- Correct the headless icon renderer using an opaque Core Graphics bitmap and
+  prevent localized grouping separators in the vehicle model year. Exclude the
+  generated icon and private IPA artifacts from source control.
+- No physical iPhone or car result is inferred from simulator and signing checks.
 
 ## 0.57-dev — Unified Android workspace
 

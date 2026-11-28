@@ -89,13 +89,15 @@ configuration/templates, run `python3 scripts/sync_ios_headunit.py`; CI checks
 that the packaged iOS copy matches. No extracted STARLINK application material
 is distributed.
 
-The Mac passed 32 Swift component tests, 76 shared Rust regressions and an Apple
-SDK simulator build. Five of six native UI journeys passed: app cards, favorites,
-notification denial, recorder/dashboard forms and the local four-screen check.
-The Garage journey reached service entry but could not reveal the upper-mileage
-field after its range-toggle interaction. A test interaction change is prepared
-but has not been rerun. Verify that form before describing the native suite as
-passing. Signed device packaging remains pending after the Mac became unavailable.
+The Mac passed 32 Swift component tests, 76 shared Rust regressions, an Apple
+SDK simulator build and all six native UI journeys: app cards, favorites,
+notification denial, recorder/dashboard forms, Garage saving/history/relaunch
+and the local four-screen check. The Garage test confirms multiple maintenance
+items, an unknown service date and a preserved 70,000–74,000-mile service range.
+The native Files export picker is checked separately from the shared backup
+round-trip tests. A development-signed arm64 IPA was archived and exported;
+signature, profile, version, resources and transfer checksum were verified.
+The generated icon is also checked after Apple's PNG optimization.
 Physical iPhone validation of this new Garage build and direct Subaru
 display/touch/reconnect remain required. The owner's earlier basic iPhone launch
 and notification result does not certify these newer features.

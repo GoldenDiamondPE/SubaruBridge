@@ -72,7 +72,7 @@ struct GarageView: View {
         Group {
             Section {
                 Text(model.vehicle["nickname"].text ?? "Vehicle").font(.title2.bold())
-                Text("\(model.vehicle["year"].int ?? 0) \(model.vehicle["make"].text ?? "") \(model.vehicle["model"].text ?? "")").foregroundStyle(.secondary)
+                Text("\(String(model.vehicle["year"].int ?? 0)) \(model.vehicle["make"].text ?? "") \(model.vehicle["model"].text ?? "")").foregroundStyle(.secondary)
                 LabeledContent(model.summary["mileage"]["estimated"].flag ? "Estimated mileage" : "Confirmed mileage", value: model.distance(model.summary["mileage"]["currentMm"].int)).accessibilityIdentifier("garage-current-mileage")
                 ForEach(model.summary["mileage"]["warnings"].list, id: \.self) { Text($0.text ?? "").font(.caption).foregroundStyle(.orange) }
             }

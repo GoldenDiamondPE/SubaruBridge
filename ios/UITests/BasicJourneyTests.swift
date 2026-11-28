@@ -92,6 +92,18 @@ import XCTest
     private func screenshot(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIApplication().screenshot()); attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
     }
+    private func setSwitch(_ toggle: XCUIElement, on: Bool, app: XCUIApplication) {
+        reveal(toggle, app:app)
+        let expected = on ? "1" : "0"
+        if toggle.value as? String != expected {
+            print("Switch before: " + toggle.debugDescription)
+            let control = toggle.switches.firstMatch.exists ? toggle.switches.firstMatch : toggle
+            control.tap()
+        }
+        let changed = XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:NSPredicate(format:"value == %@",expected),object:toggle)],timeout:3) == .completed
+        if !changed { screenshot("switch-failure-" + toggle.identifier); print("Switch after: " + toggle.debugDescription) }
+        XCTAssertTrue(changed)
+    }
     func testGarageSavingHistoryAndRelaunch() throws {
         continueAfterFailure = false
         let app = XCUIApplication(); app.launchArguments = ["--garage-ui-test", "--garage-reset", "-AppleLocale", "en_US"]; app.launch()
@@ -102,19 +114,22 @@ import XCTest
         fill("distance", "81000", app:app); app.buttons["garage-save"].tap()
         XCTAssertTrue(app.buttons["garage-log-service"].waitForExistence(timeout:10)); screenshot("unified-garage")
         app.buttons["garage-log-service"].tap(); app.buttons["garage-choose-items"].tap()
-        let oil = app.switches["garage-item-engine-oil"]; XCTAssertTrue(oil.waitForExistence(timeout:5)); oil.tap()
-        app.switches["garage-item-oil-filter"].tap(); app.navigationBars.buttons.element(boundBy:0).tap()
-        app.switches["garage-toggle-dateKnown"].tap(); fill("low", "70000", app:app)
-        let range = app.switches["garage-toggle-range"]; reveal(range, app:app)
-        range.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+        let oil = app.switches["garage-item-engine-oil"]; XCTAssertTrue(oil.waitForExistence(timeout:5)); setSwitch(oil,on:true,app:app)
+        setSwitch(app.switches["garage-item-oil-filter"],on:true,app:app); app.navigationBars.buttons.element(boundBy:0).tap()
+        setSwitch(app.switches["garage-toggle-dateKnown"],on:false,app:app); fill("low", "70000", app:app)
+        setSwitch(app.switches["garage-toggle-range"],on:true,app:app)
         XCTAssertTrue(app.textFields["garage-field-high"].waitForExistence(timeout:5)); fill("high", "74000", app:app)
-        app.buttons["garage-save"].tap(); XCTAssertTrue(app.buttons["garage-log-service"].waitForExistence(timeout:10))
+        app.buttons["garage-save"].tap()
+        XCTAssertTrue(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:NSPredicate(format:"hittable == true"),object:app.buttons["garage-log-service"])],timeout:10) == .completed)
         app.segmentedControls["garage-sections"].buttons["Maintenance"].tap(); screenshot("unified-maintenance")
-        app.segmentedControls["garage-sections"].buttons["History"].tap(); XCTAssertTrue(app.buttons.containing(.staticText, identifier:"Engine oil, Oil filter").firstMatch.waitForExistence(timeout:5))
+        app.segmentedControls["garage-sections"].buttons["History"].tap(); XCTAssertTrue(app.buttons.containing(.staticText, identifier:"Oil service, Oil filter service").firstMatch.waitForExistence(timeout:5))
         app.terminate(); app.launchArguments = ["--garage-ui-test", "-AppleLocale", "en_US"]; app.launch(); app.tabBars.buttons["Garage"].tap()
-        XCTAssertTrue(app.buttons["garage-log-odometer"].waitForExistence(timeout:10)); XCTAssertTrue(app.staticTexts["81,000 mi"].exists)
+        XCTAssertTrue(app.buttons["garage-log-odometer"].waitForExistence(timeout:10))
+        XCTAssertTrue(app.staticTexts["garage-current-mileage"].label.contains("81,000"))
         app.segmentedControls["garage-sections"].buttons["More"].tap(); app.buttons["garage-export"].tap()
-        XCTAssertTrue(app.navigationBars["Export"].waitForExistence(timeout:8) || app.buttons["Save to Files"].exists || app.buttons["Export"].exists)
+        let saveFile = app.buttons["DOCPicker.actionButton"]
+        XCTAssertTrue(saveFile.waitForExistence(timeout:8)); XCTAssertEqual(saveFile.label, "Save")
+        app.buttons["Cancel"].firstMatch.tap()
     }
     func testRecorderAndJavaScriptFreeDashboard() throws {
         continueAfterFailure = false
