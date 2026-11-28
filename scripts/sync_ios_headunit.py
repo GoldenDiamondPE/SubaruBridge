@@ -12,7 +12,9 @@ DESTINATION = ROOT / 'ios/Sources/SubaruBridgeCore/Resources/HeadUnit'
 def generated(directory):
     compile_ui(ROOT / 'android/headunit-ui', directory, directory / 'home.html')
     shutil.copy2(ROOT / 'android/src/main/assets/subarubridge-lab/pattern.png', directory / 'pattern.png')
-    return {p.relative_to(directory).as_posix(): p.read_bytes() for p in directory.rglob('*') if p.is_file()}
+    # Generated text must be identical on Windows and macOS, including line endings.
+    return {p.relative_to(directory).as_posix(): p.read_bytes() if p.suffix == '.png' else p.read_bytes().replace(b'\r\n', b'\n')
+            for p in directory.rglob('*') if p.is_file()}
 
 
 if __name__ == '__main__':

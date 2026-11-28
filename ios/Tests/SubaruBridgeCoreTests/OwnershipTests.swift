@@ -23,7 +23,7 @@ final class OwnershipTests: XCTestCase {
         XCTAssertTrue(output["summaries"].list[0]["maintenance"].list.allSatisfy { $0["status"].text == "unknownHistory" || $0["status"].text == "notApplicable" })
         let loaded = try GarageRepository(file: repository.file).view(at: today)
         XCTAssertEqual(loaded["state"], output["state"])
-        XCTAssertTrue(loaded["schedule"]["sourceUrl"].text?.hasPrefix("https://contactus.subaru.com/") == true)
+        XCTAssertEqual(loaded["schedule"]["sourceUrl"].text, "https://cdn.subarunet.com/stis/doc/warrantyBooklet/2017_war_and_maint_112216.pdf")
     }
     func testUncertainOilChangePreservesTheMileageRange() throws {
         let repository = try store(); try addCar(repository)
