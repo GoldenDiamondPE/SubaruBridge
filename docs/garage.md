@@ -160,6 +160,15 @@ or trips. See [release verification](ownership-058.md) for actual test evidence.
 The tested storage migration wraps the existing v1 garage without replacing its
 business records. Unsupported future schemas and unreadable files remain intact.
 See [backup and storage details](ownership-backup-format.md).
+## iOS storage and current limits
+
+The iOS private storage adapter caps garage state at 1.5 MiB and 10,000 total
+history records. A failed or oversized save preserves the previous committed
+file. Future-schema or unreadable files are not reset to an empty garage.
+The native iOS Garage uses the same Rust engine and records-only JSON backup format. Attachments,
+encrypted backups and richer analytics remain subsequent work. The iOS adapter
+adds native forms, charts and local calendar reminders; its device validation
+is tracked separately from Android and from actual Subaru connectivity.
 
 ## See the current screens
 

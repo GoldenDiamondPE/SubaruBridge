@@ -131,4 +131,20 @@ Pure Rust previewImport/applyImport preserve the odometer audit and currency
 semantics. Android adds receipt identity and storage-generation checks. Complete
 backup restore stages and verifies all blobs before atomically committing the
 manifest. The shared business format remains independent of Android UI/storage
-APIs; iOS implementation is deferred. See [the versioned format](ownership-backup-format.md).
+APIs; iOS receipt/encrypted-archive adapters remain subsequent work. See [the versioned format](ownership-backup-format.md).
+## Native iOS unified adapter
+
+The iOS Swift package imports the same original Rust static library through a
+small C module. OwnershipCore preserves integer JSON, validates before native
+parsing and frees each returned buffer. GarageRepository uses one private file,
+a transaction lock, atomic replacement, revision checks and the shared records-only JSON backup
+format. Unsupported or corrupt files are preserved rather than reset.
+
+Native SwiftUI Garage forms and charts operate independently of connectivity.
+Notifications schedule local calendar checks from saved records; automatic live
+mileage is not assumed. The loopback Network/WebKit preview uses the original
+HTTP routes with scripts disabled. No Garage or credential routes are exposed.
+The recorder uses monotonic elapsed session time, protected bounded files and
+explicit ZIP export; it saves on backgrounding instead of pretending iOS has
+Android's general foreground service. Accessory inventory is read-only pending
+verification of an authorized iPhone data protocol and its framing.

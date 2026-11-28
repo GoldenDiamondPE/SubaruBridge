@@ -5,6 +5,7 @@ mode=${1:-signed}
 if [ "$mode" != signed ] && [ "$mode" != unsigned ]; then echo 'Choose signed or unsigned'; exit 2; fi
 mkdir -p build/artifacts
 swift scripts/render-icon.swift App/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+ARCHS=arm64 bash scripts/build-rust-core.sh iphoneos
 if [ "$mode" = signed ]; then
   : "${DEVELOPMENT_TEAM:?Set the development team from your own Xcode account}"
   archive="$PWD/build/DeviceArchive-$(date -u +%Y%m%d-%H%M%S).xcarchive"
@@ -15,8 +16,9 @@ if [ "$mode" = signed ]; then
   python3 - <<'PY'
 import os,plistlib
 from pathlib import Path
-Path('build/ExportOptions.plist').write_bytes(plistlib.dumps({'method':'debugging','signingStyle':'automatic',
-    'teamID':os.environ['DEVELOPMENT_TEAM'],'manageAppVersionAndBuildNumber':False}))
+options={'method':'debugging','signingStyle':'automatic',
+    'teamID':os.environ['DEVELOPMENT_TEAM'],'manageAppVersionAndBuildNumber':False}
+Path('build/ExportOptions.plist').write_bytes(plistlib.dumps(options))
 PY
   xcodebuild -exportArchive -archivePath "$archive" -exportOptionsPlist build/ExportOptions.plist \
     -exportPath build/artifacts/signed -allowProvisioningUpdates

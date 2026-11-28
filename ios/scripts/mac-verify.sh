@@ -17,9 +17,11 @@ xcodebuild -version
 swift --version
 swift scripts/render-icon.swift App/Assets.xcassets/AppIcon.appiconset/AppIcon.png
 plutil -lint App/Info.plist SubaruBridge.xcodeproj/project.pbxproj
-swift test --scratch-path build/package-tests
+bash scripts/build-rust-core.sh host
+swift test --scratch-path build/package-tests -Xlinker -L -Xlinker "$PWD/build/rust-core/host"
+ARCHS="$(uname -m)" bash scripts/build-rust-core.sh iphonesimulator
 xcodebuild -project SubaruBridge.xcodeproj -scheme SubaruBridge -configuration Debug \
   -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
-  -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO build
+  -derivedDataPath build/DerivedData -jobs 2 ARCHS="$(uname -m)" CODE_SIGNING_ALLOWED=NO build
 echo "Core tests and unsigned simulator build completed."
 echo "This does not establish physical iPhone, Bluetooth or Subaru compatibility."

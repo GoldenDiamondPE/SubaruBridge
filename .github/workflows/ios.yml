@@ -9,7 +9,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Shared configuration matches Android
-        run: cmp android/headunit-ui/dashboard.json ios/Sources/SubaruBridgeCore/Resources/dashboard.json
+        run: |
+          cmp android/headunit-ui/dashboard.json ios/Sources/SubaruBridgeCore/Resources/dashboard.json
+          python3 scripts/sync_ios_headunit.py --check
       - name: Shared Rust media core and iPhone target
         run: |
           rustup toolchain install 1.90.0 --profile minimal
