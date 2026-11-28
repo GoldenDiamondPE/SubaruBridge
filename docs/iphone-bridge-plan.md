@@ -5,6 +5,11 @@ title: iPhone bridge experiments
 
 # iPhone to Subaru: next experiments
 
+For the current implementation and platform research, see the updated
+[iPhone → Pixel → Subaru guide](iphone-pixel-subaru.md). Android 0.59 retains the
+optional AMS client. iOS 0.59 provides native setup guidance; ANCS forwarding and
+audio repeating are not implemented.
+
 The native iOS companion now builds and launches in a simulator. Direct car
 transport and an authenticated iPhone-to-Pixel app link are not implemented.
 Keep the Android RFCOMM transport, iPhone app actions and factory Bluetooth audio

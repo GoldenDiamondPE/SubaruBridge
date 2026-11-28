@@ -44,13 +44,19 @@ for recording approximate history, correcting readings and keeping a backup.
 Android 0.58 adds private receipts/PDFs, complete encrypted backups with conflict
 review, verified severe-service notes, offline specifications and fuel/mileage
 summaries. See [ownership release details](docs/ownership-058.md).
+Android 0.59 adds background connection recovery, saved Pause, independent
+loopback-port recovery and clearer phone screens. See [the update and parked-car
+test](docs/android-059.md). Download the APK and iOS signing-required IPA from
+[GitHub Releases](https://github.com/GoldenDiamondPE/SubaruBridge/releases).
+The [iPhone/Pixel guide](docs/iphone-pixel-subaru.md) separates experimental music
+controls from notification research and factory audio.
 
 1. Follow [the build guide](docs/build.md) for Android Studio/CLI and the pinned toolchain.
 2. Install your locally built APK. Open SubaruBridge and use the phone preview first.
    **Home → Record & diagnose** contains phone self-checks, the private recorder,
    saved event timelines and the optional developer view.
 3. Pair the Android phone using the car's normal Bluetooth settings.
-4. With the car parked, close other STARLINK listener apps, open SubaruBridge, grant Nearby devices permission, wait for Ready, and open **Apps â†’ STARLINK** on the head unit.
+4. With the car parked, close other STARLINK listener apps, open SubaruBridge, grant Nearby devices permission, wait for Ready, and open **Apps → STARLINK** on the head unit.
 5. Follow [the test guide](docs/testing.md). A successful laptop test does not prove car compatibility.
 
 The [customization guide](docs/customization.md) explains themes, layouts and new

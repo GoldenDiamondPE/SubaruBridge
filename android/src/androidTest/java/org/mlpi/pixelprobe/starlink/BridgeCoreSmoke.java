@@ -11,17 +11,20 @@ public final class BridgeCoreSmoke extends Instrumentation {
     private boolean apps;
     private String reminderProbe;
     private boolean ownershipPreview;
-    @Override public void onCreate(Bundle args){super.onCreate(args);reminderProbe=args==null?null:args.getString("reminderProbe");ownershipPreview=args!=null&&"true".equals(args.getString("ownershipPreview"));apps=args!=null && "true".equals(args.getString("apps"));start();}
+    private boolean connectionOnly;
+    @Override public void onCreate(Bundle args){super.onCreate(args);connectionOnly=args!=null&&"true".equals(args.getString("connectionOnly"));reminderProbe=args==null?null:args.getString("reminderProbe");ownershipPreview=args!=null&&"true".equals(args.getString("ownershipPreview"));apps=args!=null && "true".equals(args.getString("apps"));start();}
     private static void check(boolean condition,String message){if(!condition)throw new AssertionError(message);}
     @Override public void onStart() {
         Bundle result=new Bundle();
         if(reminderProbe!=null){try{ReminderLifecycleChecks.run(getTargetContext(),reminderProbe,result);finish(Activity.RESULT_OK,result);}catch(Throwable e){result.putString("reminderLifecycle","FAIL: "+e);finish(Activity.RESULT_CANCELED,result);}return;}
         if(ownershipPreview){try{OwnershipPreview.run(this,getTargetContext(),result);finish(Activity.RESULT_OK,result);}catch(Throwable e){result.putString("ownershipPreview","FAIL: "+e);finish(Activity.RESULT_CANCELED,result);}return;}
+        if(connectionOnly){try{ConnectionChecks.run(this,getTargetContext(),result);finish(Activity.RESULT_OK,result);}catch(Throwable e){result.putString("connection","FAIL: "+e);finish(Activity.RESULT_CANCELED,result);}return;}
         int code=run(getTargetContext(),result);
         if(code==Activity.RESULT_OK){try{GarageChecks.run(this,getTargetContext(),result);}catch(Throwable error){result.putString("garage","FAIL: "+error);code=Activity.RESULT_CANCELED;}}
         if(code==Activity.RESULT_OK){try{OwnershipDataChecks.run(this,getTargetContext(),result);}catch(Throwable error){result.putString("ownershipData","FAIL: "+error);code=Activity.RESULT_CANCELED;}}
         if(code==Activity.RESULT_OK){try{MediaChecks.run(getTargetContext(),result);}catch(Throwable error){result.putString("appleMedia","FAIL: "+error);code=Activity.RESULT_CANCELED;}}
         if(code==Activity.RESULT_OK){try{RecorderChecks.run(this,getTargetContext(),result);}catch(Throwable error){result.putString("recorder","FAIL: "+error);code=Activity.RESULT_CANCELED;}}
+        if(code==Activity.RESULT_OK){try{ConnectionChecks.run(this,getTargetContext(),result);}catch(Throwable error){result.putString("connection","FAIL: "+error);code=Activity.RESULT_CANCELED;}}
         if(code==Activity.RESULT_OK && apps){try{AppIntegrationChecks.run(getTargetContext(),result);}catch(Throwable error){result.putString("apps","FAIL: "+error);code=Activity.RESULT_CANCELED;}}
         if(code==Activity.RESULT_OK) {
             try {

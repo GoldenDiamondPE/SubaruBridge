@@ -18,7 +18,10 @@ Android's secure RFCOMM listener uses service UUID
 `4213882b-44b9-45f4-ac4f-2c682bc800a7`. Only bonded peers are accepted.
 The observed fixed link uses phone `192.168.1.1`, peer `192.168.1.2`, HTTP port 80.
 These addresses live inside the SLIP stream, not on the phone's Wi-Fi network.
-The preview server binds only `127.0.0.1:8009` and shares the same route handler.
+The preview server binds only loopback, preferring `127.0.0.1:8009` and falling
+back to an assigned loopback port on a collision. Preview URLs, origin checks,
+authentication and developer checks follow that endpoint. It shares the route
+handler but cannot prevent the independent car listener from starting.
 
 The original Rust transport has a 4096-byte SLIP frame cap, 16 flows, bounded
 receive/reorder buffers, fixed-length HTTP, checksums, segmentation, acknowledgments,
@@ -28,8 +31,13 @@ IPv6, IP fragmentation, TCP extensions and chunked request bodies are not suppor
 More interoperability testing remains necessary.
 
 Android owns Bluetooth permissions, a connected-device foreground service,
-notification, socket I/O and a bounded active-session wake lock. The current
-wake-lock timeout is 30 minutes; long-session power management still needs testing.
+notification, socket I/O and a bounded active-session wake lock. `CarLinkLoop`
+owns cancellable listener/session recovery and waits through Bluetooth off/on
+changes within the service. Explicit Pause is persisted and checked on restart.
+`SessionPower` renews a twenty-minute lease every five minutes of an active
+session; synchronized close prevents a timer from reacquiring a finished lease.
+Renewal is regression-tested with a controlled clock; a real multi-hour drive
+remains an observation to collect.
 No root is needed for this transport. Rooted logging is separate and optional.
 
 The local launcher handles the observed lookup, timestamp and absolute-form POST

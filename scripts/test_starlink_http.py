@@ -21,10 +21,15 @@ class Form(HTMLParser):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--serial',required=True);p.add_argument('--adb',default='adb')
-    p.add_argument('--device-port',type=int,default=8009);p.add_argument('--output',type=Path,required=True)
-    p.add_argument('--expected-build',default='0.58-dev')
+    p.add_argument('--device-port',type=int);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--expected-build',default='0.59-dev')
     args=p.parse_args();args.output.mkdir(parents=True,exist_ok=False)
-    port=int(subprocess.check_output([args.adb,'-s',args.serial,'forward','tcp:0','tcp:'+str(args.device_port)],text=True))
+    device_port=args.device_port
+    if device_port is None:
+        probe=subprocess.run([args.adb,'-s',args.serial,'shell','run-as','org.subarubridge.app','cat','no_backup/preview-port'],capture_output=True,text=True)
+        device_port=int(probe.stdout.strip()) if probe.returncode==0 and probe.stdout.strip().isdigit() else 8009
+    if not 1<=device_port<=65535:raise ValueError('Invalid phone preview port')
+    port=int(subprocess.check_output([args.adb,'-s',args.serial,'forward','tcp:0','tcp:'+str(device_port)],text=True))
     c=http.client.HTTPConnection('127.0.0.1',port,timeout=15);results=[]
     preview_token=None
     def request(name,method,path,status=200,form=None,raw=None):

@@ -28,7 +28,7 @@ public final class IntegrationsActivity extends Activity {
     private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
     private GradientDrawable rounded(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
     private void label(String text,int size){TextView v=new TextView(this);v.setText(text);v.setTextSize(size);v.setTextColor(size>=22?palette.text:palette.muted);if(size>=22)v.setTypeface(null,Typeface.BOLD);v.setPadding(0,dp(12),0,dp(8));page.addView(v);}
-    private void button(String text,Runnable action){Button b=new Button(this);b.setText(text);b.setAllCaps(false);b.setTextColor(palette.onAccent);b.setBackground(rounded(palette.accent,14));b.setPadding(dp(16),dp(12),dp(16),dp(12));b.setOnClickListener(v->action.run());LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(10),0,dp(8));page.addView(b,p);}
+    private void button(String text,Runnable action){Button b=new Button(this);b.setText(text);b.setAllCaps(false);b.setTextSize(16);b.setTextColor(palette.accent);b.setBackground(rounded(palette.surface,14));b.setMinHeight(dp(50));b.setPadding(dp(16),dp(12),dp(16),dp(12));b.setOnClickListener(v->action.run());LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(8),0,dp(8));page.addView(b,p);}
     private void toggle(String key,String title,String detail){
         LinearLayout group=new LinearLayout(this);group.setOrientation(LinearLayout.VERTICAL);group.setPadding(dp(16),dp(13),dp(16),dp(14));group.setBackground(rounded(palette.surface,18));
         Switch value=new Switch(this);value.setText(title);value.setTextColor(palette.text);value.setTextSize(16);value.setChecked(integrations.enabled(key));value.setPadding(0,0,0,dp(8));
@@ -41,12 +41,17 @@ public final class IntegrationsActivity extends Activity {
     }
     @Override public void onCreate(Bundle saved){
         super.onCreate(saved);integrations=PhoneIntegrations.get(this);palette=new PhonePalette(this);
-        ScrollView scroll=new ScrollView(this);scroll.setBackgroundColor(palette.background);page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setPadding(dp(22),dp(36),dp(22),dp(30));scroll.addView(page);setContentView(scroll);
+        ScrollView scroll=new ScrollView(this);scroll.setBackgroundColor(palette.background);page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setPadding(dp(20),dp(12),dp(20),dp(30));scroll.addView(page);setContentView(scroll);palette.applyWindow(this);
+        scroll.setOnApplyWindowInsetsListener((v,insets)->{var bars=insets.getInsets(android.view.WindowInsets.Type.systemBars()|android.view.WindowInsets.Type.displayCutout()|android.view.WindowInsets.Type.ime());scroll.setPadding(bars.left,bars.top,bars.right,bars.bottom);return insets;});scroll.requestApplyInsets();
+        button("‹ SubaruBridge",this::finish);
         label("Apps & integrations",28);label("Choose what appears on your Subaru dashboard.",15);
-        access=new TextView(this);access.setTextColor(palette.muted);page.addView(access);
+        button("iPhone + Pixel setup",()->new AlertDialog.Builder(this).setTitle("Use iPhone with your Pixel")
+                .setMessage("Keep SubaruBridge ready on the Pixel for the car dashboard.\n\nMusic: pair both phones normally, choose iPhone media below, and start Taurus or another iPhone player. This experimental link carries track details and offered controls.\n\nSound and calls: keep the iPhone paired to the Subaru for factory audio and hands-free calls. Whether the car allows iPhone audio and Pixel STARLINK together still needs a parked test.\n\niPhone notifications and incoming-call alerts through the Pixel are under investigation and are not relayed in this build.")
+                .setPositiveButton("Done",null).show());
+        access=new TextView(this);access.setTextSize(15);access.setTextColor(palette.muted);page.addView(access);
         button("Manage notification access",()->startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)));
         toggle("music","Music controls","Use an Android music app, or the optional iPhone Bluetooth media connection for Taurus and other iPhone players.");
-        musicStatus=new TextView(this);musicStatus.setTextColor(palette.muted);musicStatus.setPadding(0,dp(12),0,dp(4));page.addView(musicStatus);
+        musicStatus=new TextView(this);musicStatus.setTextSize(15);musicStatus.setTextColor(palette.muted);musicStatus.setPadding(0,dp(12),0,dp(4));page.addView(musicStatus);
         button("Choose music source",()->new AlertDialog.Builder(this).setTitle("Music source").setSingleChoiceItems(new String[]{"Android music apps","iPhone media · experimental"},integrations.prefs().getString("musicSource","android").equals("iphone")?1:0,(dialog,which)->{integrations.prefs().edit().putString("musicSource",which==1?"iphone":"android").apply();if(which==0)AppleMediaClient.stopIfStarted();dialog.dismiss();}).setNegativeButton("Cancel",null).show());
         button("Choose Android music app",this::chooseAndroidPlayer);
         button("Connect paired iPhone media",this::chooseIPhone);

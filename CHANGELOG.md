@@ -1,5 +1,22 @@
 # Changes
 
+## 0.59-dev — Connection recovery and readable phone screens
+
+- Move Bluetooth off/on and listener/session recovery into the foreground service;
+  use cancellable bounded retries, clean permission failures and a renewable
+  active-session power lease. Respect explicit Pause across Activity and service
+  restarts. Distinguish received STARLINK requests from a socket merely opening.
+- Keep the phone preview independent of the car listener. Fall back to another
+  authenticated loopback port on a conflict and update previews, origin checks,
+  self-checks and developer HTTP tests to use the selected endpoint.
+- Simplify Home, enlarge supporting labels, improve filled-control contrast and
+  window/keyboard insets, and keep technical details expandable in Tools.
+- Add native Android lifecycle regression checks with isolated transports and
+  document computer-free recording/export and the parked-car test.
+- Include the 0.58 ownership system. Investigate iPhone notification/audio roles
+  and add companion setup guidance; actual iPhone relay and head-unit results
+  remain separately required.
+
 ## 0.58-dev — Android ownership completion
 
 - Verify the actual 2017 US manufacturer booklet, item-specific severe-service

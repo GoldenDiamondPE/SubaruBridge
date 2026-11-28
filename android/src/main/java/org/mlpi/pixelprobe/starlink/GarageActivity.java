@@ -150,6 +150,7 @@ public final class GarageActivity extends Activity {
         });
         Button back = button(formKind == null ? "‹ SubaruBridge" : "‹ Cancel", View.NO_ID, this::back);
         back.setBackgroundColor(android.graphics.Color.TRANSPARENT); back.setGravity(Gravity.START | Gravity.CENTER_VERTICAL); back.setPadding(0, 0, 0, 0); back.setMinHeight(dp(44));
+        palette.applyWindow(this);scroll.requestApplyInsets();
         label(title, 28, palette.text, true); if (!subtitle.isEmpty()) note(subtitle);
         errorText = label("", 14, palette.accent, false); errorText.setId(R.id.garage_error); errorText.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE); errorText.setVisibility(View.GONE);
     }

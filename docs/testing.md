@@ -14,7 +14,7 @@ runtime do not certify it.
 1. Install your APK and open SubaruBridge.
 2. Home shows the connection status and prepares Bluetooth after permission setup.
    Tools contains the Rust status. Bluetooth permission is not needed for preview.
-3. The dashboard loads under **Preview Â· JavaScript off**. Use Check to visit
+3. The dashboard loads under **Preview · JavaScript off**. Use Check to visit
    Display, Touch, Phone and Results. Send three touches, read phone data and
    save the result. Change themes and layouts under Appearance, then reload.
 4. With the app open, run the HTTP regression against that selected device:
@@ -95,7 +95,7 @@ environment from the build guide first.
 2. Pair the Android phone using the head unit's ordinary Bluetooth setup.
 3. Close other STARLINK or research listener apps. In SubaruBridge open the app, allow Nearby devices, and wait
    for **Ready to connect**.
-4. Connect the car's Bluetooth and choose **Apps â†’ STARLINK** on the head unit.
+4. Connect the car's Bluetooth and choose **Apps → STARLINK** on the head unit.
 5. Record exactly what appears. If the dashboard opens, choose Check and visit Display, Touch,
    Phone and Results. Send three separate touches, read phone data, save the
    result and photograph the results screen. Wait for each response.
@@ -184,3 +184,20 @@ not overnight scheduler delivery. Run only on the explicitly selected device.
 sample garage into private test-cache PNGs. No demonstration records enter the
 owner's garage. Original manufacturer PDFs, exports and device logs remain
 excluded from public source.
+
+## Android connection and UI 0.59
+
+`BridgeCoreSmoke -e connectionOnly true` exercises original connection logic with
+isolated, process-local transports. The cases include failed listener open/accept,
+unpaired rejection, ended sessions, Bluetooth off/on with the Activity finished,
+permission loss, cancellation during open/accept, renewable bounded power leases,
+preview-port collision, a real Android foreground-service lifecycle and persisted
+notification Pause followed by explicit Resume. No synthetic transport is selected
+through an Intent, network route or user setting.
+
+The complete Android 17/API 37 emulator suite passes alongside Garage storage,
+encrypted restore, receipts, app-owned recording, real synthetic MediaSession and
+notification/RemoteInput fixtures. These are app tests, not head-unit evidence.
+The 0.58 physical Pixel ownership, deep-idle receiver and reboot checks remain
+recorded in [the ownership release](ownership-058.md). A fresh physical 0.59 car
+test is still required. See [the parked-car directions](android-059.md).
