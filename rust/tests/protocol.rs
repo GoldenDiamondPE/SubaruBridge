@@ -1,13 +1,51 @@
 use subarubridge_core::{http::{self,Frame},slip::{self,Decoder},transport::{Engine,checksum,ipv4}};
 
 fn peer(port: u16, seq: u32, ack: u32, flags:u8, payload:&[u8]) -> Vec<u8> {
+    peer_address([192,168,1,2],port,seq,ack,flags,&[],payload)
+}
+fn peer_address(address:[u8;4],port:u16,seq:u32,ack:u32,flags:u8,options:&[u8],payload:&[u8])->Vec<u8>{
+    assert_eq!(options.len()%4,0);
     let mut t=Vec::new(); t.extend(port.to_be_bytes());t.extend(80u16.to_be_bytes());t.extend(seq.to_be_bytes());t.extend(ack.to_be_bytes());
-    t.extend([5<<4,flags,0x20,0,0,0,0,0]); t.extend(payload);
-    let mut p=vec![192,168,1,2,192,168,1,1,0,6];p.extend((t.len() as u16).to_be_bytes());p.extend(&t);
-    let cs=checksum(&p);t[16..18].copy_from_slice(&cs.to_be_bytes());slip::encode(&ipv4(6,[192,168,1,2],[192,168,1,1],&t))
+    t.extend([(((20+options.len())/4) as u8)<<4,flags,0x20,0,0,0,0,0]);t.extend(options);t.extend(payload);
+    let mut p=Vec::new();p.extend(address);p.extend([192,168,1,1,0,6]);p.extend((t.len() as u16).to_be_bytes());p.extend(&t);
+    let cs=checksum(&p);t[16..18].copy_from_slice(&cs.to_be_bytes());slip::encode(&ipv4(6,address,[192,168,1,1],&t))
 }
 fn packets(bytes:&[u8])->Vec<Vec<u8>> { Decoder::default().feed(bytes) }
 fn be32(data:&[u8],at:usize)->u32 { u32::from_be_bytes(data[at..at+4].try_into().unwrap()) }
+// Synthetic values and public TCP options; no private packet bytes are embedded.
+const CAR:[u8;4]=[192,168,0,1];
+#[test] fn factory_headunit_address_reaches_http_and_receives_correctly_addressed_replies(){
+    let mut engine=Engine::new(701);
+    let options=[2,4,0x0f,0xd8,4,2,8,10,0,0,0,7,0,0,0,0,1,3,3,6];
+    let syn=peer_address(CAR,39400,100,0,2,&options,&[]);
+    let reply=packets(&engine.feed(&syn,0).wire);assert_eq!(reply.len(),1,"Factory SYN was silently discarded");
+    assert_eq!(reply[0][16..20],CAR);assert_eq!(reply[0][33],0x12);assert_eq!(checksum(&reply[0][..20]),0);
+    let server=be32(&reply[0],24).wrapping_add(1);
+    engine.feed(&peer_address(CAR,39400,101,server,16,&[],&[]),1);
+    let request=b"GET /version HTTP/1.0\r\n\r\n";
+    let batch=engine.feed(&peer_address(CAR,39400,101,server,24,&[],request),2);
+    assert_eq!(batch.requests.len(),1);assert_eq!(batch.requests[0].1,request);
+    let wire=engine.respond(batch.requests[0].0,b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok",true,3).wire;
+    for packet in packets(&wire){assert_eq!(packet[16..20],CAR);let mut pseudo=vec![192,168,1,1];pseudo.extend(CAR);pseudo.extend([0,6]);pseudo.extend(((packet.len()-20) as u16).to_be_bytes());pseudo.extend(&packet[20..]);assert_eq!(checksum(&pseudo),0);}
+}
+#[test] fn peer_is_pinned_for_one_bluetooth_link_and_reset_by_new_engine(){
+    let mut engine=Engine::new(702);
+    assert!(!engine.feed(&peer_address(CAR,40000,10,0,2,&[],&[]),0).wire.is_empty());
+    assert!(engine.feed(&peer(40000,10,0,2,&[]),1).wire.is_empty(),"Bench address crossed an active factory link");
+    assert!(!Engine::new(703).feed(&peer(40000,10,0,2,&[]),0).wire.is_empty());
+}
+#[test] fn invalid_or_unrecognized_peer_cannot_claim_a_link(){
+    let mut engine=Engine::new(704);
+    assert!(engine.feed(&peer_address([192,168,0,9],40000,10,0,2,&[],&[]),0).wire.is_empty());
+    let packet=peer_address(CAR,40000,10,0,2,&[],&[]);let mut raw=packets(&packet).remove(0);raw[36]^=1;
+    assert!(engine.feed(&slip::encode(&raw),1).wire.is_empty());
+    assert!(!engine.feed(&peer(40000,10,0,2,&[]),2).wire.is_empty(),"Invalid input pinned the factory address");
+}
+#[test] fn factory_icmp_echo_returns_to_factory_peer(){
+    let mut engine=Engine::new(705);let mut echo=vec![8,0,0,0,0,1,0,1];let sum=checksum(&echo);echo[2..4].copy_from_slice(&sum.to_be_bytes());
+    let reply=packets(&engine.feed(&slip::encode(&ipv4(1,CAR,[192,168,1,1],&echo)),0).wire);
+    assert_eq!(reply.len(),1);assert_eq!(reply[0][16..20],CAR);assert_eq!(reply[0][20],0);assert_eq!(checksum(&reply[0][20..]),0);
+}
 fn handshake(engine:&mut Engine, port:u16, seq:u32)->(u32,u32) {
     let r=engine.feed(&peer(port,seq,0,2,&[]),0);let p=packets(&r.wire);assert_eq!(p.len(),1);assert_eq!(p[0][33],0x12);
     let server=be32(&p[0],24).wrapping_add(1);let client=seq.wrapping_add(1);
