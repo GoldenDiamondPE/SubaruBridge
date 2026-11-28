@@ -1,13 +1,15 @@
 # Vehicle data model
 
 The canonical model is `rust/src/ownership/model.rs`, with schema version 1.
-Android persists that model directly. There is no second ownership database.
+Android stores that model inside a version-2 atomic envelope with receipt metadata.
+There is one ownership manifest; receipt files are content-addressed private blobs.
+See [storage, migration and backup formats](docs/ownership-backup-format.md).
 The maintenance database is versioned factual data in `vehicle-database/`; its
 provenance and limitations are recorded in [MAINTENANCE_DATA.md](MAINTENANCE_DATA.md).
 
 | Collection | Meaning |
 | --- | --- |
-| `vehicles` | Identity, optional local identifiers/purchase data, units/currency, schedule selection and archive status |
+| `vehicles` | Identity, optional local identifiers/purchase data, units/currency, schedule selection, specific severeConditions and archive status |
 | `readings` | Observation timestamp, source, confirmed/approximate distance, optional superseded ID and reason |
 | `services` | One service visit, item IDs, optional civil date and distance range, provider, cost and notes |
 | `fuel` | Fill timestamp/odometer, purchased volume/cost, full/partial and missed-fill flags |
@@ -30,7 +32,7 @@ Revision counters are capped at the largest exactly representable JSON integer
 
 The C API `sb_ownership_execute` accepts a JSON object containing `state`,
 `today`, `nowMs`, `command` and optional due-soon distance/day thresholds. The
-success object contains `ok`, `changed`, `state`, `summaries`, `schedule` and
+success object contains `ok`, `changed`, `state`, `summaries`, `schedule`, `importReview` and
 `capabilities`; a validation failure contains `ok:false,error` without a new state.
 Input is capped at 4 MiB. Owned buffers must be freed exactly once using
 `sb_core_buffer_free`.
@@ -42,7 +44,7 @@ Commands are `view`, `addVehicle`, `updateVehicle`, `addReading`, `addService`,
 `updateService`, `addFuel`, `updateFuel`, `addExpense`, `updateExpense`, `addTrip`,
 `updateTrip`, `setOverride`, `resetOverride`, `recordFillUp`, `mergeBackup`,
 `addCustomItem`, `updateCustomItem`, `setPreferences`, `snoozeReminder`, `clearSnooze`
-and read-only `analyze`.
+read-only `analyze`, `previewImport` and revision-checked `applyImport`.
 Variant and field names are camelCase. `recordFillUp` takes `entry` and a matching
 confirmed manual `reading`; both are validated in one revision. Record edits may
 not move a history record between vehicles. Currency changes with saved costs
@@ -73,3 +75,22 @@ including offset changes. Ends are exclusive. Each vehicle summary returns an
 coverage, fuel cycles wholly within the period, dated costs and unassigned services.
 Analysis never changes the garage revision. Trip distance is attributed by trip
 completion; undated services remain in lifetime totals and are not assigned a period.
+
+## Android 0.58 additions
+
+`severeConditions` defaults to an empty list. Allowed IDs come from the bundled
+schedule; unknown/duplicate IDs are rejected. A legacy broad severe flag without
+conditions stays unresolved. Shared rules choose only matching item exceptions.
+
+Fuel summaries include all purchased volume/cost and volume-weighted unit price,
+plus fuel cost for completed full-to-full cycles. The opening anchor purchase
+is excluded from a cycle's consumed fuel/cost; partial fills are included and
+missed fills reset the measurement. Monthly cycles require both full anchors
+inside that month. Forecasts need at least two active confirmed readings at
+least one day apart, a last reading no more than 90 days old and plausible,
+positive growth. They remain estimates, with source window and method exposed.
+
+Backup conflict review is pure Rust. Applying a review validates the resulting
+combined graph; it cannot rewrite an odometer record, move history to another
+vehicle or change currency under saved local costs. Android receipt generation
+adds another stale-review check before committing files and records together.

@@ -18,11 +18,11 @@ command, account, server or location permission is needed by this model.
 - Service dates and mileage ranges, including genuinely unknown dates and the
   example of a prior service somewhere within a mileage interval.
 - Whichever applicable time/mileage threshold occurs first; unknown history,
-  conflicting record chronology and unverified severe-service notes stay explicit.
+  conflicting record chronology and unresolved broad severe flags stay explicit.
 - Fuel full-to-full cycles including partial fills and missed-fill breaks.
 - Fuel/service expenses counted once from their records, plus explicit other
   operating and financing expenses. No duplicate expense rows are generated.
-- Additive backup merging by ID, conflict rejection, bounded JSON and schema
+- Reviewed backup merging by ID, explicit conflict choices, bounded JSON and schema
   validation. A repeated identical merge does not increment the revision.
 
 Distance is stored as integer millimetres; a mile is exactly 1,609,344 mm. Fuel is
@@ -35,7 +35,7 @@ calendar-month arithmetic, including month-end and leap-year handling.
 cargo +1.90.0 test --manifest-path rust/Cargo.toml --locked
 ```
 
-44 ownership regressions cover unknown/approximate history, first and subsequent
+50 ownership regressions cover unknown/approximate history, first and subsequent
 coolant intervals, calendar and mileage thresholds, severe-condition gaps, owner
 overrides, odometer correction cycles, a 10,000-record correction chain, GPS
 confidence, trip reconciliation, ambiguous service ordering, partial fuel fills,
@@ -89,3 +89,13 @@ zone and reject nonexistent/ambiguous times unless a valid explicit offset is su
 Next: native iOS persistence/UI using this API, attachments,
 backup conflict review, advanced analytics, permission-based GPS and optional read-only
 diagnostics. Android-only notification/RFCOMM capabilities are not implied for iOS.
+
+## Android 0.58 ownership workspace
+
+The native adapter now supports saved-record photos/PDFs, complete ZIP and
+password-encrypted backups, reviewed conflict choices and tested atomic migration
+from bare v1 state into a version-2 manifest. Driving conditions select verified
+manufacturer exceptions; offline specifications retain section-level provenance.
+Fuel cost/price summaries and labeled mileage forecasts use the shared engine.
+The iOS adapter is deferred in this release. See [release verification](docs/ownership-058.md)
+and [storage/encryption format](docs/ownership-backup-format.md).

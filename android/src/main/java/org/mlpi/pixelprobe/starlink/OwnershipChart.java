@@ -10,17 +10,17 @@ final class OwnershipChart extends View {
     private final long[] values;
     private final String[] labels;
     private final PhonePalette palette;
-    private final boolean costs, metric;
+    private final boolean costs, metric, fuel;
     private final String currency;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private float dp(float value) { return value * getResources().getDisplayMetrics().density; }
-    OwnershipChart(Context context, long[] values, String[] labels, PhonePalette palette, boolean costs, boolean metric, String currency) {
-        super(context); this.values = values.clone(); this.labels = labels.clone(); this.palette = palette; this.costs = costs; this.metric = metric; this.currency = currency;
-        StringBuilder description = new StringBuilder(costs ? "Recorded operating costs by month. " : "Recorded trip distance by completion month. ");
+    OwnershipChart(Context context, long[] values, String[] labels, PhonePalette palette, boolean costs, boolean metric, String currency, boolean fuel) {
+        super(context); this.values = values.clone(); this.labels = labels.clone(); this.palette = palette; this.costs = costs; this.metric = metric; this.currency = currency; this.fuel=fuel;
+        StringBuilder description = new StringBuilder(fuel ? "Measured fuel economy by month (gaps have no completed cycle). " : costs ? "Recorded operating costs by month. " : "Recorded trip distance by completion month. ");
         for (int i = 0; i < values.length; i++) description.append(labels[i]).append(": ").append(amount(values[i])).append(". ");
         setContentDescription(description.toString()); setFocusable(true);
     }
-    private String amount(long value) { return costs ? OwnershipNumbers.money(value, currency) : OwnershipNumbers.distance(value, metric) + (metric ? " km" : " mi"); }
+    private String amount(long value) { return fuel ? value==0?"No completed cycle":String.format(java.util.Locale.getDefault(),"%.1f %s",value/10.0,metric?"L/100 km":"MPG (US)") : costs ? OwnershipNumbers.money(value, currency) : OwnershipNumbers.distance(value, metric) + (metric ? " km" : " mi"); }
     @Override protected void onDraw(Canvas canvas) {
         super.onDraw(canvas); float left = dp(4), right = getWidth() - dp(4), top = dp(34), bottom = getHeight() - dp(34);
         long maximum = 0; for (long value : values) maximum = Math.max(maximum, value);

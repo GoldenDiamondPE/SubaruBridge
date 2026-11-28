@@ -46,3 +46,16 @@ pub fn summarize(state:&Garage,id:&str,period:&Period)->Summary {
         fuel:fuel_entries(fuel),costs:PeriodCosts{fuel_cents:fuel_cost,service_cents:service_cost,other_operating_cents:other,financing_cents:financing,operating_cents:fuel_cost+service_cost+other,total_cents:fuel_cost+service_cost+other+financing},
         service_visits:services.len(),undated_service_count:undated.len(),undated_service_cents:undated.iter().map(|v|v.cost_cents).sum()}
 }
+
+/// Measured growth window and a labeled linear estimate. Never invents unrecorded trips.
+pub fn forecast(state:&Garage,id:&str,now:u64)->serde_json::Value{
+    let replaced:BTreeSet<_>=state.readings.iter().filter_map(|v|v.supersedes.as_deref()).collect();
+    let mut readings:Vec<_>=state.readings.iter().filter(|v|v.vehicle_id==id && v.confidence==Confidence::Confirmed && !replaced.contains(v.id.as_str())).collect();readings.sort_by_key(|v|v.at_ms);
+    let Some(first)=readings.first() else{return serde_json::Value::Null;};let last=readings.last().unwrap();
+    let span=last.at_ms-first.at_ms;
+    // Stale or implausible measurements must not drive an apparently precise forecast.
+    if readings.len()<2 || span<86_400_000 || now.saturating_sub(last.at_ms)>90*86_400_000{return serde_json::Value::Null;}
+    let daily=(last.distance_mm-first.distance_mm) as f64*86_400_000.0/span as f64;
+    if daily<=0.0 || daily>1000.0*MM_PER_MILE as f64{return serde_json::Value::Null;}
+    serde_json::json!({"estimated":true,"growthStartMs":first.at_ms,"growthEndMs":last.at_ms,"averageMmPerDay":daily,"annualizedMm":(daily*365.0).round() as u64,"method":"Linear estimate from active confirmed readings; does not establish complete trip coverage."})
+}

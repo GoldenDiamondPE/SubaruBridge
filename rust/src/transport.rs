@@ -2,7 +2,9 @@ use crate::{http, slip};
 use std::collections::{BTreeMap, VecDeque};
 
 const FIN: u8 = 1; const SYN: u8 = 2; const RST: u8 = 4; const ACK: u8 = 16;
-const LOCAL: [u8; 4] = [192,168,1,1]; const PEER: [u8; 4] = [192,168,1,2];
+const LOCAL: [u8; 4] = [192,168,1,1];
+const FACTORY_PEER: [u8;4] = [192,168,0,1];
+const BENCH_PEER: [u8;4] = [192,168,1,2];
 const RECEIVE_WINDOW: usize = 16384;
 
 #[derive(Default)]
@@ -30,15 +32,15 @@ pub fn ipv4(protocol: u8, source: [u8;4], target: [u8;4], payload: &[u8]) -> Vec
     let length = packet.len() as u16; packet[2..4].copy_from_slice(&length.to_be_bytes());
     let cs = checksum(&packet[..20]); packet[10..12].copy_from_slice(&cs.to_be_bytes()); packet
 }
-fn tcp(port: u16, seq: u32, ack: u32, flags: u8, payload: &[u8]) -> Vec<u8> {
+fn tcp(peer:[u8;4],port: u16, seq: u32, ack: u32, flags: u8, payload: &[u8]) -> Vec<u8> {
     let mut segment = Vec::new(); segment.extend(80u16.to_be_bytes()); segment.extend(port.to_be_bytes());
     segment.extend(seq.to_be_bytes()); segment.extend(ack.to_be_bytes());
     segment.extend([if flags & SYN != 0 { 6 << 4 } else { 5 << 4 },flags]);
     segment.extend((RECEIVE_WINDOW as u16).to_be_bytes()); segment.extend([0,0,0,0]);
     if flags & SYN != 0 { segment.extend([2,4,0x04,0xb0]); }
     segment.extend(payload);
-    let mut pseudo = Vec::new(); pseudo.extend(LOCAL); pseudo.extend(PEER); pseudo.extend([0,6]); pseudo.extend((segment.len() as u16).to_be_bytes()); pseudo.extend(&segment);
-    let cs = checksum(&pseudo); segment[16..18].copy_from_slice(&cs.to_be_bytes()); ipv4(6,LOCAL,PEER,&segment)
+    let mut pseudo = Vec::new(); pseudo.extend(LOCAL); pseudo.extend(peer); pseudo.extend([0,6]); pseudo.extend((segment.len() as u16).to_be_bytes()); pseudo.extend(&segment);
+    let cs = checksum(&pseudo); segment[16..18].copy_from_slice(&cs.to_be_bytes()); ipv4(6,LOCAL,peer,&segment)
 }
 fn u16_at(data: &[u8], p: usize) -> u16 { u16::from_be_bytes([data[p],data[p+1]]) }
 fn u32_at(data: &[u8], p: usize) -> u32 { u32::from_be_bytes([data[p],data[p+1],data[p+2],data[p+3]]) }
@@ -47,16 +49,17 @@ struct Sent { seq: u32, flags: u8, payload: Vec<u8>, at: u64, retries: u8 }
 impl Sent { fn end(&self) -> u32 { self.seq.wrapping_add(self.payload.len() as u32).wrapping_add((self.flags & (SYN|FIN) != 0) as u32) } }
 struct Reply { bytes: VecDeque<u8>, close: bool }
 struct Connection {
+    peer:[u8;4],
     id: u64, port: u16, initial: u32, receive: u32, send: u32, established: bool,
     outstanding: Option<Sent>, reply: Option<Reply>, input: Vec<u8>, pending: bool,
     pending_at: u64, last: u64, mss: usize, window: usize, reordered: BTreeMap<u32,Vec<u8>>,
     peer_fin: Option<u32>, received_fin: bool, sent_fin: bool, fin_acked: bool, dead: bool,
 }
 impl Connection {
-    fn ack(&self, out: &mut Batch) { out.send(tcp(self.port,self.send,self.receive,ACK,&[])); }
+    fn ack(&self, out: &mut Batch) { out.send(tcp(self.peer,self.port,self.send,self.receive,ACK,&[])); }
     fn tracked(&mut self, flags: u8, payload: Vec<u8>, now: u64, out: &mut Batch) {
         let sent = Sent { seq: self.send, flags, payload, at: now, retries: 0 };
-        out.send(tcp(self.port,sent.seq,self.receive,flags,&sent.payload)); self.send = sent.end(); self.outstanding = Some(sent);
+        out.send(tcp(self.peer,self.port,sent.seq,self.receive,flags,&sent.payload)); self.send = sent.end(); self.outstanding = Some(sent);
     }
     fn consume(&mut self, seq: u32, data: &[u8]) {
         let behind = self.receive.wrapping_sub(seq);
@@ -87,7 +90,7 @@ impl Connection {
         let flags = segment[13]; let seq = u32_at(segment,4); let ack = u32_at(segment,8);
         if flags & RST != 0 { self.dead = true; return; }
         if flags & SYN != 0 {
-            if seq == self.initial { if let Some(sent) = &self.outstanding { out.send(tcp(self.port,sent.seq,self.receive,sent.flags,&sent.payload)); } }
+            if seq == self.initial { if let Some(sent) = &self.outstanding { out.send(tcp(self.peer,self.port,sent.seq,self.receive,sent.flags,&sent.payload)); } }
             return;
         }
         if flags & ACK == 0 { return; }
@@ -131,7 +134,7 @@ impl Connection {
         if let Some(sent) = &mut self.outstanding {
             if now.saturating_sub(sent.at) >= 400 * (1u64 << sent.retries.min(3)) {
                 if sent.retries >= 5 { self.dead = true; return; }
-                sent.at = now; sent.retries += 1; out.send(tcp(self.port,sent.seq,self.receive,sent.flags,&sent.payload));
+                sent.at = now; sent.retries += 1; out.send(tcp(self.peer,self.port,sent.seq,self.receive,sent.flags,&sent.payload));
             }
         }
         self.service(now,out);
@@ -139,9 +142,9 @@ impl Connection {
 }
 
 struct Closed { send: u32, receive: u32, until: u64 }
-pub struct Engine { decoder: slip::Decoder, connections: BTreeMap<u16,Connection>, closed: BTreeMap<u16,Closed>, next_id: u64, random: u64 }
+pub struct Engine { decoder: slip::Decoder, peer:Option<[u8;4]>, connections: BTreeMap<u16,Connection>, closed: BTreeMap<u16,Closed>, next_id: u64, random: u64 }
 impl Engine {
-    pub fn new(seed: u64) -> Self { Self { decoder: slip::Decoder::default(), connections: BTreeMap::new(), closed: BTreeMap::new(), next_id: 1, random: seed | 1 } }
+    pub fn new(seed: u64) -> Self { Self { decoder: slip::Decoder::default(), peer:None, connections: BTreeMap::new(), closed: BTreeMap::new(), next_id: 1, random: seed | 1 } }
     fn reap(&mut self, now: u64) {
         self.closed.retain(|_,c| now < c.until);
         let finished: Vec<_> = self.connections.iter().filter(|(_,c)| c.dead || (c.fin_acked && c.received_fin)).map(|(p,_)| *p).collect();
@@ -166,19 +169,25 @@ impl Engine {
         let header = ((packet[0] & 15) as usize)*4;
         if header < 20 || header > packet.len() || u16_at(packet,2) as usize != packet.len()
             || u16_at(packet,6) & 0x3fff != 0 || checksum(&packet[..header]) != 0
-            || packet[12..16] != PEER || packet[16..20] != LOCAL { return; }
+            || packet[16..20] != LOCAL { return; }
+        let peer:[u8;4]=packet[12..16].try_into().unwrap();
+        // The factory address was confirmed in car captures; the second address
+        // preserves the existing synthetic bench. Never learn arbitrary peers,
+        // and never let another address replace one selected for this link.
+        if (peer!=FACTORY_PEER && peer!=BENCH_PEER) || self.peer.is_some_and(|selected|selected!=peer){return;}
         let data = &packet[header..];
         if packet[9] == 1 {
             if data.len() >= 8 && data[0] == 8 && data[1] == 0 && checksum(data) == 0 {
+                self.peer=Some(peer);
                 let mut reply = data.to_vec(); reply[0] = 0; reply[2] = 0; reply[3] = 0;
-                let cs = checksum(&reply); reply[2..4].copy_from_slice(&cs.to_be_bytes()); out.send(ipv4(1,LOCAL,PEER,&reply));
+                let cs = checksum(&reply); reply[2..4].copy_from_slice(&cs.to_be_bytes()); out.send(ipv4(1,LOCAL,peer,&reply));
             }
             return;
         }
         if packet[9] != 6 || data.len() < 20 || u16_at(data,2) != 80 { return; }
         let offset = ((data[12] >> 4) as usize)*4;
         if offset < 20 || offset > data.len() { return; }
-        let mut pseudo = Vec::new(); pseudo.extend(PEER); pseudo.extend(LOCAL); pseudo.extend([0,6]); pseudo.extend((data.len() as u16).to_be_bytes()); pseudo.extend(data);
+        let mut pseudo = Vec::new(); pseudo.extend(peer); pseudo.extend(LOCAL); pseudo.extend([0,6]); pseudo.extend((data.len() as u16).to_be_bytes()); pseudo.extend(data);
         if checksum(&pseudo) != 0 { return; }
         let port = u16_at(data,0); if port == 0 { return; }
         if data[13] & SYN != 0 && data[13] & (ACK|RST|FIN) == 0 {
@@ -197,19 +206,21 @@ impl Engine {
                 at += data[at+1] as usize;
             }
             self.random ^= self.random << 13; self.random ^= self.random >> 7; self.random ^= self.random << 17;
-            let mut c = Connection { id:self.next_id, port, initial:sequence, receive:sequence.wrapping_add(1), send:self.random as u32,
+            self.peer=Some(peer);
+            let mut c = Connection { peer,id:self.next_id, port, initial:sequence, receive:sequence.wrapping_add(1), send:self.random as u32,
                 established:false, outstanding:None, reply:None, input:Vec::new(), pending:false, pending_at:now, last:now,
                 mss, window:u16_at(data,14) as usize, reordered:BTreeMap::new(), peer_fin:None, received_fin:false, sent_fin:false, fin_acked:false, dead:false };
             self.next_id = self.next_id.wrapping_add(1); c.tracked(SYN|ACK,Vec::new(),now,out); self.connections.insert(port,c);
         } else if let Some(connection) = self.connections.get_mut(&port) { connection.input(data,now,out); }
         else if let Some(closed) = self.closed.get(&port) {
             if data[13] & FIN != 0 && u32_at(data,4).wrapping_add((data.len()-offset) as u32).wrapping_add(1) == closed.receive {
-                out.send(tcp(port,closed.send,closed.receive,ACK,&[]));
+                out.send(tcp(peer,port,closed.send,closed.receive,ACK,&[]));
             }
         } else if data[13] & RST == 0 {
+            self.peer=Some(peer);
             // A stale connection after an app restart should restart cleanly.
-            if data[13] & ACK != 0 { out.send(tcp(port,u32_at(data,8),0,RST,&[])); }
-            else { out.send(tcp(port,0,u32_at(data,4).wrapping_add((data.len()-offset) as u32).wrapping_add((data[13] & FIN != 0) as u32),RST|ACK,&[])); }
+            if data[13] & ACK != 0 { out.send(tcp(peer,port,u32_at(data,8),0,RST,&[])); }
+            else { out.send(tcp(peer,port,0,u32_at(data,4).wrapping_add((data.len()-offset) as u32).wrapping_add((data[13] & FIN != 0) as u32),RST|ACK,&[])); }
         }
         self.reap(now);
     }

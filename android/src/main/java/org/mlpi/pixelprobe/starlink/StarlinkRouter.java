@@ -143,7 +143,7 @@ public final class StarlinkRouter {
             else if(path.equals(PREFIX+"apps/action")) {
                 method(request,"POST");
                 String origin=request.headers.get("origin");
-                if(origin!=null && !origin.equals("http://192.168.1.1") && !origin.equals("http://127.0.0.1:"+StarlinkRuntime.PREVIEW_PORT))throw new LocalHttp.Error(403,"Local origin required");
+                if(origin!=null && !origin.equals("http://192.168.1.1") && !origin.equals("http://127.0.0.1:"+StarlinkRuntime.get(context).previewPort()))throw new LocalHttp.Error(403,"Local origin required");
                 response=html(apps.actionPage(apps.perform(body(request,1024))),request.close);
             }else if(route.startsWith("apps/")) {method(request,"GET");response=html(apps.page(route.substring(5)),request.close);}
             else if(path.equals(PREFIX+"dashboard")) {method(request,"GET");response=html(new CarUi(context).home(run(query,false)),request.close);}

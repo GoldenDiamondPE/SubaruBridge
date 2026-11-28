@@ -1,5 +1,71 @@
 # Changes
 
+## 0.59-dev — Connection recovery and readable phone screens
+
+- Fix factory packets silently discarded because the stack hard-coded the bench
+  IP. Use the capture-confirmed head-unit address, preserve the bench, pin peers
+  per session and construct replies/checksums for the selected address. Add
+  fail-before/pass-after regressions and a real Android JNI HTTP exchange.
+- Move Bluetooth off/on and listener/session recovery into the foreground service;
+  use cancellable bounded retries, clean permission failures and a renewable
+  active-session power lease. Respect explicit Pause across Activity and service
+  restarts. Distinguish received STARLINK requests from a socket merely opening.
+- Keep the phone preview independent of the car listener. Fall back to another
+  authenticated loopback port on a conflict and update previews, origin checks,
+  self-checks and developer HTTP tests to use the selected endpoint.
+- Simplify Home, enlarge supporting labels, improve filled-control contrast and
+  window/keyboard insets, and keep technical details expandable in Tools.
+- Add native Android lifecycle regression checks with isolated transports and
+  document computer-free recording/export and the parked-car test.
+- Include the 0.58 ownership system. Investigate iPhone notification/audio roles
+  and add companion setup guidance; actual iPhone relay and head-unit results
+  remain separately required.
+- Fix the first-tap iOS Garage export dialog by preparing its document before
+  presentation; pass all seven native simulator journeys. Update the shared
+  maintenance-source assertion and make resource checks consistent across hosts.
+
+## 0.58-dev — Android ownership completion
+
+- Verify the actual 2017 US manufacturer booklet, item-specific severe-service
+  exceptions and offline owner-manual fluid/capacity/torque/plug/tire references.
+- Add private JPEG/PNG/WebP and PDF receipts on saved vehicles, services, fuel,
+  expenses and trips; preview, save copies and remove attachments locally.
+- Add complete ZIP and optional password-encrypted SBBK backups, legacy JSON
+  compatibility, native conflict review and atomic, tested v1 storage migration.
+- Protect odometer correction history, currency meaning, receipt identity and
+  stale reviews. Reject duplicate JSON keys, unsafe paths and damaged archives.
+- Keep a stable daily reminder target, report permission/storage failures and
+  recover after boot/time changes instead of silently swallowing exceptions.
+- Add purchased-fuel totals/price, measured cycle fuel cost, fuel-economy charts
+  and labeled mileage/service-date estimates using recent confirmed readings.
+- Preserve the unified STARLINK/diagnostic/media paths. No iOS changes or OEM
+  application code/assets are included.
+## 0.57.0 iOS — Unified companion
+
+- Add native Home, Garage, Dashboard and Tools navigation with the Android icon.
+- Use the existing shared Rust maintenance, mileage, fuel and expense engine from
+  Swift through the C interface. Keep one local Garage and Android-compatible
+  JSON backup/restore, CSV export and printable service history.
+- Add vehicle profiles, audited odometer corrections, uncertain multi-item service
+  records, fuel logs, expenses, manual trips, custom intervals, charts and local
+  maintenance reminders. Preserve the existing iPhone actions and preferences.
+- Package the original head-unit templates for a loopback-only, JavaScript-free
+  preview. Touch forms, settings and phone self-checks use the app's HTTP handler.
+- Add bounded metadata recording, private notes, interrupted-run recovery and ZIP
+  export. iOS saves a recording on backgrounding; it does not claim Android-style
+  continuous background recording or raw Bluetooth capture.
+- Reject duplicate JSON keys before native parsing can hide conflicting schema
+  fields. Shared regression coverage protects both platform adapters.
+- Direct Subaru accessory transport, Taurus control and other apps' iPhone
+  notifications remain separate, unverified or platform-restricted capabilities.
+- Pass 32 Swift component tests and all six native iPhone simulator journeys.
+  Verify saved uncertain service history, relaunch persistence and the native
+  export picker; archive/export and verify a development-signed arm64 IPA.
+- Correct the headless icon renderer using an opaque Core Graphics bitmap and
+  prevent localized grouping separators in the vehicle model year. Exclude the
+  generated icon and private IPA artifacts from source control.
+- No physical iPhone or car result is inferred from simulator and signing checks.
+
 ## 0.57-dev — Unified Android workspace
 
 - Keep Garage, the original STARLINK dashboard, integrations and diagnostic tools

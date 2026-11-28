@@ -11,8 +11,11 @@ public final class StarlinkRuntime {
     private static StarlinkRuntime instance;
     public final StarlinkRouter router;
     private ServerSocket server;
+    private int previewPort=PREVIEW_PORT;
+    private final File previewPortFile;
     private final String previewToken;
     private StarlinkRuntime(Context context){
+        previewPortFile=new File(context.getNoBackupFilesDir(),"preview-port");
         router=new StarlinkRouter(context);
         byte[] bytes=new byte[24];new java.security.SecureRandom().nextBytes(bytes);
         StringBuilder token=new StringBuilder();for(byte b:bytes)token.append(String.format(java.util.Locale.ROOT,"%02x",b & 255));previewToken=token.toString();
@@ -28,16 +31,30 @@ public final class StarlinkRuntime {
         return false;
     }
     public static synchronized StarlinkRuntime get(Context context){if(instance==null)instance=new StarlinkRuntime(context.getApplicationContext());return instance;}
+    public synchronized int previewPort(){return previewPort;}
+    synchronized void stopPreview(){if(server!=null)try{server.close();}catch(IOException ignored){}server=null;}
     public synchronized void startPreview() throws IOException {
+        startPreview(PREVIEW_PORT);
+    }
+    synchronized void startPreview(int preferredPort) throws IOException {
+        if(preferredPort<1||preferredPort>65535)throw new IllegalArgumentException("Invalid preview port");
         if(server!=null && !server.isClosed())return;
         ServerSocket socket=new ServerSocket();
-        socket.bind(new InetSocketAddress(InetAddress.getByName("127.0.0.1"),PREVIEW_PORT),4);server=socket;
+        try{
+            socket.setReuseAddress(true);
+            InetAddress loopback=InetAddress.getByName("127.0.0.1");
+            try{socket.bind(new InetSocketAddress(loopback,preferredPort),4);}
+            catch(BindException occupied){socket.close();socket=new ServerSocket();socket.bind(new InetSocketAddress(loopback,0),4);}
+        }catch(IOException|RuntimeException failure){try{socket.close();}catch(IOException ignored){}throw failure;}
+        server=socket;previewPort=socket.getLocalPort();final ServerSocket listener=socket;
+        try(FileOutputStream out=new FileOutputStream(previewPortFile)){out.write(Integer.toString(previewPort).getBytes(java.nio.charset.StandardCharsets.US_ASCII));}
+        catch(IOException unavailable){android.util.Log.w("SubaruBridgePreview","Debug port file unavailable");}
         ThreadPoolExecutor clients=new ThreadPoolExecutor(0,4,15,TimeUnit.SECONDS,new SynchronousQueue<>());
         Thread thread=new Thread(()->{
-            try {while(!socket.isClosed()) {
-                Socket peer=socket.accept();peer.setSoTimeout(5000);
+            try {while(!listener.isClosed()) {
+                Socket peer=listener.accept();peer.setSoTimeout(5000);
                 try{clients.execute(()->serve(peer));}catch(RejectedExecutionException busy){peer.close();}
-            }}catch(IOException ignored){}finally{clients.shutdownNow();try{socket.close();}catch(IOException ignored){}}
+            }}catch(IOException ignored){}finally{clients.shutdownNow();try{listener.close();}catch(IOException ignored){}}
         },"bridge-loopback");thread.setDaemon(true);thread.start();
     }
     private void serve(Socket peer) {

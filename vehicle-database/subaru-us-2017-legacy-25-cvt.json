@@ -3,11 +3,11 @@
   "profile": "subaru-us-2017-legacy-25-cvt",
   "market": "US",
   "vehicle": "2017 Subaru Legacy 2.5i CVT",
-  "sourceUrl": "https://contactus.subaru.com/_entity/annotation/5a65d58d-ed51-ec11-8c62-0022482a2d61",
-  "sourceSha256": "b408b8a024f6a1d9ff7a12ad3ee117fe298c17fadb0e242e68d4e3556a3e5830",
-  "sourcePage": "Official 2017 maintenance attachment, page 1; row references retained",
+  "sourceUrl": "https://cdn.subarunet.com/stis/doc/warrantyBooklet/2017_war_and_maint_112216.pdf",
+  "sourceSha256": "6f0e44f69e0da2ed87b515d01fd049d98926cdf14f14dc5573bd3c810178f866",
+  "sourcePage": "2017 US Warranty & Maintenance Booklet, pages 29\u201331; schedule rows and numbered notes",
   "verifiedDate": "2026-11-27",
-  "limitations": "Schedule table only. Referenced booklet notes, severe exceptions, specifications and parts are not included in this attachment and have not been imported. Severe mode requires a verified exception or an explicit owner override. No vehicle service history is assumed.",
+  "limitations": "Only US 2017 Legacy 2.5 CVT. Condition-specific exceptions follow page 31. A prior broad severe flag needs condition selection. No numeric interval is invented for inspect-more-often instructions. CVT capacity is not a drain-and-fill instruction. No service completion is assumed.",
   "rules": [
     {
       "id": "engine-oil",
@@ -20,7 +20,20 @@
       "sourceRow": "1",
       "noteRefs": [
         1
-      ]
+      ],
+      "exception": {
+        "conditions": [
+          "shortTrips",
+          "cold",
+          "towing"
+        ],
+        "interval": {
+          "miles": 3000,
+          "months": 3
+        },
+        "action": "replace",
+        "source": "Note 1; examples a, d, g"
+      }
     },
     {
       "id": "oil-filter",
@@ -33,7 +46,20 @@
       "sourceRow": "2",
       "noteRefs": [
         1
-      ]
+      ],
+      "exception": {
+        "conditions": [
+          "shortTrips",
+          "cold",
+          "towing"
+        ],
+        "interval": {
+          "miles": 3000,
+          "months": 3
+        },
+        "action": "replace",
+        "source": "Note 1; examples a, d, g"
+      }
     },
     {
       "id": "spark-plugs",
@@ -69,7 +95,19 @@
       "noteRefs": [
         6,
         7
-      ]
+      ],
+      "exception": {
+        "conditions": [
+          "salt",
+          "coastal"
+        ],
+        "interval": {
+          "miles": 6000,
+          "months": 6
+        },
+        "action": "inspect",
+        "source": "Note 6; examples e, f"
+      }
     },
     {
       "id": "fuel-filter",
@@ -83,6 +121,14 @@
       "noteRefs": [
         2,
         7
+      ],
+      "advisories": [
+        {
+          "conditions": [
+            "temperatureExtremes"
+          ],
+          "note": "Replace more often in extreme hot or cold areas (note 2); the booklet gives no shortened numerical interval."
+        }
       ]
     },
     {
@@ -96,6 +142,14 @@
       "sourceRow": "8",
       "noteRefs": [
         8
+      ],
+      "advisories": [
+        {
+          "conditions": [
+            "dust"
+          ],
+          "note": "Inspect the engine air cleaner more often in extremely dusty use (note 8). No fixed extra inspection interval is given."
+        }
       ]
     },
     {
@@ -126,7 +180,13 @@
       "initial": {
         "miles": 137500,
         "months": 132
-      }
+      },
+      "advisories": [
+        {
+          "conditions": [],
+          "note": "The 2017 booklet note 10 specifies Genuine SUBARU Cooling System Conditioner whenever coolant is replaced. Follow the vehicle service procedure."
+        }
+      ]
     },
     {
       "id": "cvt-fluid",
@@ -139,7 +199,18 @@
       "sourceRow": "13",
       "noteRefs": [
         4
-      ]
+      ],
+      "exception": {
+        "conditions": [
+          "towing"
+        ],
+        "interval": {
+          "miles": 24855,
+          "months": null
+        },
+        "action": "replace",
+        "source": "Note 4; example g; distance-only exception"
+      }
     },
     {
       "id": "differentials",
@@ -152,7 +223,18 @@
       "sourceRow": "14",
       "noteRefs": [
         3
-      ]
+      ],
+      "exception": {
+        "conditions": [
+          "towing"
+        ],
+        "interval": {
+          "miles": 15000,
+          "months": 15
+        },
+        "action": "replace",
+        "source": "Note 3; example g"
+      }
     },
     {
       "id": "brake-lines",
@@ -165,7 +247,20 @@
       "sourceRow": "15",
       "noteRefs": [
         6
-      ]
+      ],
+      "exception": {
+        "conditions": [
+          "roughRoads",
+          "salt",
+          "towing"
+        ],
+        "interval": {
+          "miles": 6000,
+          "months": 6
+        },
+        "action": "inspect",
+        "source": "Note 6; examples b, e, g"
+      }
     },
     {
       "id": "brake-fluid",
@@ -178,6 +273,27 @@
       "sourceRow": "16",
       "noteRefs": [
         5
+      ],
+      "exception": {
+        "conditions": [
+          "humidityMountains"
+        ],
+        "interval": {
+          "miles": 15000,
+          "months": 15
+        },
+        "action": "replace",
+        "source": "Note 5; humidity or mountainous areas"
+      },
+      "advisories": [
+        {
+          "conditions": [
+            "roughRoads",
+            "salt",
+            "towing"
+          ],
+          "note": "Examples b, e and g include brake-fluid item 16. Note 5 supplies a shortened numeric interval only for high humidity or mountain use; verify other severe-use needs with Subaru."
+        }
       ]
     },
     {
@@ -191,7 +307,20 @@
       "sourceRow": "17",
       "noteRefs": [
         6
-      ]
+      ],
+      "exception": {
+        "conditions": [
+          "cold",
+          "salt",
+          "towing"
+        ],
+        "interval": {
+          "miles": 6000,
+          "months": 6
+        },
+        "action": "inspect",
+        "source": "Note 6; examples d, e, g"
+      }
     },
     {
       "id": "steering-suspension",
@@ -204,7 +333,19 @@
       "sourceRow": "18",
       "noteRefs": [
         6
-      ]
+      ],
+      "exception": {
+        "conditions": [
+          "cold",
+          "towing"
+        ],
+        "interval": {
+          "miles": 6000,
+          "months": 6
+        },
+        "action": "inspect",
+        "source": "Note 6; examples d, g"
+      }
     },
     {
       "id": "wheel-bearings",
@@ -241,7 +382,53 @@
       "sourceRow": "21",
       "noteRefs": [
         8
+      ],
+      "advisories": [
+        {
+          "conditions": [
+            "dust"
+          ],
+          "note": "Row 21 refers to note 8, whose wording names the air cleaner element. A separate numeric cabin-filter exception is not stated."
+        }
       ]
+    }
+  ],
+  "conditions": [
+    {
+      "id": "shortTrips",
+      "title": "Repeated short-distance trips"
+    },
+    {
+      "id": "roughRoads",
+      "title": "Rough or muddy roads"
+    },
+    {
+      "id": "dust",
+      "title": "Extremely dusty conditions"
+    },
+    {
+      "id": "cold",
+      "title": "Extremely cold weather"
+    },
+    {
+      "id": "salt",
+      "title": "Road salt or corrosive materials"
+    },
+    {
+      "id": "coastal",
+      "title": "Coastal areas"
+    },
+    {
+      "id": "towing",
+      "title": "Repeated trailer towing"
+    },
+    {
+      "id": "humidityMountains",
+      "title": "High humidity or mountainous areas"
+    },
+    {
+      "id": "temperatureExtremes",
+      "title": "Extremely hot or cold areas (fuel filter)"
     }
   ]
 }

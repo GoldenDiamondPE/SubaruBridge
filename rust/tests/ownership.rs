@@ -6,6 +6,9 @@ use serde_json::{json,Value};
  let deep=format!("{}0{}","[".repeat(1000),"]".repeat(1000));assert!(!own::valid_document(deep.as_bytes()));
  let quoted=json!({"notes":"{".repeat(1000)}).to_string();assert!(own::valid_document(quoted.as_bytes()));
  assert!(!own::valid_document(br#"{"notes":"\uD800"}"#));assert!(!own::valid_document(&vec![b' ';own::MAX_JSON+1]));
+ assert!(!own::valid_document(br#"{"schemaVersion":999,"schemaVersion":1}"#));
+ assert!(!own::valid_document(br#"{"nested":{"id":1,"\u0069d":2}}"#));
+ assert!(own::valid_document(br#"{"left":{"id":1},"right":{"id":2}}"#));
 }
 
 #[test]fn version_counters_remain_exact_across_native_and_json_adapters(){
@@ -106,7 +109,7 @@ fn fuel(id:&str,at:u64,miles:u64,ml:u64,full:bool)->Fuel{Fuel{id:id.into(),vehic
  assert_eq!(date("2026-03-01").ordinal()-date("2026-02-28").ordinal(),1);
  assert!(date("2200-12-01").add_months(1).is_err());
 }
-#[test]fn bundled_schedule_is_scoped_and_sourced(){let db=own::schedule();assert_eq!(db.rules.len(),18);assert!(db.source_url.starts_with("https://contactus.subaru.com/"));assert_eq!(db.source_sha256.len(),64);let oil=db.rules.iter().find(|r|r.id=="engine-oil").unwrap();assert_eq!(oil.normal,Interval{miles:Some(6000),months:Some(6)});assert!(db.rules.iter().all(|r|r.severe.is_none()));}
+#[test]fn bundled_schedule_is_scoped_and_sourced(){let db=own::schedule();assert_eq!(db.rules.len(),18);assert!(db.source_url.starts_with("https://cdn.subarunet.com/"));assert_eq!(db.source_sha256.len(),64);let oil=db.rules.iter().find(|r|r.id=="engine-oil").unwrap();assert_eq!(oil.normal,Interval{miles:Some(6000),months:Some(6)});assert!(db.rules.iter().all(|r|r.severe.is_none()));}
 #[test]fn unknown_history_does_not_become_overdue(){let d=due("engine-oil",None,Some(81000),false,None);assert_eq!(d.status,"unknownHistory");assert!(d.next_date.is_none()&&d.next_low_mm.is_none());}
 #[test]fn mileage_threshold_due_soon_due_and_overdue(){let s=service("s","engine-oil",Some((70000,70000)),Some("2026-09-01"));for (m,status) in [(75000,"upToDate"),(75500,"dueSoon"),(76000,"due"),(76001,"overdue")]{assert_eq!(due("engine-oil",Some(&s),Some(m),false,None).status,status);}}
 #[test]fn calendar_threshold_wins_even_with_low_mileage(){let s=service("s","engine-oil",Some((70000,70000)),Some("2026-05-27"));assert_eq!(due("engine-oil",Some(&s),Some(71000),false,None).status,"due");let s=service("s","engine-oil",Some((70000,70000)),Some("2026-05-26"));assert_eq!(due("engine-oil",Some(&s),Some(71000),false,None).status,"overdue");}
@@ -133,3 +136,55 @@ fn fuel(id:&str,at:u64,miles:u64,ml:u64,full:bool)->Fuel{Fuel{id:id.into(),vehic
 #[test]fn maintenance_profile_needs_an_exact_supported_engine(){let mut s=garage();s.vehicles[0].engine="12.5L".into();assert!(valid(&s).is_err());s.vehicles[0].engine="FB25".into();assert!(valid(&s).is_ok());s.vehicles[0].transmission="manual".into();assert!(valid(&s).is_err());s.vehicles[0].maintenance_profile=None;assert!(valid(&s).is_ok());}
 #[test]fn trip_overlap_and_invalid_factory_cost_are_rejected(){let mut s=garage();for(id,start,end)in[("a",1,5),("b",4,7)]{s.trips.push(Trip{id:id.into(),vehicle_id:"car".into(),started_ms:start,ended_ms:end,distance_mm:MM_PER_MILE,source:DistanceSource::Gps,notes:String::new()});}assert!(valid(&s).is_err());s.trips.clear();let mut baseline=service("factory","coolant",Some((0,0)),Some("2017-01-01"));baseline.factory_baseline=true;baseline.cost_cents=1;s.services.push(baseline);assert!(valid(&s).is_err());}
 #[test]fn json_boundary_rejects_unknown_fields_and_oversize(){let out:Value=serde_json::from_slice(&own::execute_json(&vec![b' ';own::MAX_JSON+1])).unwrap();assert_eq!(out["ok"],false);let mut req=json!({"state":garage(),"today":"2026-11-27","nowMs":1800000000000u64,"command":{"type":"view"},"unknown":true});assert_eq!(serde_json::from_slice::<Value>(&own::execute_json(&serde_json::to_vec(&req).unwrap())).unwrap()["ok"],false);req.as_object_mut().unwrap().remove("unknown");assert_eq!(serde_json::from_slice::<Value>(&own::execute_json(&serde_json::to_vec(&req).unwrap())).unwrap()["ok"],true);}
+
+#[test]fn severe_exceptions_are_condition_and_item_specific(){
+ let db=own::schedule();let rule=|id:&str|db.rules.iter().find(|r|r.id==id).unwrap();
+ let choose=|id:&str,c:&str|maintenance::for_conditions(rule(id),&[c.to_owned()]).0;
+ assert_eq!(choose("engine-oil","shortTrips").normal.miles,Some(3000));
+ assert_eq!(choose("engine-oil","salt").normal.miles,Some(6000));
+ assert_eq!(choose("fuel-lines","coastal").normal.months,Some(6));
+ assert_eq!(choose("brakes-and-boots","cold").normal.miles,Some(6000));
+ assert_eq!(choose("steering-suspension","salt").normal.miles,Some(12000));
+ let cvt=choose("cvt-fluid","towing");assert_eq!(cvt.action,"replace");assert_eq!(cvt.normal,Interval{miles:Some(24855),months:None});
+ assert_eq!(choose("cvt-fluid","shortTrips").action,"inspect");
+ let diff=choose("differentials","towing");assert_eq!(diff.action,"replace");assert_eq!(diff.normal.months,Some(15));
+ assert_eq!(choose("brake-fluid","humidityMountains").normal.miles,Some(15000));
+ assert_eq!(choose("brake-fluid","salt").normal.miles,Some(30000));
+ let (air,note)=maintenance::for_conditions(rule("engine-air-filter"),&["dust".into()]);assert_eq!(air.normal.miles,Some(30000));assert!(note.contains("No fixed"));
+}
+#[test]fn selected_conditions_drive_real_maintenance_without_assuming_history(){
+ let mut s=garage();s.vehicles[0].severe_conditions=vec!["towing".into()];s.readings.push(reading("r",1,75000));
+ s.services.push(service("last","cvt-fluid",Some((50000,50000)),None));let out=execute(&s,json!({"type":"view"}));
+ let cvt=out["summaries"][0]["maintenance"].as_array().unwrap().iter().find(|v|v["itemId"]=="cvt-fluid").unwrap();assert_eq!(cvt["status"],"overdue");assert_eq!(cvt["action"],"replace");assert!(cvt["nextDate"].is_null());assert_eq!(cvt["nextLowMm"],74855*MM_PER_MILE);
+ s.vehicles[0].severe_conditions.push("invented".into());assert!(valid(&s).is_err());
+}
+#[test]fn backup_review_and_resolution_are_atomic_and_revision_checked(){
+ let mut local=garage();let mut incoming=local.clone();incoming.vehicles[0].nickname="Backup nickname".into();
+ incoming.expenses.push(Expense{id:"parking".into(),vehicle_id:"car".into(),date:date("2026-11-01"),category:"Parking".into(),cost_cents:450,financing:false,notes:String::new()});
+ let preview=execute(&local,json!({"type":"previewImport","backup":incoming}));assert_eq!(preview["ok"],true);assert_eq!(preview["changed"],false);assert_eq!(preview["importReview"]["newRecords"],1);assert_eq!(preview["importReview"]["conflicts"][0]["key"],"vehicles/car");assert_eq!(preview["state"]["vehicles"][0]["nickname"],"Legacy");
+ let apply=|state:&Garage,choices:Value|execute(state,json!({"type":"applyImport","backup":incoming,"expectedRevision":0,"resolutions":choices}));
+ assert_eq!(apply(&local,json!([]))["ok"],false);
+ let changed=apply(&local,json!([{"key":"vehicles/car","useIncoming":true}]));assert_eq!(changed["ok"],true);assert_eq!(changed["state"]["vehicles"][0]["nickname"],"Backup nickname");assert_eq!(changed["state"]["expenses"].as_array().unwrap().len(),1);
+ assert_eq!(apply(&local,json!([{"key":"vehicles/car","useIncoming":false}]))["state"]["vehicles"][0]["nickname"],"Legacy");
+ local.revision=1;assert_eq!(apply(&local,json!([{"key":"vehicles/car","useIncoming":true}]))["ok"],false);
+}
+#[test]fn backup_resolution_preserves_odometer_audit_and_currency_semantics(){
+ let mut local=garage();local.readings.push(reading("r",1,80000));let mut incoming=local.clone();incoming.readings[0].distance_mm=79000*MM_PER_MILE;
+ let review=execute(&local,json!({"type":"previewImport","backup":incoming}));assert_eq!(review["importReview"]["conflicts"][0]["canReplace"],false);
+ assert_eq!(execute(&local,json!({"type":"applyImport","backup":incoming,"expectedRevision":0,"resolutions":[{"key":"readings/r","useIncoming":true}]}))["ok"],false);
+ local.services.push(service("s","engine-oil",None,Some("2026-11-01")));incoming=local.clone();incoming.vehicles[0].currency="CAD".into();
+ let out=execute(&local,json!({"type":"previewImport","backup":incoming}));assert_eq!(out["importReview"]["conflicts"][0]["canReplace"],false);
+}
+#[test]fn fuel_costs_use_complete_cycles_include_partials_and_exclude_anchor_purchase(){
+ let mut s=garage();
+ for (id,at,miles,ml,cost,full,missed) in [("a",1,100,10000,5000,true,false),("b",2,180,5000,2000,false,false),("c",3,300,10000,4000,true,false),("d",4,350,10000,1000,false,true)] {
+  s.fuel.push(Fuel{id:id.into(),vehicle_id:"car".into(),at_ms:at,distance_mm:miles*MM_PER_MILE,volume_ml:ml,cost_cents:cost,full,missed_fill:missed,notes:String::new()});
+ }
+ let fuel=own::fuel_summary(&s,"car");assert_eq!(fuel.completed_cycles,1);assert_eq!(fuel.cycle_cost_cents,6000);assert_eq!(fuel.cost_per_mile,Some(0.3));assert_eq!(fuel.purchased_cost_cents,12000);assert_eq!(fuel.fill_ups,4);assert_eq!(fuel.full_fill_ups,2);assert_eq!(fuel.purchased_volume_ml,35000);assert!(fuel.average_price_per_litre.is_some());
+}
+#[test]fn mileage_forecasts_require_recent_nonzero_confirmed_growth(){
+ let mut s=garage();let now=1_796_000_000_000;let mut first=reading("r1",now-30*86_400_000,80000);let last=reading("r2",now,81000);s.readings=vec![first.clone(),last];
+ let f=own::analytics::forecast(&s,"car",now);assert_eq!(f["estimated"],true);assert_eq!(f["annualizedMm"],(1000.0/30.0*365.0*MM_PER_MILE as f64).round() as u64);
+ assert!(own::analytics::forecast(&s,"car",now+91*86_400_000).is_null());
+ first.confidence=Confidence::Approximate;s.readings[0]=first;assert!(own::analytics::forecast(&s,"car",now).is_null());
+}

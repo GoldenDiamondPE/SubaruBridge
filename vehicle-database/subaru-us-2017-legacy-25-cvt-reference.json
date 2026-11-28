@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "profile": "subaru-us-2017-legacy-25-cvt",
+  "vehicle": "US 2017 Subaru Legacy 2.5i Premium \u00b7 CVT",
+  "verifiedDate": "2026-11-27",
+  "sourceUrl": "https://www.subaru.com/owners/vehicle-resources.html?model=2017-LEG-HAD",
+  "document": "2017MY Legacy/Outback Owner Manual MSA5M1703A_B_STIS_Index.pdf",
+  "sourceSha256": "b93d7dfb30ab96ddd8703433af27bb93a990490e8e9599da764ec4c74ed28133",
+  "specifications": [
+    {
+      "title": "Engine oil",
+      "value": "0W-20 synthetic \u00b7 API SN Resource Conserving or ILSAC GF-5",
+      "sourceSection": "Owner manual 12-4\u201312-5",
+      "notes": "These are the manual\u2019s original oil requirements, not a claim that a newer specification is incompatible. Subaru-approved oil is preferred.",
+      "quantityKind": "specification"
+    },
+    {
+      "title": "Oil & filter change",
+      "value": "5.1 US qt \u00b7 4.8 L",
+      "sourceSection": "Owner manual 12-5",
+      "notes": "Guideline for an oil-and-filter change. Verify the dipstick level after refilling; not total engine dry capacity.",
+      "quantityKind": "serviceFill"
+    },
+    {
+      "title": "Engine coolant",
+      "value": "SUBARU Super Coolant \u00b7 8.2 US qt / 7.8 L system capacity",
+      "sourceSection": "Owner manual 12-8",
+      "notes": "2.5 L CVT system quantity, not a measured drain-and-fill amount. The 2017 warranty booklet note 10 specifies Subaru cooling system conditioner when replacing coolant.",
+      "quantityKind": "systemCapacity"
+    },
+    {
+      "title": "Front differential",
+      "value": "SUBARU Extra MT; API GL-5 75W-90 alternative \u00b7 1.3 US qt / 1.2 L guideline",
+      "sourceSection": "Owner manual 12-7",
+      "notes": "The manual lists Extra MT as factory fill. Its GL-5 alternative may reduce drivability or fuel economy. Confirm the fill level by the specified service procedure.",
+      "quantityKind": "capacityGuideline"
+    },
+    {
+      "title": "Rear differential",
+      "value": "API GL-5 \u00b7 75W-90 recommended \u00b7 0.8 US qt / 0.8 L guideline",
+      "sourceSection": "Owner manual 12-7",
+      "notes": "The manual also lists SAE 90 for the indicated temperature range. Check the specified level; printed units are manufacturer-rounded.",
+      "quantityKind": "capacityGuideline"
+    },
+    {
+      "title": "CVT",
+      "value": "12.0 US qt \u00b7 11.4 L published capacity; fluid type: consult Subaru",
+      "sourceSection": "Owner manual 12-8 / 11-19",
+      "notes": "This is a published transmission capacity, NOT a normal drain-and-fill quantity. Correct service fluid and procedure require exact transmission/VIN verification.",
+      "quantityKind": "systemCapacity"
+    },
+    {
+      "title": "Brake fluid",
+      "value": "Fresh DOT 3 or DOT 4 \u00b7 FMVSS 116",
+      "sourceSection": "Owner manual 12-8 / 11-20",
+      "notes": "The manual provides no refill volume. Use new fluid from a sealed container; follow the brake-service procedure.",
+      "quantityKind": "specification"
+    },
+    {
+      "title": "Spark plugs",
+      "value": "NGK SILZKAR7B11",
+      "sourceSection": "Owner manual 12-9",
+      "notes": "Type listed for the 2.5 L engine. Do not infer a tightening torque or electrode adjustment from this reference.",
+      "quantityKind": "specification"
+    },
+    {
+      "title": "Battery",
+      "value": "55D23R \u00b7 US 2.5 L model",
+      "sourceSection": "Owner manual 12-9",
+      "notes": "Manual battery type, not an aftermarket group-size or CCA fitment claim. Check polarity, dimensions, hold-down and current replacement fitment.",
+      "quantityKind": "specification"
+    },
+    {
+      "title": "Factory 17-inch tires",
+      "value": "225/55R17 97V \u00b7 cold 33 psi front / 32 psi rear",
+      "sourceSection": "Owner manual 12-9",
+      "notes": "Applies to the manual\u2019s Legacy 17-inch tire configuration. The actual vehicle door placard governs; changed wheels or load ratings need verification.",
+      "quantityKind": "specification"
+    },
+    {
+      "title": "Wheel nuts",
+      "value": "120 N\u00b7m \u00b7 88.5 lbf\u00b7ft",
+      "sourceSection": "Owner manual 12-9 / 9-5",
+      "notes": "Use the manual\u2019s wheel installation procedure and have the tightening torque checked by an automotive service facility after owner installation.",
+      "quantityKind": "specification"
+    },
+    {
+      "title": "Fuel",
+      "value": "87 AKI / 90 RON minimum \u00b7 18.5 US gal / 70 L tank",
+      "sourceSection": "Owner manual Gas station reference",
+      "notes": "Unleaded gasoline; tank capacity is not a fill-up target.",
+      "quantityKind": "tankCapacity"
+    }
+  ],
+  "parts": [
+    {
+      "title": "Spark-plug type",
+      "value": "NGK SILZKAR7B11",
+      "status": "Verified for 2.5 L",
+      "sourceSection": "Owner manual 12-9",
+      "notes": "Manufacturer-listed spark-plug type; no OEM order number is inferred."
+    },
+    {
+      "title": "Oil-filter bulletin",
+      "value": "15208AA21A / 15208AA100",
+      "status": "Bulletin reference; exact fitment requires verification",
+      "sourceUrl": "https://static.nhtsa.gov/odi/tsbs/2024/MC-11008267-0001.pdf",
+      "sourceSection": "Subaru bulletin 02-191-22R, revised 2024-09-17, page 1",
+      "notes": "The bulletin lists new filters alongside earlier 15208AA15A and 15208AA12A filters. It does not establish the exact VIN-specific pairing here. Do not select either new filter solely from this general reference."
+    },
+    {
+      "title": "Other filters & CVT service fluid",
+      "value": "Not yet verified for exact VIN",
+      "status": "Unverified",
+      "sourceSection": "No approved fitment data bundled",
+      "notes": "Engine air filter, cabin filter, oil-filter VIN pairing and CVT service fluid require Subaru catalog/service confirmation. Save known installed part numbers in your service record."
+    }
+  ]
+}

@@ -25,7 +25,7 @@ final class PhoneSelfCheck {
             StarlinkRuntime runtime=StarlinkRuntime.get(context);runtime.startPreview();
             for(String route:new String[]{"/version",StarlinkRouter.ENTRY,"/subarubridge-diag/dashboard"}) {
                 try(Socket socket=new Socket()) {
-                    socket.connect(new InetSocketAddress("127.0.0.1",StarlinkRuntime.PREVIEW_PORT),2000);socket.setSoTimeout(3000);
+                    socket.connect(new InetSocketAddress("127.0.0.1",StarlinkRuntime.get(context).previewPort()),2000);socket.setSoTimeout(3000);
                     socket.getOutputStream().write(("GET "+route+" HTTP/1.0\r\n\r\n").getBytes(StandardCharsets.US_ASCII));
                     ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] block=new byte[4096];int n;
                     while((n=socket.getInputStream().read(block))!=-1){if(out.size()+n>128*1024)throw new IOException("Response limit");out.write(block,0,n);}

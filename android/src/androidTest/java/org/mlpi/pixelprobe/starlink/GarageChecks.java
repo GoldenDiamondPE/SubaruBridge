@@ -31,8 +31,7 @@ final class GarageChecks {
         } finally {
             GarageActivity.testStore = null;
             context.getSharedPreferences("garage-qa-selection", Context.MODE_PRIVATE).edit().clear().commit();
-            File[] files = folder.listFiles(); if (files != null) for (File file : files) check(file.isFile() && file.delete(), "Fixture cleanup failed");
-            check(folder.delete(), "Fixture folder cleanup failed");
+            OwnershipFiles.removeTree(folder);
         }
     }
     private static void persistence(File folder) throws Exception {
@@ -102,8 +101,9 @@ final class GarageChecks {
         while (System.currentTimeMillis() < until) {
             instrumentation.runOnMainSync(() -> found[0] = screen.findViewById(id)); if (found[0] != null) return found[0]; Thread.sleep(60);
         }
-        throw new AssertionError("Garage screen missing view " + id);
+        final StringBuilder visible=new StringBuilder();instrumentation.runOnMainSync(()->collect(screen.getWindow().getDecorView(),visible));throw new AssertionError("Garage screen missing view " + id+"; "+visible);
     }
+    private static void collect(View view,StringBuilder text){if(view instanceof TextView)text.append(((TextView)view).getText()).append(" | ");if(view instanceof android.view.ViewGroup){android.view.ViewGroup group=(android.view.ViewGroup)view;for(int i=0;i<group.getChildCount();i++)collect(group.getChildAt(i),text);}}
     private static void click(Activity screen, Instrumentation instrumentation, int id) throws Exception { await(screen, instrumentation, id); instrumentation.runOnMainSync(() -> check(screen.findViewById(id).performClick(), "Control did not accept tap")); }
     private static void type(Activity screen, Instrumentation instrumentation, int id, String text) throws Exception { await(screen, instrumentation, id); instrumentation.runOnMainSync(() -> ((EditText)screen.findViewById(id)).setText(text)); }
     private static void ui(Instrumentation instrumentation, Context context, File folder) throws Exception {

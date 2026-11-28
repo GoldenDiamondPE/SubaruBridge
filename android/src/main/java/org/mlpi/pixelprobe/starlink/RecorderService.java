@@ -19,17 +19,19 @@ public final class RecorderService extends Service {
     @Override public int onStartCommand(Intent intent,int flags,int startId) {
         if(intent!=null&&"STOP".equals(intent.getAction())){stopSelf();return START_NOT_STICKY;}
         if(worker!=null)return START_NOT_STICKY;
-        getSystemService(NotificationManager.class).createNotificationChannel(
+        try{getSystemService(NotificationManager.class).createNotificationChannel(
                 new NotificationChannel(CHANNEL,"Diagnostic recordings",NotificationManager.IMPORTANCE_LOW));
         PendingIntent open=PendingIntent.getActivity(this,0,new Intent(this,DeveloperActivity.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
         PendingIntent stop=PendingIntent.getService(this,2,new Intent(this,RecorderService.class).setAction("STOP"),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
         startForeground(NOTICE,new Notification.Builder(this,CHANNEL).setSmallIcon(R.drawable.bridge_notice)
                 .setContentTitle("Recording SubaruBridge diagnostics").setContentText("Local app events · stops after 10 minutes")
                 .setContentIntent(open).setOngoing(true).addAction(new Notification.Action.Builder(null,"Stop and save",stop).build()).build());
+        }catch(RuntimeException unavailable){android.util.Log.w("SubaruBridgeRecorder","Recording service unavailable; reopen the app");stopSelf(startId);return START_NOT_STICKY;}
         recorder=SessionRecorder.get(this);
         try{recorder.start();}catch(IOException failure){stopSelf();return START_NOT_STICKY;}
-        awake=getSystemService(PowerManager.class).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,"SubaruBridge:diagnostic-recording");
-        awake.acquire(605000L);
+        try{awake=getSystemService(PowerManager.class).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,"SubaruBridge:diagnostic-recording");
+            awake.acquire(605000L);
+        }catch(RuntimeException unavailable){finish("power_unavailable");return START_NOT_STICKY;}
         started=SystemClock.elapsedRealtime();worker=Executors.newSingleThreadScheduledExecutor();
         worker.scheduleWithFixedDelay(()->{
             if(!recorder.recording()){stopSelf();return;}

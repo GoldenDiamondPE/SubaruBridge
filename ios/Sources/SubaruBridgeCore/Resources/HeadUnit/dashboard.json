@@ -1,0 +1,122 @@
+{
+  "brand": "SubaruBridge",
+  "eyebrow": "YOUR WORKSPACE",
+  "homeTitle": "Your dashboard",
+  "homeSubtitle": "Your music, directions and conversations. Powered by your phone.",
+  "defaultTheme": "midnight",
+  "defaultLayout": "grid",
+  "columnsWide": 5,
+  "columnsNarrow": 2,
+  "tiles": [
+    {
+      "id": "display",
+      "title": "Display",
+      "subtitle": "Check the screen",
+      "icon": "display",
+      "tone": "blue",
+      "screen": 1
+    },
+    {
+      "id": "touch",
+      "title": "Touch",
+      "subtitle": "Confirm each tap",
+      "icon": "touch",
+      "tone": "green",
+      "screen": 2
+    },
+    {
+      "id": "phone",
+      "title": "Phone",
+      "subtitle": "Read live data",
+      "icon": "phone",
+      "tone": "purple",
+      "screen": 3
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "subtitle": "Review your check",
+      "icon": "results",
+      "tone": "orange",
+      "screen": 4
+    }
+  ],
+  "themes": {
+    "midnight": {
+      "label": "Midnight",
+      "background": "#101114",
+      "glow": "#101114",
+      "surface": "#1c1c1e",
+      "surfaceRaised": "#2c2c2e",
+      "text": "#f5f5f7",
+      "muted": "#a2a2aa",
+      "accent": "#0a84ff",
+      "onAccent": "#ffffff",
+      "border": "#38383a",
+      "dock": "#1c1c1e"
+    },
+    "daylight": {
+      "label": "Daylight",
+      "background": "#f2f2f7",
+      "glow": "#f2f2f7",
+      "surface": "#ffffff",
+      "surfaceRaised": "#e9e9ef",
+      "text": "#1d1d1f",
+      "muted": "#636366",
+      "accent": "#007aff",
+      "onAccent": "#ffffff",
+      "border": "#d1d1d6",
+      "dock": "#ffffff"
+    },
+    "coast": {
+      "label": "Coast",
+      "background": "#0b1b20",
+      "glow": "#0b1b20",
+      "surface": "#142a31",
+      "surfaceRaised": "#203a43",
+      "text": "#f0faf9",
+      "muted": "#9db9bd",
+      "accent": "#65d6c4",
+      "onAccent": "#082b25",
+      "border": "#304850",
+      "dock": "#142a31"
+    }
+  },
+  "apps": [
+    {
+      "id": "music",
+      "title": "Music",
+      "subtitle": "Now playing",
+      "icon": "music",
+      "tone": "blue"
+    },
+    {
+      "id": "navigation",
+      "title": "Maps",
+      "subtitle": "Google Maps directions",
+      "icon": "navigation",
+      "tone": "green"
+    },
+    {
+      "id": "calls",
+      "title": "Phone",
+      "subtitle": "Hands-free calls",
+      "icon": "calls",
+      "tone": "purple"
+    },
+    {
+      "id": "messages",
+      "title": "Messages",
+      "subtitle": "Optional sharing",
+      "icon": "messages",
+      "tone": "orange"
+    },
+    {
+      "id": "notifications",
+      "title": "Notifications",
+      "subtitle": "Your app updates",
+      "icon": "notifications",
+      "tone": "blue"
+    }
+  ]
+}

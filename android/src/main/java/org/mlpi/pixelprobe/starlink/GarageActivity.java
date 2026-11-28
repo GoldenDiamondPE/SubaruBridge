@@ -42,6 +42,7 @@ public final class GarageActivity extends Activity {
     private boolean clockRegistered;
     private int analyticsYear = LocalDate.now().getYear();
     private boolean costChart;
+    private boolean fuelChart;
     private final BroadcastReceiver clockChange = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
             if (formKind == null && !busy) perform(() -> store.view(), false);
@@ -67,7 +68,7 @@ public final class GarageActivity extends Activity {
             formKind = saved.getString("form"); editingId = saved.getString("editing", ""); itemId = saved.getString("item", "");
             draftId = saved.getString("draftId", draftId);
             historyQuery = saved.getString("historyQuery", "");
-            analyticsYear = saved.getInt("analyticsYear", analyticsYear); costChart = saved.getBoolean("costChart");
+            analyticsYear = saved.getInt("analyticsYear", analyticsYear); costChart = saved.getBoolean("costChart"); fuelChart=saved.getBoolean("fuelChart");
             try { formZone = ZoneId.of(saved.getString("formZone", formZone.getId())); } catch (DateTimeException ignored) { formZone = ZoneId.systemDefault(); }
             restoredDraft = saved.getBundle("draft"); exportKind = saved.getString("export", "backup");
         }
@@ -79,7 +80,7 @@ public final class GarageActivity extends Activity {
         out.putString("form", formKind); out.putString("editing", editingId); out.putString("item", itemId);
         out.putString("draftId", draftId);
         out.putString("historyQuery", historyQuery);
-        out.putInt("analyticsYear", analyticsYear); out.putBoolean("costChart", costChart);
+        out.putInt("analyticsYear", analyticsYear); out.putBoolean("costChart", costChart); out.putBoolean("fuelChart",fuelChart);
         out.putString("formZone", formZone.getId());
         out.putString("export", exportKind); if (form != null) out.putBundle("draft", form.draft());
     }
@@ -149,6 +150,7 @@ public final class GarageActivity extends Activity {
         });
         Button back = button(formKind == null ? "‹ SubaruBridge" : "‹ Cancel", View.NO_ID, this::back);
         back.setBackgroundColor(android.graphics.Color.TRANSPARENT); back.setGravity(Gravity.START | Gravity.CENTER_VERTICAL); back.setPadding(0, 0, 0, 0); back.setMinHeight(dp(44));
+        palette.applyWindow(this);scroll.requestApplyInsets();
         label(title, 28, palette.text, true); if (!subtitle.isEmpty()) note(subtitle);
         errorText = label("", 14, palette.accent, false); errorText.setId(R.id.garage_error); errorText.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE); errorText.setVisibility(View.GONE);
     }
@@ -186,7 +188,7 @@ public final class GarageActivity extends Activity {
                 link.setOnClickListener(v -> { section = title; historyLimit = 50; render(); }); links.addView(link);
             }
             navigation.addView(links); page.addView(navigation);
-            switch (section) { case "Maintenance": maintenance(); break; case "History": history(); break; case "More": more(); break; case "Analytics": analytics(); break; default: overview(); }
+            switch (section) { case "Maintenance": maintenance(); break; case "History": history(); break; case "More": more(); break; case "Analytics": analytics(); break; case "Reference": reference(); break; default: overview(); }
         } catch (Exception error) { beginPage("Garage", "Your records were preserved."); showError(safeError(error)); }
     }
     private boolean metric() { return vehicle != null && vehicle.optString("units").equals("metric"); }
@@ -226,8 +228,9 @@ public final class GarageActivity extends Activity {
         button("Add maintenance item", R.id.garage_add_item, () -> openForm("custom", "", ""));
         button("Reminder lead times", R.id.garage_lead_times, () -> openForm("preferences", "", ""));
         if (vehicle.isNull("maintenanceProfile")) note("A verified manufacturer schedule is not selected. Add owner-defined maintenance for this vehicle.");
-        else note("Normal US schedule · 2017 Legacy 2.5 CVT. Both time and distance apply, whichever comes first. Unknown history is never assumed overdue.");
-        if (vehicle.optBoolean("severe")) note("Severe service selected. Manufacturer severe-condition footnotes are not yet verified; add explicit owner intervals where needed.");
+        else note("Manufacturer US schedule · 2017 Legacy 2.5 CVT. Both time and distance apply, whichever comes first. Unknown history is never assumed overdue.");
+        if (vehicle.optBoolean("severe") && vehicle.optJSONArray("severeConditions").length()==0) note("An older broad severe-service flag is set. Choose specific driving conditions in the vehicle profile to apply verified exceptions.");
+        if(vehicle.optJSONArray("severeConditions").length()>0)note("Condition-specific exceptions from Subaru’s 2017 booklet are active. Open each item for its source and calculation.");
         List<JSONObject> sorted = new ArrayList<>(); for (int i = 0; i < items.length(); i++) sorted.add(items.getJSONObject(i));
         sorted.sort(Comparator.comparingInt(value -> priority(value.optString("status"))));
         for (JSONObject item : sorted) row(item.getString("title"), statusName(item.getString("status")) + (item.optBoolean("uncertain") ? " · Uncertain" : "") + (item.isNull("reminderSnoozedUntil") ? "" : " · Reminders snoozed until " + item.optString("reminderSnoozedUntil")) + next(item), () -> detail(item));
@@ -244,7 +247,12 @@ public final class GarageActivity extends Activity {
         JSONObject last = item.optJSONObject("lastMileage"); if (last != null) message.append("\nLast mileage: ").append(distance(last.optLong("lowMm"))).append(last.optLong("highMm") != last.optLong("lowMm") ? " – " + distance(last.optLong("highMm")) : "");
         if (!item.isNull("remainingLowMm")) message.append("\nDistance to threshold: ").append(distance(item.optLong("remainingLowMm"))).append(item.optLong("remainingHighMm") != item.optLong("remainingLowMm") ? " to " + distance(item.optLong("remainingHighMm")) : "");
         if (!item.isNull("remainingDays")) message.append("\nDays to threshold: ").append(item.optLong("remainingDays"));
-        message.append("\n\n").append(item.optString("explanation")).append("\n\nSource: ").append(item.optString("sourceRow"));
+        JSONObject forecast=summary.optJSONObject("forecast");
+        if(forecast!=null&&!item.isNull("remainingLowMm")&&item.optLong("remainingLowMm")>0){
+            double daily=forecast.optDouble("averageMmPerDay",0);long days=(long)Math.ceil(item.optLong("remainingLowMm")/daily),high=(long)Math.ceil(item.optLong("remainingHighMm")/daily);
+            if(daily>0&&days<=3650&&high<=3650)message.append("\nEstimated mileage threshold: ").append(LocalDate.now().plusDays(days)).append(days==high?"":" to "+LocalDate.now().plusDays(high)).append(" (at recent confirmed mileage growth; calendar service may be earlier)");
+        }
+        message.append("\n\nAction: ").append(item.optString("action")).append("\n").append(item.optString("explanation")).append("\n\nSource: ").append(item.optString("sourceRow"));
         new AlertDialog.Builder(this).setTitle(item.optString("title")).setMessage(message.toString())
                 .setPositiveButton("Log service", (d, w) -> openForm("service", "", item.optString("itemId")))
                 .setNeutralButton("Interval & source", (d, w) -> openForm("interval", "", item.optString("itemId"))).setNegativeButton("Close", null).show();
@@ -304,13 +312,28 @@ public final class GarageActivity extends Activity {
         button("Edit vehicle profile", R.id.garage_edit_vehicle, () -> openForm("vehicle", selected, ""));
         button("Ownership summaries", R.id.garage_analytics, () -> { section = "Analytics"; render(); });
         button("Maintenance reminders", R.id.garage_reminders, this::reminders);
+        button("Fluids, parts & specifications", View.NO_ID, () -> { section="Reference"; render(); });
         heading("Recorded costs"); JSONObject costs = summary.getJSONObject("costs");
         row("Fuel", money(costs.getLong("fuelCents")), null); row("Services", money(costs.getLong("serviceCents")), null);
         row("Other operating costs", money(costs.getLong("otherOperatingCents")), null); row("Financing", money(costs.getLong("financingCents")), null);
         row("Total recorded", money(costs.getLong("recordedTotalCents")), null);
         note("Fuel and service costs are included automatically. Do not enter the same purchase again as an expense. Purchase price is kept on the profile and excluded from these recorded operating totals.");
         heading("Data & privacy"); dataButtons();
-        note("Vehicle records stay in this app's private storage and are excluded from connection reports. Export a backup before uninstalling or clearing app data. Backups are unencrypted JSON; choose their destination carefully.");
+        note("Vehicle records stay in this app's private storage and are excluded from connection reports. Export a backup before uninstalling or clearing app data. Complete backups can be password-protected and include receipts. Records-only JSON is also available.");
+    }
+    private void reference() throws Exception {
+        heading("Vehicle reference");
+        if (!"subaru-us-2017-legacy-25-cvt".equals(vehicle.optString("maintenanceProfile"))) { note("The bundled reference applies to the US 2017 Legacy 2.5 CVT. This profile does not select that verified configuration."); return; }
+        JSONObject database;
+        try(InputStream input=getAssets().open("vehicle-reference.json")){database=OwnershipStore.parse(OwnershipStore.readBounded(input,256*1024));}
+        note(database.getString("vehicle")+" · verified "+database.getString("verifiedDate"));
+        note("Manufacturer facts retained offline with document sections. Quantities are guidelines; follow the specified level-check procedure. Total capacities are not service-fill quantities.");
+        JSONArray specs=database.getJSONArray("specifications");
+        for(int i=0;i<specs.length();i++){JSONObject spec=specs.getJSONObject(i);row(spec.getString("title"),spec.getString("value"),()->new AlertDialog.Builder(this).setTitle(spec.optString("title")).setMessage(spec.optString("value")+"\n\n"+spec.optString("notes")+"\n\nSource: "+spec.optString("sourceSection")+"\nVerified "+database.optString("verifiedDate"))
+                .setPositiveButton("Close",null).setNeutralButton("Manufacturer source",(d,w)->{try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(database.optString("sourceUrl"))));}catch(ActivityNotFoundException e){toast("No browser is available");}}).show());}
+        heading("Parts & compatibility");note("Spark-plug type is verified in the owner’s manual. Oil-filter numbers below are bulletin references; confirm your exact VIN and current supersession before purchase. Other filter fitments and CVT service fluid are left unverified rather than guessed.");
+        for(int i=0;i<database.getJSONArray("parts").length();i++){JSONObject part=database.getJSONArray("parts").getJSONObject(i);row(part.getString("title"),part.getString("value")+" · "+part.getString("status"),()->new AlertDialog.Builder(this).setTitle(part.optString("title")).setMessage(part.optString("notes")+"\n\n"+part.optString("sourceSection")).setPositiveButton("Close",null).show());}
+        note("Preferred parts and quantities can be recorded with each service. Receipts remain attached to that service and are included in complete backups.");
     }
     private JSONObject period(String id, String label, LocalDate start, LocalDate end) throws Exception {
         ZoneId zone = ZoneId.systemDefault();
@@ -329,25 +352,36 @@ public final class GarageActivity extends Activity {
         heading("Ownership summaries · " + analyticsYear);
         LinearLayout years = new LinearLayout(this);
         Button previous = new Button(this); previous.setText("‹ Previous year"); previous.setAllCaps(false); previous.setTextColor(palette.accent); previous.setEnabled(analyticsYear > 1900);
-        Button next = new Button(this); next.setText("Next year ›"); next.setAllCaps(false); next.setTextColor(palette.accent); next.setEnabled(analyticsYear < Math.min(LocalDate.now().getYear(), 2199));
-        for (Button control : new Button[]{previous, next}) { control.setBackground(background(palette.surface, 10)); control.setTextSize(16); control.setMinHeight(dp(46)); control.setAlpha(control.isEnabled() ? 1f : .45f); }
-        previous.setOnClickListener(v -> { if (!busy) { analyticsYear--; loadAnalytics(); } }); next.setOnClickListener(v -> { if (!busy) { analyticsYear++; loadAnalytics(); } });
-        years.addView(previous, new LinearLayout.LayoutParams(0, -2, 1)); years.addView(next, new LinearLayout.LayoutParams(0, -2, 1)); page.addView(years);
+        Button nextYear = new Button(this); nextYear.setText("Next year ›"); nextYear.setAllCaps(false); nextYear.setTextColor(palette.accent); nextYear.setEnabled(analyticsYear < Math.min(LocalDate.now().getYear(), 2199));
+        for (Button control : new Button[]{previous, nextYear}) { control.setBackground(background(palette.surface, 10)); control.setTextSize(16); control.setMinHeight(dp(46)); control.setAlpha(control.isEnabled() ? 1f : .45f); }
+        previous.setOnClickListener(v -> { if (!busy) { analyticsYear--; loadAnalytics(); } }); nextYear.setOnClickListener(v -> { if (!busy) { analyticsYear++; loadAnalytics(); } });
+        years.addView(previous, new LinearLayout.LayoutParams(0, -2, 1)); years.addView(nextYear, new LinearLayout.LayoutParams(0, -2, 1)); page.addView(years);
         JSONArray data = summary.getJSONArray("analytics");
         if (data.length() != 13 || !data.getJSONObject(0).getJSONObject("period").getString("id").equals("year-" + analyticsYear)) { note("Calculating your recorded history…"); loadAnalytics(); return; }
         JSONObject total = data.getJSONObject(0), costs = total.getJSONObject("costs");
-        row(quantity(total.getInt("recordedTrips"), "recorded trip"), distance(total.getLong("tripDistanceMm")) + " · " + duration(total.getLong("tripDurationMs")), null);
-        if (total.isNull("confirmedGrowthMm")) note("Confirmed odometer growth needs two active confirmed readings within this year.");
-        else row("Confirmed odometer growth: " + distance(total.getLong("confirmedGrowthMm")), when(total.getLong("growthStartMs")) + " to " + when(total.getLong("growthEndMs")) + ". This covers those readings, not unrecorded portions of the year.", null);
-        row(money(costs.getLong("operatingCents")), "Recorded operating costs · financing " + money(costs.getLong("financingCents")), null);
-        note("Trips are grouped by completion date, using their full logged distance. These totals do not establish complete driving coverage or live vehicle measurements.");
-        button(costChart ? "Show recorded trip distance" : "Show recorded operating costs", R.id.garage_chart_mode, () -> { costChart = !costChart; render(); });
+        row(distance(total.getLong("tripDistanceMm")) + " · " + quantity(total.getInt("recordedTrips"), "recorded trip"), duration(total.getLong("tripDurationMs")) + " · " + money(costs.getLong("operatingCents")) + " operating costs", null);
+        button("Chart: " + (fuelChart ? "fuel economy" : costChart ? "operating costs" : "trip distance") + " · Change", R.id.garage_chart_mode, () -> new AlertDialog.Builder(this).setTitle("Monthly chart").setItems(new String[]{"Recorded trip distance", "Recorded operating costs", "Measured fuel economy"}, (d, index) -> { costChart=index==1; fuelChart=index==2; render(); }).show());
         long[] values = new long[12]; String[] labels = new String[12];
-        for (int i = 0; i < 12; i++) { JSONObject month = data.getJSONObject(i + 1); values[i] = costChart ? month.getJSONObject("costs").getLong("operatingCents") : month.getLong("tripDistanceMm"); labels[i] = month.getJSONObject("period").getString("label"); }
-        OwnershipChart chart = new OwnershipChart(this, values, labels, palette, costChart, metric(), vehicle.optString("currency", "USD")); page.addView(chart, new LinearLayout.LayoutParams(-1, dp(210)));
-        button("Read monthly details", R.id.garage_month_details, () -> new AlertDialog.Builder(this).setTitle("Recorded month").setItems(labels, (d, index) -> { try { monthDetails(data.getJSONObject(index + 1)); } catch (Exception error) { showError(safeError(error)); } }).show());
-        if (total.getInt("undatedServiceCount") > 0) note(total.getInt("undatedServiceCount") + " service records have no date. " + money(total.getLong("undatedServiceCents")) + " in undated services is kept in lifetime costs and is not assigned to a month or year.");
-        note("Service and expense dates use their saved civil dates. Fill-ups and trip times use actual local time-zone boundaries, including daylight-saving changes. Fuel economy uses complete full-to-full cycles inside the selected period.");
+        for (int i = 0; i < 12; i++) { JSONObject month = data.getJSONObject(i+1); values[i] = fuelChart ? Math.round(month.getJSONObject("fuel").optDouble(metric()?"litresPer100Km":"mpgUs",0)*10) : costChart ? month.getJSONObject("costs").getLong("operatingCents") : month.getLong("tripDistanceMm"); labels[i] = month.getJSONObject("period").getString("label"); }
+        OwnershipChart chart = new OwnershipChart(this, values, labels, palette, costChart, metric(), vehicle.optString("currency", "USD"), fuelChart); page.addView(chart, new LinearLayout.LayoutParams(-1, dp(210)));
+        button("Read monthly details", R.id.garage_month_details, () -> new AlertDialog.Builder(this).setTitle("Recorded month").setItems(labels, (d, index) -> { try { monthDetails(data.getJSONObject(index+1)); } catch (Exception error) { showError(safeError(error)); } }).show());
+        if(fuelChart)note("Blank months have no complete full-to-full fuel cycle inside that month.");
+        heading("Fuel"); fuelDetails(total.getJSONObject("fuel"));
+        heading("Mileage & costs");
+        if (total.isNull("confirmedGrowthMm")) note("Confirmed odometer growth needs two active confirmed readings within this year.");
+        else row("Confirmed growth: " + distance(total.getLong("confirmedGrowthMm")), when(total.getLong("growthStartMs")) + " to " + when(total.getLong("growthEndMs")) + ". Only this recorded window is covered.", null);
+        JSONObject forecast=summary.optJSONObject("forecast");
+        if(forecast!=null)row("Estimated annual mileage: "+distance(forecast.getLong("annualizedMm")),"Current estimate from confirmed readings, "+when(forecast.getLong("growthStartMs"))+" to "+when(forecast.getLong("growthEndMs"))+". Future driving may differ.",null);
+        if(total.getLong("tripDistanceMm")>0){double units=total.getLong("tripDistanceMm")/(metric()?1000000.0:1609344.0);row(OwnershipNumbers.money(Math.round(costs.getLong("operatingCents")/units),vehicle.optString("currency","USD"))+" / logged "+unit(),"Recorded operating costs ÷ logged trip distance. Missing trips or costs change this ratio; it is not a measured whole-vehicle cost per mile.",null);}
+        row("Financing",money(costs.getLong("financingCents"))+" · excluded from operating costs",null);
+        if (total.getInt("undatedServiceCount") > 0) note(total.getInt("undatedServiceCount") + " undated services, totaling " + money(total.getLong("undatedServiceCents")) + ", remain in lifetime costs and are not assigned to a month or year.");
+        note("Trips use their full distance in the completion month. Fuel uses complete full-to-full cycles inside the period. These records do not establish complete driving coverage. Saved civil dates and actual local time-zone boundaries are respected.");
+    }
+    private void fuelDetails(JSONObject fuel) throws Exception {
+        row(quantity(fuel.getInt("fillUps"),"fill-up")+" · "+quantity(fuel.getInt("fullFillUps"),"full fill"),String.format(Locale.getDefault(),"%.2f L purchased",fuel.getLong("purchasedVolumeMl")/1000.0)+" · "+money(fuel.getLong("purchasedCostCents")),null);
+        if(!fuel.isNull("averagePricePerLitre"))row("Average fuel price",String.format(Locale.getDefault(),"%.2f %s / %s",fuel.getDouble(metric()?"averagePricePerLitre":"averagePricePerUsGallon"),vehicle.optString("currency","USD"),metric()?"L":"US gal"),null);
+        if(!fuel.isNull("costPerMile"))row("Measured fuel cost",String.format(Locale.getDefault(),"%.2f %s / %s",fuel.getDouble(metric()?"costPer100Km":"costPerMile"),vehicle.optString("currency","USD"),metric()?"100 km":"mile")+" · "+fuel.getInt("completedCycles")+" complete full-to-full cycles",null);
+        if(!fuel.isNull(metric()?"litresPer100Km":"mpgUs"))row("Measured fuel economy",String.format(Locale.getDefault(),metric()?"%.1f L/100 km":"%.1f MPG (US)",fuel.getDouble(metric()?"litresPer100Km":"mpgUs")),null);
     }
     private static String duration(long ms) { return ms / 3600000 + " h " + (ms / 60000) % 60 + " min"; }
     private void monthDetails(JSONObject month) throws Exception {
@@ -355,25 +389,26 @@ public final class GarageActivity extends Activity {
         String text = quantity(month.getInt("recordedTrips"), "recorded trip") + " · " + distance(month.getLong("tripDistanceMm")) + "\nRecorded driving duration: " + duration(month.getLong("tripDurationMs"))
                 + "\nFuel: " + money(costs.getLong("fuelCents")) + "\nServices: " + money(costs.getLong("serviceCents")) + "\nOther operating: " + money(costs.getLong("otherOperatingCents")) + "\nFinancing: " + money(costs.getLong("financingCents"));
         if (!month.isNull("averageTripMm")) text += "\nAverage trip: " + distance(month.getLong("averageTripMm")) + "\nLongest trip: " + distance(month.getLong("longestTripMm"));
-        text += "\n\nFuel cycles wholly inside month: " + fuel.getInt("completedCycles");
+        text += "\n\nFill-ups: "+fuel.getInt("fillUps")+" · full: "+fuel.getInt("fullFillUps")+"\nFuel purchased: "+String.format(Locale.getDefault(),"%.2f L",fuel.getLong("purchasedVolumeMl")/1000.0)+"\nFuel cycles wholly inside month: " + fuel.getInt("completedCycles");
+        if(!fuel.isNull("costPerMile"))text+=String.format(Locale.getDefault(),"\nMeasured cycle fuel cost: %.2f %s / %s",fuel.getDouble(metric()?"costPer100Km":"costPerMile"),vehicle.optString("currency","USD"),metric()?"100 km":"mile");
         if (metric() && !fuel.isNull("litresPer100Km")) text += String.format(Locale.getDefault(), "\n%.1f L/100 km", fuel.getDouble("litresPer100Km"));
         if (!metric() && !fuel.isNull("mpgUs")) text += String.format(Locale.getDefault(), "\n%.1f MPG (US)", fuel.getDouble("mpgUs"));
         new AlertDialog.Builder(this).setTitle(month.getJSONObject("period").getString("label") + " " + analyticsYear).setMessage(text).setPositiveButton("Close", null).show();
     }
     private void dataButtons() {
-        button("Export garage backup", R.id.garage_export, () -> export("backup"));
-        button("Import garage backup", R.id.garage_import, this::importBackup);
+        button("Backups & receipt data", R.id.garage_export, () -> startActivity(new Intent(this, GarageDataActivity.class)));
+        button("Restore or merge backup", R.id.garage_import, () -> startActivity(new Intent(this, GarageDataActivity.class)));
         if (vehicle != null) { button("Export history CSV", R.id.garage_csv, () -> export("csv")); button("Export service report", R.id.garage_report, () -> export("report")); }
     }
     private void reminders() {
         boolean enabled = getSharedPreferences("subarubridge-garage-reminders", MODE_PRIVATE).getBoolean("enabled", false);
-        new AlertDialog.Builder(this).setTitle("Maintenance reminders").setMessage("" + (enabled ? "Reminders are on. " : "Reminders are off. ") + "A daily, best-effort check uses your saved records. Notifications show counts, without vehicle identifiers. Unknown history is excluded. Mileage reminders update when you save readings or trips.")
+        new AlertDialog.Builder(this).setTitle("Maintenance reminders").setMessage(GarageReminders.diagnostic(this) + "\n\n" + (enabled ? "Reminders are on. " : "Reminders are off. ") + "A daily, best-effort check uses your saved records. Notifications show counts, without vehicle identifiers. Unknown history is excluded. Mileage reminders update when you save readings or trips.")
                 .setPositiveButton(enabled ? "Turn off" : "Turn on", (d, w) -> {
                     getSharedPreferences("subarubridge-garage-reminders", MODE_PRIVATE).edit().putBoolean("enabled", !enabled).apply();
                     if (!enabled && Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 812);
                     GarageReminders.refresh(this); toast(enabled ? "Reminders off" : "Reminders enabled; Android notification permission is required");
                 }).setNeutralButton("Android notification settings", (d, w) -> startActivity(new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName())))
-                .setNegativeButton("Close", null).show();
+                .setNegativeButton("Send test notification", (d, w) -> toast(GarageReminders.testNotification(this) ? "Test sent to Android" : "Allow maintenance notifications in Android settings first")).show();
     }
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) { super.onRequestPermissionsResult(code, permissions, results); if (code == 812) GarageReminders.refresh(this); }
     private void export(String kind) {
@@ -408,6 +443,10 @@ public final class GarageActivity extends Activity {
         beginPage(formKind.equals("vehicle") ? (editingId.isEmpty() ? "Add vehicle" : "Vehicle profile") : formKind.equals("interval") ? "Service interval" : formKind.equals("custom") ? "Owner maintenance item" : formKind.equals("preferences") ? "Reminder lead times" : editingId.isEmpty() ? "Log " + formKind : formKind.equals("reading") ? "Correct odometer" : "Edit " + formKind, "");
         form = new Form(); JSONObject existing = formKind.equals("vehicle") ? (editingId.isEmpty() ? new JSONObject() : vehicle) : formKind.equals("interval") ? new JSONObject() : find(collection(formKind), editingId);
         switch (formKind) { case "vehicle": vehicleForm(existing); break; case "reading": readingForm(existing); break; case "service": serviceForm(existing); break; case "fuel": fuelForm(existing); break; case "expense": expenseForm(existing); break; case "trip": tripForm(existing); break; case "interval": intervalForm(); break; case "custom": customForm(existing); break; case "preferences": preferencesForm(); break; }
+        if (!editingId.isEmpty() && Arrays.asList("vehicle", "service", "fuel", "expense", "trip").contains(formKind)) {
+            final String linkedKind = formKind.equals("vehicle") ? "vehicles" : collection(formKind), linkedId = editingId;
+            button("Receipts & photos", View.NO_ID, () -> startActivity(new Intent(this, GarageDataActivity.class).putExtra("kind", linkedKind).putExtra("recordId", linkedId)));
+        } else if (Arrays.asList("vehicle", "service", "fuel", "expense", "trip").contains(formKind)) note("Save this record first, then open it from History to attach receipts or photos.");
         if (restoredDraft != null) { form.restore(restoredDraft); restoredDraft = null; }
         form.refresh();
     }
@@ -441,17 +480,18 @@ public final class GarageActivity extends Activity {
         void choices(JSONArray rules, JSONArray selectedItems, String first) throws Exception {
             String[] names = new String[rules.length()], keys = new String[rules.length()];
             for (int i = 0; i < rules.length(); i++) {
-                JSONObject rule = rules.getJSONObject(i); String id = rule.getString("id"); keys[i] = "item-" + id; names[i] = rule.getString("title") + " · " + rule.getString("action");
+                JSONObject rule = rules.getJSONObject(i); String id = rule.getString("id"); keys[i] = "item-" + id; names[i] = rule.getString("title") + (rule.has("action") ? " · " + rule.getString("action") : "");
                 CheckBox check = new CheckBox(GarageActivity.this); check.setChecked(id.equals(first));
                 if (selectedItems != null) for (int j = 0; j < selectedItems.length(); j++) if (id.equals(selectedItems.getString(j))) check.setChecked(true);
                 inputs.put(keys[i], check);
             }
-            Button choose = button("Choose completed work", R.id.garage_service_items, () -> {
+            boolean drivingConditions = rules.length() > 0 && !rules.getJSONObject(0).has("action");
+            Button choose = button(drivingConditions ? "Choose driving conditions" : "Choose completed work", drivingConditions ? View.NO_ID : R.id.garage_service_items, () -> {
                 boolean[] choices = new boolean[keys.length]; for (int i = 0; i < keys.length; i++) choices[i] = checked(keys[i]);
-                new AlertDialog.Builder(GarageActivity.this).setTitle("Completed service items").setMultiChoiceItems(names, choices, (dialog, index, checked) -> choices[index] = checked)
+                new AlertDialog.Builder(GarageActivity.this).setTitle(drivingConditions ? "Driving conditions" : "Completed service items").setMultiChoiceItems(names, choices, (dialog, index, checked) -> choices[index] = checked)
                         .setPositiveButton("Done", (dialog, which) -> { for (int i = 0; i < keys.length; i++) ((CheckBox)inputs.get(keys[i])).setChecked(choices[i]); refresh(); }).setNegativeButton("Cancel", null).show();
             });
-            controls.add(choose); refreshers.add(() -> { int count = 0; for (String key : keys) if (checked(key)) count++; choose.setText(count == 0 ? "Choose completed work" : quantity(count, "service item") + " selected"); });
+            controls.add(choose); refreshers.add(() -> { int count = 0; for (String key : keys) if (checked(key)) count++; choose.setText(count == 0 ? (drivingConditions ? "Choose driving conditions" : "Choose completed work") : quantity(count, drivingConditions ? "driving condition" : "service item") + " selected"); });
         }
         Bundle draft() { Bundle out = new Bundle(); for (Map.Entry<String, View> entry : inputs.entrySet()) { if (entry.getValue() instanceof EditText) out.putString(entry.getKey(), ((EditText)entry.getValue()).getText().toString()); else out.putBoolean(entry.getKey(), ((CheckBox)entry.getValue()).isChecked()); } if (details != null) out.putBoolean("_details", details.getVisibility() == View.VISIBLE); return out; }
         void restore(Bundle values) { for (Map.Entry<String, View> entry : inputs.entrySet()) if (values.containsKey(entry.getKey())) { if (entry.getValue() instanceof EditText) ((EditText)entry.getValue()).setText(values.getString(entry.getKey(), "")); else ((CheckBox)entry.getValue()).setChecked(values.getBoolean(entry.getKey())); } if (details != null) details.setVisibility(values.getBoolean("_details") ? View.VISIBLE : View.GONE); }
@@ -460,6 +500,10 @@ public final class GarageActivity extends Activity {
     private JSONObject record(JSONObject existing) throws Exception { return new JSONObject(existing.toString()).put("id", editingId.isEmpty() || formKind.equals("reading") ? draftId : editingId).put("vehicleId", selected); }
     private JSONObject command(String add, String update, String key, JSONObject value) throws Exception { return new JSONObject().put("type", editingId.isEmpty() ? add : update).put(key, value); }
     private void notes(JSONObject existing) { form.text("notes", "Notes (optional)", existing.optString("notes")); }
+    private JSONArray selectedConditions() throws Exception {
+        JSONArray chosen = new JSONArray(), known = snapshot.getJSONObject("schedule").getJSONArray("conditions");
+        for (int i=0;i<known.length();i++) { String id=known.getJSONObject(i).getString("id"); if (form.checked("item-"+id)) chosen.put(id); } return chosen;
+    }
     private void vehicleForm(JSONObject existing) throws Exception {
         boolean fresh = editingId.isEmpty();
         form.text("nickname", "Vehicle name", existing.optString("nickname", "My Legacy"), false, R.id.garage_vehicle_name);
@@ -471,8 +515,11 @@ public final class GarageActivity extends Activity {
         form.check("schedule", "Use verified US 2017 Legacy 2.5 CVT schedule", fresh || !existing.isNull("maintenanceProfile"));
         form.check("metric", "Use kilometres and litres", existing.optString("units").equals("metric"));
         form.text("currency", "Currency (USD, CAD, EUR, GBP, AUD or NZD)", existing.optString("currency", "USD"));
-        form.check("severe", "Severe driving conditions", existing.optBoolean("severe"));
-        note("Severe-service manufacturer footnotes still need verification. Explicit owner intervals can be set per item.");
+        boolean legacySevere=existing.optBoolean("severe") && (existing.optJSONArray("severeConditions")==null || existing.optJSONArray("severeConditions").length()==0);
+        CheckBox legacyFlag=form.check("severe", "Retain unresolved broad severe-service flag",legacySevere);if(!legacySevere)legacyFlag.setVisibility(View.GONE);
+        JSONArray conditions = snapshot.getJSONObject("schedule").getJSONArray("conditions");
+        form.choices(conditions, existing.optJSONArray("severeConditions"), "");
+        note("Choose the driving conditions that apply. Subaru’s 2017 notes change only the listed components; an old broad severe flag keeps calculations unknown until specific conditions are chosen.");
         form.text("vin", "VIN (optional, stays local)", existing.isNull("vin") ? "" : existing.optString("vin")); form.text("plate", "License plate (optional, stays local)", existing.isNull("plate") ? "" : existing.optString("plate"));
         form.text("purchaseDate", "Purchase date (YYYY-MM-DD, optional)", existing.isNull("purchaseDate") ? "" : existing.optString("purchaseDate"));
         form.text("inServiceDate", "First in-service date (YYYY-MM-DD, optional)", existing.isNull("inServiceDate") ? "" : existing.optString("inServiceDate"));
@@ -487,7 +534,7 @@ public final class GarageActivity extends Activity {
             JSONObject value = new JSONObject(existing.toString()).put("id", fresh ? draftId : editingId).put("nickname", form.text("nickname"))
                     .put("make", form.text("make")).put("model", form.text("model")).put("year", Integer.parseInt(form.text("year"))).put("trim", form.text("trim"))
                     .put("engine", form.text("engine")).put("transmission", form.text("transmission")).put("drivetrain", form.text("drivetrain"))
-                    .put("units", form.checked("metric") ? "metric" : "us").put("currency", currency).put("severe", form.checked("severe")).put("archived", form.checked("archived"))
+                    .put("units", form.checked("metric") ? "metric" : "us").put("currency", currency).put("severe", form.checked("severe") && selectedConditions().length()==0).put("severeConditions", selectedConditions()).put("archived", form.checked("archived"))
                     .put("vin", form.text("vin").isEmpty() ? JSONObject.NULL : form.text("vin").toUpperCase(Locale.ROOT)).put("plate", form.text("plate").isEmpty() ? JSONObject.NULL : form.text("plate"))
                     .put("maintenanceProfile", form.checked("schedule") ? "subaru-us-2017-legacy-25-cvt" : JSONObject.NULL).put("notes", form.text("notes"))
                     .put("purchaseDate", form.text("purchaseDate").isEmpty() ? JSONObject.NULL : day(form.text("purchaseDate"), false))

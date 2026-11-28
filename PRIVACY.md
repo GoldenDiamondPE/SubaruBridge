@@ -14,8 +14,9 @@ notification inbox access.
 
 Export is an explicit action through the system document picker. Garage backups
 contain all saved vehicles and ownership records, including optional identifiers.
-CSV and service reports contain the chosen vehicle history. Exports are currently
-unencrypted. Choosing a remote document provider can upload the selected file
+CSV and service reports contain the chosen vehicle history. Complete garage
+backups include receipts and can be encrypted with a user password. Legacy
+records-only JSON, unencrypted ZIP, CSV and HTML are readable exports. Choosing a remote document provider can upload the selected file
 through that provider. There is no automatic backup or synchronization.
 
 Automatic GPS trips, location history, OBD-II telemetry and extended vehicle
@@ -39,3 +40,18 @@ saved/current recordings, private notes and the current/previous bounded app
 journals. These exports are unencrypted and remain until the user deletes them.
 Android can expose Downloads through a user's chosen file/sync tools. Review
 reports before sharing. Older apps' sandboxes are not silently imported or erased.
+
+Receipt originals are copied into private no-backup storage through the system
+file picker. No broad storage or camera permission is required. Original photos
+may retain metadata such as location; the app does not transmit them or strip
+metadata silently. Saving a copy or exporting a complete backup includes those
+original bytes. Receipt removal preserves its service record and does not delete
+copies in previously exported backups. Connection diagnostic exports exclude
+all receipts and ownership transfer folders.
+
+Encrypted ownership backups use PBKDF2-HMAC-SHA256 and authenticated, bounded
+AES-256-GCM records. Passwords are never persisted and have no recovery path.
+Temporary transfers are private; completed/cancelled activity cleanup removes
+them, with abandoned folders older than a day cleaned on the next transfer
+workspace opening. App data itself uses Android storage protection, without a
+separate app database password. See [the format](docs/ownership-backup-format.md).

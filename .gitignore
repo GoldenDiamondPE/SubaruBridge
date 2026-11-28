@@ -14,6 +14,8 @@ __pycache__/
 local.properties
 *.apk
 *.aab
+*.ipa
+ios/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png
 *.so
 *.a
 *.jar

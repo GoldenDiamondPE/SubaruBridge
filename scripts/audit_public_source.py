@@ -14,6 +14,7 @@ PNG=Path('android/src/main/assets/subarubridge-lab/pattern.png')
 PNG_SHA256='4bd97df4c282b97fba8a280df9e3504c4de0c38eb5cd10bacbe1ca0b0a60a6f9'
 REVIEWED_PNG={
     PNG: PNG_SHA256,
+    Path('ios/Sources/SubaruBridgeCore/Resources/HeadUnit/pattern.png'): PNG_SHA256,
     Path('docs/assets/demo/analytics.png'): '18568bf052468fe34054ac13c69b5119a3f20a2ff24adf690210b6514ec26dfc',
     Path('docs/assets/demo/garage.png'): '742eb6b0ca67deed7b5444ce2d1e01d4844a226b22b679fd560e70c14460ec6d',
     Path('docs/assets/demo/home.png'): 'cb6bc27c3db7701ebb1fb747fd91ead75fdc578bb90d3dbcad530d938ad7796d',
@@ -41,7 +42,7 @@ def audit(root):
         if file.name=='local.properties' or file.suffix.lower() in DENIED:errors.append(name+': prohibited artifact');continue
         if file.suffix.lower()=='.png':
             if relative not in REVIEWED_PNG:errors.append(name+': unreviewed image');continue
-        elif file.suffix not in ALLOWED and file.name not in {'LICENSE','.gitignore','.gitattributes','.nojekyll'}:
+        elif file.suffix not in ALLOWED and relative != Path('ios/Sources/CSubaruBridgeCore/module.modulemap') and file.name not in {'LICENSE','.gitignore','.gitattributes','.nojekyll'}:
             errors.append(name+': unreviewed file type');continue
         raw=file.read_bytes()
         if relative in REVIEWED_PNG and hashlib.sha256(raw).hexdigest()!=REVIEWED_PNG[relative]:

@@ -1,0 +1,5 @@
+module CSubaruBridgeCore [system] {
+    header "shim.h"
+    link "subarubridge_core"
+    export *
+}

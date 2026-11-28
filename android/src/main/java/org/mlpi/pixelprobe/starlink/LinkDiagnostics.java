@@ -10,7 +10,7 @@ import java.util.*;
 /** Bounded, app-owned metadata for offline tests. No packets, addresses or bodies. */
 public final class LinkDiagnostics {
     private static final String INSTANCE=UUID.randomUUID().toString();
-    private static long received,sent,requests,connections;
+    private static long received,sent,requests,connections,bluetoothRequests,phoneRequests;
     private static boolean journalFull,journalUnavailable;
     private LinkDiagnostics(){}
     public static synchronized void received(int count){received+=count;}
@@ -18,15 +18,16 @@ public final class LinkDiagnostics {
     public static synchronized Map<String,Object> snapshot(){
         Map<String,Object> value=new LinkedHashMap<>();value.put("instance",INSTANCE);
         value.put("receivedBytes",received);value.put("sentBytes",sent);value.put("httpRequests",requests);value.put("connections",connections);
+        value.put("bluetoothHttpRequests",bluetoothRequests);value.put("phoneHttpRequests",phoneRequests);
         value.put("journalFull",journalFull);value.put("journalUnavailable",journalUnavailable);return value;
     }
     public static synchronized void state(Context context,String state){
         if(state.startsWith("Connected:"))connections++;
         Map<String,Object> event=snapshot();event.put("event","state");
-        event.put("state",state.startsWith("Ready:")?"ready":state.startsWith("Connected:")?"connected":state.startsWith("Disconnected:")?"disconnected":state.startsWith("Starting:")?"starting":"stopped");append(context,event);
+        event.put("state",state.startsWith("Ready:")?"ready":state.startsWith("Connected:")?"connected":state.startsWith("Active:")?"active":state.startsWith("Waiting:")?"waiting":state.startsWith("Retrying:")?"retrying":state.startsWith("Disconnected:")?"disconnected":state.startsWith("Starting:")?"starting":"stopped");append(context,event);
     }
     public static synchronized void http(Context context,String source,String method,String route,int status,int bytes){
-        requests++;Map<String,Object> event=snapshot();event.put("event","http");
+        requests++;if("bluetooth".equals(source))bluetoothRequests++;else phoneRequests++;Map<String,Object> event=snapshot();event.put("event","http");
         event.put("source",source);
         event.put("method",method.equals("GET")||method.equals("POST")||method.equals("HEAD")?method:"other");
         event.put("route",route);event.put("status",status);event.put("responseBytes",bytes);append(context,event);

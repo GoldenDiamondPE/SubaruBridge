@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 /** Phone and head-unit colors come from the same editable dashboard.json. */
 final class PhonePalette {
     final String id, brand;
-    final int background, surface, raised, text, muted, accent, onAccent, border;
+    final int background, surface, raised, text, muted, accent, onAccent, border,controlAccent;
 
     PhonePalette(Context context) {
         JSONObject theme = new JSONObject();
@@ -39,6 +39,23 @@ final class PhonePalette {
         accent = color(theme, "accent", "#0a84ff");
         onAccent = color(theme, "onAccent", "#ffffff");
         border = color(theme, "border", "#38383a");
+        controlAccent=readableFill(accent,onAccent);
+    }
+
+    void applyWindow(android.app.Activity activity){
+        activity.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(background));
+        activity.getWindow().getDecorView().post(()->{
+            android.view.WindowInsetsController controller=activity.getWindow().getInsetsController();
+            if(controller!=null)controller.setSystemBarsAppearance(id.equals("daylight")?android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS:0,
+                    android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+        });
+    }
+    private static double luminance(int color){double total=0;int[] channels={Color.red(color),Color.green(color),Color.blue(color)};double[] weights={0.2126,0.7152,0.0722};for(int i=0;i<3;i++){double v=channels[i]/255.0;total+=weights[i]*(v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4));}return total;}
+    private static int readableFill(int fill,int foreground){
+        double text=luminance(foreground);for(int i=0;i<36;i++){
+            double background=luminance(fill);if((Math.max(text,background)+0.05)/(Math.min(text,background)+0.05)>=4.5)return fill;
+            int target=text>0.179?0:255;fill=Color.rgb(Math.round(Color.red(fill)*0.88f+target*0.12f),Math.round(Color.green(fill)*0.88f+target*0.12f),Math.round(Color.blue(fill)*0.88f+target*0.12f));
+        }return fill;
     }
 
     private int color(JSONObject values, String key, String fallback) {
