@@ -81,7 +81,9 @@ final class ConnectionChecks {
                 socket.setSoTimeout(2000);socket.getOutputStream().write("GET /version HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.US_ASCII));
                 check(new String(socket.getInputStream().readAllBytes(),StandardCharsets.UTF_8).startsWith("HTTP/1.1 200"),"Fallback dashboard unavailable");
             }
+            Object carRequests=LinkDiagnostics.snapshot().get("bluetoothHttpRequests");
             check("pass".equals(PhoneSelfCheck.run(context).get("localDashboard")),"Phone checks used stale preview port");
+            check(carRequests.equals(LinkDiagnostics.snapshot().get("bluetoothHttpRequests")),"Phone preview was counted as car requests");
         }finally{runtime.stopPreview();runtime.startPreview();}
         check(runtime.previewPort()>0,"Preview did not restart");
     }

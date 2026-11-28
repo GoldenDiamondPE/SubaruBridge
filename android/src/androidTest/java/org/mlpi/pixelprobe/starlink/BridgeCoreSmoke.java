@@ -67,6 +67,7 @@ public final class BridgeCoreSmoke extends Instrumentation {
             for(String request:bad){try{LocalHttp.parse(request.getBytes(StandardCharsets.US_ASCII));throw new AssertionError("Ambiguous HTTP accepted");}catch(LocalHttp.Error expected){check(expected.status==400,"Wrong rejection");}}
             check(LocalHttp.parse("GET / HTTP/1.1\r\nConnection: keep-alive, close\r\n\r\n".getBytes(StandardCharsets.US_ASCII)).close,"Close token ignored");
             StarlinkRouter router=StarlinkRuntime.get(context).router;
+            FactoryLinkChecks.run(context);
             check(router.handle("GET /version HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.US_ASCII)).status==200,"Local router unavailable");
             check(router.handle("GET http://example.invalid/ HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.US_ASCII)).status==403,"Remote target accepted");
             check(router.handle("GET /subarubridge-diag/%0aInjected HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.US_ASCII)).status==400,"Control character in path accepted");
