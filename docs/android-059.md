@@ -11,6 +11,11 @@ open SubaruBridge, allow Nearby devices and open Apps → STARLINK while parked.
 
 ## Connection fixes
 
+- Correct a real factory-address rejection: earlier car captures use head-unit
+  `192.168.0.1`, whereas the old stack accepted only the synthetic bench client's
+  `192.168.1.2`. Pin a validated peer for each Bluetooth link and address all TCP
+  and ICMP replies correctly. Keep the bench compatible without accepting
+  arbitrary addresses or allowing an active link's peer to change.
 - Recover failed listener opens, accepts and ended sessions in the foreground
   service, including when Home is closed. Retry with a bounded delay.
 - Wait through Bluetooth off/on changes without depending on an Activity.
@@ -53,3 +58,11 @@ a claim that iPhone notifications or call audio already pass through the Pixel.
 
 Physical-car results are still required. Automated transports and simulators
 exercise app behavior; they do not verify the factory head unit.
+
+The owner's 0.58 car report showed a Bluetooth connection, 896 received bytes,
+zero transmitted bytes and the factory install-STARLINK error. No car HTTP
+request reached the app. The archive contained metadata, not raw packets, so it
+cannot independently identify those 896 bytes. Comparing the earlier factory
+captures exposed the address bug; synthetic regressions failed before its fix
+and pass afterward. A fresh physical test must verify the corrected build.
+Reports now distinguish Bluetooth HTTP from phone preview/self-check requests.

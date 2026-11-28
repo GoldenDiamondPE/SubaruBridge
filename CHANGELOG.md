@@ -2,6 +2,10 @@
 
 ## 0.59-dev — Connection recovery and readable phone screens
 
+- Fix factory packets silently discarded because the stack hard-coded the bench
+  IP. Use the capture-confirmed head-unit address, preserve the bench, pin peers
+  per session and construct replies/checksums for the selected address. Add
+  fail-before/pass-after regressions and a real Android JNI HTTP exchange.
 - Move Bluetooth off/on and listener/session recovery into the foreground service;
   use cancellable bounded retries, clean permission failures and a renewable
   active-session power lease. Respect explicit Pause across Activity and service
@@ -16,6 +20,9 @@
 - Include the 0.58 ownership system. Investigate iPhone notification/audio roles
   and add companion setup guidance; actual iPhone relay and head-unit results
   remain separately required.
+- Fix the first-tap iOS Garage export dialog by preparing its document before
+  presentation; pass all seven native simulator journeys. Update the shared
+  maintenance-source assertion and make resource checks consistent across hosts.
 
 ## 0.58-dev — Android ownership completion
 

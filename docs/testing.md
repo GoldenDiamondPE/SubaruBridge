@@ -201,3 +201,11 @@ notification/RemoteInput fixtures. These are app tests, not head-unit evidence.
 The 0.58 physical Pixel ownership, deep-idle receiver and reboot checks remain
 recorded in [the ownership release](ownership-058.md). A fresh physical 0.59 car
 test is still required. See [the parked-car directions](android-059.md).
+
+Four factory-address regressions supplement the eighteen existing protocol
+cases. They check the factory SYN options, HTTP exchange and response checksums,
+ICMP return address, invalid-source rejection and peer pinning across reconnect.
+The three factory-dependent tests fail against the old bench-only stack and pass
+after correction. `FactoryLinkChecks` also sends a synthetic factory-address
+handshake and GET through the actual Android Rust/JNI/router boundary. No private
+packet bytes or proprietary source are included in the fixtures.

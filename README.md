@@ -9,6 +9,11 @@ private research adapter displayed HTML on a Fujitsu Ten FB856UM. That result
 does **not** establish compatibility of this new independent transport. Its next
 milestone is a parked-car display, touch and reconnect test.
 
+The 0.58 factory test exposed a startup failure. Version 0.59 corrects a
+capture-confirmed head-unit address rejection, with failing-before/passing-after
+regressions and Android JNI checks. The corrected APK still requires a new
+physical-car test; see [the fix and test directions](docs/android-059.md).
+
 ## What is here
 
 - Original paired Bluetooth Classic RFCOMM listener; no root is needed for the app.

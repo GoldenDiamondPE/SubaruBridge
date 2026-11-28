@@ -5,6 +5,27 @@ title: Verified results
 
 # Verified results
 
+## Android/iOS 0.59 bug fixes — 2026-11-28
+
+| Check | Result and scope |
+| --- | --- |
+| Physical factory test on 0.58 | Failed before rendering: Bluetooth opened, 896 bytes received, zero sent, no car HTTP request; factory install-STARLINK error reported |
+| Factory address evidence | Earlier private car captures show head unit `192.168.0.1` talking to phone `192.168.1.1`; the old independent stack accepted only bench `192.168.1.2` |
+| Address regression before fix | Three factory-dependent cases fail; synthetic factory SYN is discarded |
+| Shared Rust after correction | 86 tests pass, including 22 protocol cases, factory HTTP/ICMP return addresses, peer pinning and the existing bench |
+| Android 17/API 37 emulator | Full JNI, Garage, complete/encrypted restore, receipts, media, notifications, recorder, connection lifecycle and cold-launch suites pass; factory-address handshake/HTTP uses the actual JNI/router boundary |
+| Foreground recovery | Failed open/accept, ended peers, Bluetooth off/on while the Activity is closed, permission loss, cancellation and explicit Pause/Resume pass |
+| Process termination | Android recreates the listener service after deliberate process termination in the emulator; explicit Pause remains respected |
+| Local HTTP | 61/61 route and privacy contract cases pass against the corrected Android build |
+| Normal release installer | Non-debuggable APK signature matches the earlier installed key; normal UI starts/stops a recording and passes phone self-checks on the emulator |
+| iOS | 32 Swift component tests and seven native simulator journeys pass; first-tap Garage export is corrected. An arm64 device IPA builds; public download requires signing |
+| Source boundary | Ten policy regressions pass. Reviewed original sources/assets only; private reports, captures, provisioning profiles, keys and original STARLINK software remain excluded |
+
+The 0.59 factory fix has **not** yet passed a physical head-unit test. Old bench
+results did not establish its peer address. No private packet bytes are copied
+into the public synthetic regressions. Repeat the parked-car startup test with
+the new APK before attempting display, touch or app-level validation.
+
 ## Android 0.57 consolidation — 2026-11-27
 
 The existing Android Garage, media adapters and independent STARLINK dashboard

@@ -16,7 +16,12 @@ Paired head unit or synthetic peer
 
 Android's secure RFCOMM listener uses service UUID
 `4213882b-44b9-45f4-ac4f-2c682bc800a7`. Only bonded peers are accepted.
-The observed fixed link uses phone `192.168.1.1`, peer `192.168.1.2`, HTTP port 80.
+Factory captures establish phone `192.168.1.1`, head unit `192.168.0.1`, HTTP
+port 80. The older `192.168.1.2` address belongs to the synthetic bench client.
+The original 0.58 stack incorrectly allowed only that bench address. Android
+0.59 accepts either verified address and pins the first valid peer to one
+Bluetooth session; replies and checksums use that peer. Unknown addresses and
+mid-session address changes remain rejected.
 These addresses live inside the SLIP stream, not on the phone's Wi-Fi network.
 The preview server binds only loopback, preferring `127.0.0.1:8009` and falling
 back to an assigned loopback port on a collision. Preview URLs, origin checks,
