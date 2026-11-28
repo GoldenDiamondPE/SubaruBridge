@@ -39,7 +39,7 @@ struct AppHub: View {
                 Section {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Your phone. Your Subaru.").font(.title2.bold())
-                        Label("SubaruBridge 0.57", systemImage: "iphone").foregroundStyle(.blue).accessibilityIdentifier("unified-home")
+                        Label("SubaruBridge " + (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""), systemImage: "iphone").foregroundStyle(.blue).accessibilityIdentifier("unified-home")
                         Text("Your Garage, phone apps and dashboard together. Vehicle records work offline.")
                             .font(.callout).foregroundStyle(.secondary)
                     }.padding(.vertical, 8)
@@ -48,6 +48,7 @@ struct AppHub: View {
                     NavigationLink { GarageView() } label: { Label("Garage & maintenance", systemImage: "car.side") }.accessibilityIdentifier("workspace-garage")
                     NavigationLink { HeadUnitPreview() } label: { Label("Preview your dashboard", systemImage: "display") }.accessibilityIdentifier("workspace-dashboard")
                     NavigationLink { RecorderView() } label: { Label("Record & diagnose", systemImage: "waveform.path.ecg") }.accessibilityIdentifier("workspace-recorder")
+                    NavigationLink { PixelRelaySetupView() } label: { Label("Use iPhone with your Pixel", systemImage: "iphone.radiowaves.left.and.right") }.accessibilityIdentifier("workspace-pixel-relay")
                     if garage.vehicle != .null { LabeledContent(garage.vehicle["nickname"].text ?? "Your vehicle", value: garage.distance(garage.summary["mileage"]["currentMm"].int)) }
                 }
                 Section("Your apps") {
@@ -111,6 +112,38 @@ struct AppHub: View {
                 Text("Review the recipient and text, then choose Send or Cancel in the iPhone composer.")
             }.navigationTitle("Messages")
         }
+    }
+}
+
+struct PixelRelaySetupView: View {
+    var body: some View {
+        Form {
+            Section {
+                Text("Let the Pixel run the Subaru dashboard while you keep using your iPhone.")
+                Text("Setup guide · phone and car verification required").font(.callout).foregroundStyle(.secondary).accessibilityIdentifier("pixel-relay-status")
+            }
+            Section("Connection paths") {
+                Label("Pixel → Subaru: STARLINK dashboard", systemImage: "display")
+                Label("iPhone ↔ Pixel: supported music controls", systemImage: "music.note")
+                Label("iPhone → Subaru: music and call audio", systemImage: "speaker.wave.2")
+                Text("The head unit must allow iPhone audio and Pixel STARLINK at the same time. This combination still needs a parked-car test.").foregroundStyle(.secondary)
+            }
+            Section("Music, including Taurus") {
+                Text("1. Pair the iPhone and Pixel in Bluetooth settings.\n2. On the Pixel, open SubaruBridge → Apps & integrations and enable Music controls.\n3. Choose iPhone media, then Connect paired iPhone media.\n4. Start Taurus or another player on this iPhone and check its Lock Screen Now Playing controls.")
+                Text("The experimental Pixel connection can receive track information and send the commands the iPhone offers. It does not carry the audio. Keep the iPhone paired with the Subaru for sound.").foregroundStyle(.secondary)
+            }
+            Section("Notifications and incoming calls") {
+                Text("Notification forwarding through the Pixel is under investigation. Apple’s Bluetooth notification service may offer app alerts and incoming-call alerts after normal authorization.")
+                Text("This build does not relay those alerts. Answering and call audio continue through the Subaru’s factory hands-free connection.").foregroundStyle(.secondary)
+            }
+            Section("Test while parked") {
+                Text("First check the Pixel dashboard. Then check iPhone music information and each offered control. Finally verify actual sound and a call with someone who agrees to test. Record each result separately.")
+                Text("Keep private notification previews off by default. Your iPhone’s Bluetooth permissions and notification settings determine what it shares.").foregroundStyle(.secondary)
+            }
+            Section {
+                Link("Open the relay test directions", destination: URL(string: "https://goldendiamondpe.github.io/SubaruBridge/docs/iphone-media-testing.html")!)
+            }
+        }.navigationTitle("iPhone + Pixel").navigationBarTitleDisplayMode(.inline)
     }
 }
 

@@ -49,6 +49,17 @@ import XCTest
         app.navigationBars.buttons.element(boundBy:0).tap()
         reveal(number,app:app);number.tap();number.typeText(String(repeating:XCUIKeyboardKey.delete.rawValue,count:10));dismissKeyboard(app)
     }
+    func testPixelRelaySetupExplainsAudioAndVerification() throws {
+        continueAfterFailure=false
+        let app=XCUIApplication();app.launch()
+        let setup=app.buttons["workspace-pixel-relay"];XCTAssertTrue(setup.waitForExistence(timeout:20));reveal(setup,app:app);setup.tap()
+        XCTAssertTrue(app.staticTexts["pixel-relay-status"].waitForExistence(timeout:5))
+        XCTAssertTrue(app.staticTexts["iPhone → Subaru: music and call audio"].exists)
+        app.swipeUp()
+        XCTAssertTrue(app.staticTexts["Music, including Taurus"].exists || app.staticTexts.containing(NSPredicate(format:"label CONTAINS %@","Taurus or another player")).firstMatch.exists)
+        app.navigationBars.buttons.element(boundBy:0).tap()
+        XCTAssertTrue(app.buttons["workspace-garage"].exists)
+    }
     func testNotificationPermissionDenial() throws {
         continueAfterFailure=false
         let app=XCUIApplication();app.launch();reveal(app.buttons["app-notifications"], app:app);app.buttons["app-notifications"].tap()
