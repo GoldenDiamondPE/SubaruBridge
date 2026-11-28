@@ -7,13 +7,16 @@ import SubaruBridgeCore
 struct DashboardView: View {
     var body: some View {
         TabView {
-            AppHub().tabItem { Label("Apps", systemImage: "square.grid.2x2") }
+            AppHub().tabItem { Label("Home", systemImage: "house") }
+            NavigationStack { GarageView() }.tabItem { Label("Garage", systemImage: "car.side") }
+            NavigationStack { HeadUnitPreview() }.tabItem { Label("Dashboard", systemImage: "display") }
             ConnectionLabView().tabItem { Label("Tools", systemImage: "wrench.and.screwdriver") }
         }.tint(.blue)
     }
 }
 
 struct AppHub: View {
+    @EnvironmentObject private var garage: GarageModel
     private enum FavoriteField: Hashable { case number, destination, reply }
     @FocusState private var favoriteFocus: FavoriteField?
     @AppStorage("favoriteNumber") private var number = ""
@@ -36,10 +39,16 @@ struct AppHub: View {
                 Section {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Your phone. Your Subaru.").font(.title2.bold())
-                        Label("iPhone companion preview", systemImage: "iphone").foregroundStyle(.blue)
-                        Text("Music, directions and phone actions. Car connectivity is still in development.")
+                        Label("SubaruBridge 0.57", systemImage: "iphone").foregroundStyle(.blue).accessibilityIdentifier("unified-home")
+                        Text("Your Garage, phone apps and dashboard together. Vehicle records work offline.")
                             .font(.callout).foregroundStyle(.secondary)
                     }.padding(.vertical, 8)
+                }
+                Section("Your workspace") {
+                    NavigationLink { GarageView() } label: { Label("Garage & maintenance", systemImage: "car.side") }.accessibilityIdentifier("workspace-garage")
+                    NavigationLink { HeadUnitPreview() } label: { Label("Preview your dashboard", systemImage: "display") }.accessibilityIdentifier("workspace-dashboard")
+                    NavigationLink { RecorderView() } label: { Label("Record & diagnose", systemImage: "waveform.path.ecg") }.accessibilityIdentifier("workspace-recorder")
+                    if garage.vehicle != .null { LabeledContent(garage.vehicle["nickname"].text ?? "Your vehicle", value: garage.distance(garage.summary["mileage"]["currentMm"].int)) }
                 }
                 Section("Your apps") {
                     ForEach(orderedApps) { app in

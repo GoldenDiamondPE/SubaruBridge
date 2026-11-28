@@ -7,19 +7,19 @@ is evidence that the independent app works on the Subaru.
 | Area | Current implementation | Verification still needed |
 | --- | --- | --- |
 | STARLINK | Independent Android RFCOMM / Rust SLIP-IP-TCP-HTTP, original script-free UI, touch/result routes, private export | Independent transport on the target physical head unit, touch and reconnect |
-| Unified Android workspace | One existing app ID for Garage, dashboard, integrations, head-unit checks, phone self-checks, original icon and developer mode | Earlier experimental MirrorLink/AirPlay/CarPlay receiver paths remain separate; iOS adapter remains paused |
+| Unified Android workspace | One existing app ID for Garage, dashboard, integrations, head-unit checks, phone self-checks, original icon and developer mode | Earlier experimental MirrorLink/AirPlay/CarPlay receiver paths remain separate; iOS has native unified navigation; direct accessory transport remains separate |
 | On-device diagnostic recorder | No-root foreground recording, private notes/markers, event timelines, explicit ZIP export; 10-minute/1-MiB sessions, 12-session retention, interrupted-run recovery | Metadata only; exact Bluetooth/USB packets need privileged external capture. Android scheduling and power behavior vary |
 | Passive USB lab | USB state/accessory and interface counts, phone resource/permission samples, system settings links | Does not change USB functions or establish MirrorLink registration/certification |
 | Android music | Generic MediaSession provider selection, advertised controls, toggle-only support, session-bound forms, metadata/timing | Real music apps and audio routing; streaming-provider capabilities vary |
 | iPhone / Taurus music | Experimental Android AMS client; shared Rust decoder; separate source choice | Real iPhone pairing, service exposure, Taurus metadata/controls and car coexistence |
-| iPhone companion | Native phone-side apps, local diagnostics and app-owned notifications, included in this branch | Native Garage adapter, car transport and a general phone-to-phone app channel |
+| iPhone companion | Native unified Home/Garage/Dashboard/Tools, shared Rust Garage, script-free preview, local metadata recorder, phone apps and reminders | Signed-phone validation, direct car transport and a general phone-to-phone channel |
 | Maps | Android notification directions; native phone URLs | Real navigation and head-unit rendering; no embedded live maps |
 | Calls / messages | Android dialer/composer, confirmed notification replies; native iOS prompts/composer | No arbitrary inbox read or call-audio interception; normal factory hands-free testing |
 | Notifications | Android opt-in bounded memory feed; iOS app-owned local notifications | iPhone-wide relay requires separate authorized accessory research |
-| Ownership | Native Android Garage; bounded atomic private storage, profiles, confirmed/approximate readings, correction trail and versioned Rust calculations | iOS persistence/UI adapter, attachments and future schema migrations |
+| Ownership | Native Android and iOS Garage; bounded atomic private storage, profiles, confirmed/approximate readings, correction trail and versioned Rust calculations | Signed iPhone checks, attachments and future schema migrations |
 | Maintenance | 18 sourced normal-service rules for US 2017 Legacy 2.5 CVT; uncertain ranges, date/distance thresholds, editable owner-defined items and intervals on any vehicle | Manufacturer severe-service notes and verified schedules for other vehicles |
 | Service book | Multi-item visits, dates/ranges, DIY/provider, parts/labor/tax breakdown, owner-recorded part numbers, warranty notes, search and printable history | Receipt/photo/PDF attachments and richer part records |
-| Maintenance reminders | Opt-in daily Android inexact alarm and local notification; configurable lead times and snoozes; saved changes trigger checks; unknown history and archived vehicles excluded | Notification delivery after device power management/reboot; iOS adapter |
+| Maintenance reminders | Opt-in daily Android inexact alarm and local notification; configurable lead times and snoozes; saved changes trigger checks; unknown history and archived vehicles excluded | iOS local calendar reminders implemented; device delivery after power management/reboot still needs testing |
 | Trips / fuel / expenses | Completed manual trips, reconciled estimates, full/partial/missed fills and derived operating/financing totals; editable records | Automatic GPS, routes, richer analytics and safeguards for auto recording |
 | Ownership summaries | Shared monthly/yearly calculations, native distance/cost charts and monthly details; corrected readings and undated costs remain explicit | Forecasts, configurable analytics widgets, trend comparisons and cost-per-mile coverage logic |
 | Data ownership | User-chosen JSON export/additive restore, CSV history and escaped printable offline HTML service report | Attachments, encrypted backups, conflict-resolution UI and CSV/GPX import |
@@ -43,7 +43,7 @@ is evidence that the independent app works on the Subaru.
 | Media expansion | Provider capability model, queues, virtual CDs, skins, radio/self-hosted sources and listening history; official APIs, rights and parked-state limits |
 | Screensavers and wheel shortcuts | Idle/static clock designs and event inspector first; verified rendering/input and a trusted parked signal for animations |
 | App ecosystem | Versioned manifests, restricted permissions, original examples and simulator; compatible distribution on both mobile platforms |
-| Native platform integration | iOS Garage, Android/iOS widgets, local reminders and automation; platform-specific APIs and signed device testing |
+| Native platform integration | Signed iOS Garage checks, Android/iOS widgets and automation; platform-specific APIs and signed device testing |
 | Protocol tools | Capture import/redaction, decoded inspector, replay and simulator failure cases; synthetic tests before any hardware verification |
 
 This is an incremental development backlog. A planned system is not described as

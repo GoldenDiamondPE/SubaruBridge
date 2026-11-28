@@ -4,6 +4,24 @@
     classes = {};
     objectVersion = 56;
     objects = {
+        37AFA730992ED882730CA001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryConnection.swift; sourceTree = "<group>"; };
+        BA323417102EC30A83F7C6F3 = {isa = PBXBuildFile; fileRef = 37AFA730992ED882730CA001; };
+        417A57FD13B96B58D7D38FBE = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeRuntime.swift; sourceTree = "<group>"; };
+        41D186B2E9C9F15CA85054B5 = {isa = PBXBuildFile; fileRef = 417A57FD13B96B58D7D38FBE; };
+        7CCF5A0DE03952567DB1B011 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GarageEditor.swift; sourceTree = "<group>"; };
+        749FFD57F44498129F3A04D0 = {isa = PBXBuildFile; fileRef = 7CCF5A0DE03952567DB1B011; };
+        3284CA4196E23298BF6894B1 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GarageModel.swift; sourceTree = "<group>"; };
+        29132B06B186899A3511C40A = {isa = PBXBuildFile; fileRef = 3284CA4196E23298BF6894B1; };
+        EBF1129ADAEF025E4F009FEF = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GarageNotifications.swift; sourceTree = "<group>"; };
+        5B0594D92F947C02DB5E2875 = {isa = PBXBuildFile; fileRef = EBF1129ADAEF025E4F009FEF; };
+        1E953B621FCF56665E0B2D0D = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GarageView.swift; sourceTree = "<group>"; };
+        2276766B9FE384010D6C933A = {isa = PBXBuildFile; fileRef = 1E953B621FCF56665E0B2D0D; };
+        2630AD2ED2334E54F887537B = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeadUnitPreview.swift; sourceTree = "<group>"; };
+        68289A5A75EEE51D91E015B2 = {isa = PBXBuildFile; fileRef = 2630AD2ED2334E54F887537B; };
+        A01FCEE6DD189C1408AB01A7 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnershipReport.swift; sourceTree = "<group>"; };
+        3763296B1E21DD79229E3DCF = {isa = PBXBuildFile; fileRef = A01FCEE6DD189C1408AB01A7; };
+        739E9F81DE1F039CAAB57BFE = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecorderView.swift; sourceTree = "<group>"; };
+        C1CF688A257AEA6D692B1237 = {isa = PBXBuildFile; fileRef = 739E9F81DE1F039CAAB57BFE; };
         B10000000000000000000001 = {isa = PBXBuildFile; fileRef = B20000000000000000000001; };
         B10000000000000000000002 = {isa = PBXBuildFile; fileRef = B20000000000000000000002; };
         B10000000000000000000003 = {isa = PBXBuildFile; fileRef = B20000000000000000000003; };
@@ -36,20 +54,21 @@
         A20000000000000000000006 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppHub.swift; sourceTree = "<group>"; };
         A20000000000000000000005 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SubaruBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
         A30000000000000000000001 = {isa = PBXGroup; children = (A30000000000000000000002, A30000000000000000000003, B30000000000000000000001); sourceTree = "<group>"; };
-        A30000000000000000000002 = {isa = PBXGroup; children = (A20000000000000000000001, A20000000000000000000002, A20000000000000000000003, A20000000000000000000006, A20000000000000000000004, B20000000000000000000001, B20000000000000000000002, B20000000000000000000003); path = App; sourceTree = "<group>"; };
+        A30000000000000000000002 = {isa = PBXGroup; children = (A20000000000000000000001, A20000000000000000000002, A20000000000000000000003, A20000000000000000000006, A20000000000000000000004, B20000000000000000000001, B20000000000000000000002, B20000000000000000000003, 37AFA730992ED882730CA001, 417A57FD13B96B58D7D38FBE, 7CCF5A0DE03952567DB1B011, 3284CA4196E23298BF6894B1, EBF1129ADAEF025E4F009FEF, 1E953B621FCF56665E0B2D0D, 2630AD2ED2334E54F887537B, A01FCEE6DD189C1408AB01A7, 739E9F81DE1F039CAAB57BFE); path = App; sourceTree = "<group>"; };
         A30000000000000000000003 = {isa = PBXGroup; children = (A20000000000000000000005, B20000000000000000000005); name = Products; sourceTree = "<group>"; };
-        A40000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003, A10000000000000000000005, B10000000000000000000001); runOnlyForDeploymentPostprocessing = 0; };
+        A40000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001, A10000000000000000000002, A10000000000000000000003, A10000000000000000000005, B10000000000000000000001, BA323417102EC30A83F7C6F3, 41D186B2E9C9F15CA85054B5, 749FFD57F44498129F3A04D0, 29132B06B186899A3511C40A, 5B0594D92F947C02DB5E2875, 2276766B9FE384010D6C933A, 68289A5A75EEE51D91E015B2, 3763296B1E21DD79229E3DCF, C1CF688A257AEA6D692B1237); runOnlyForDeploymentPostprocessing = 0; };
         A40000000000000000000002 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000004); runOnlyForDeploymentPostprocessing = 0; };
         A40000000000000000000003 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (B10000000000000000000002, B10000000000000000000003); runOnlyForDeploymentPostprocessing = 0; };
         A50000000000000000000001 = {
             isa = PBXNativeTarget;
             buildConfigurationList = A70000000000000000000002;
-            buildPhases = (A40000000000000000000001, A40000000000000000000002, A40000000000000000000003);
+            buildPhases = (C40000000000000000000001,A40000000000000000000001, A40000000000000000000002, A40000000000000000000003);
             buildRules = (); dependencies = (); name = SubaruBridge;
             packageProductDependencies = (A90000000000000000000002);
             productName = SubaruBridge; productReference = A20000000000000000000005;
             productType = "com.apple.product-type.application";
         };
+        C40000000000000000000001 = {isa = PBXShellScriptBuildPhase; alwaysOutOfDate = 1; buildActionMask = 2147483647; files = (); inputPaths = (); name = "Build shared Rust engine"; outputPaths = (); runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/bash; shellScript = "set -euo pipefail\nbash \"$SRCROOT/scripts/build-rust-core.sh\" \"$PLATFORM_NAME\"\n"; };
         A60000000000000000000001 = {
             isa = PBXProject;
             attributes = {BuildIndependentTargetsInParallel = YES; LastSwiftUpdateCheck = 1500; LastUpgradeCheck = 1500; TargetAttributes = {A50000000000000000000001 = {CreatedOnToolsVersion = 15.0; }; }; };
@@ -62,10 +81,10 @@
         };
         A70000000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (A80000000000000000000001, A80000000000000000000002); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
         A70000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (A80000000000000000000003, A80000000000000000000004); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-        A80000000000000000000001 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; DEBUG_INFORMATION_FORMAT = dwarf; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; ONLY_ACTIVE_ARCH = YES; }; name = Debug; };
-        A80000000000000000000002 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; SWIFT_COMPILATION_MODE = wholemodule; }; name = Release; };
-        A80000000000000000000003 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 2; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = App/Info.plist; MARKETING_VERSION = 0.2.0; ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; PRODUCT_BUNDLE_IDENTIFIER = org.subarubridge.iosresearch; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = NO; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
-        A80000000000000000000004 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 2; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = App/Info.plist; MARKETING_VERSION = 0.2.0; ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; PRODUCT_BUNDLE_IDENTIFIER = org.subarubridge.iosresearch; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = NO; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
+        A80000000000000000000001 = {isa = XCBuildConfiguration; buildSettings = {SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; CLANG_ENABLE_MODULES = YES; ENABLE_USER_SCRIPT_SANDBOXING = NO; LIBRARY_SEARCH_PATHS = ("$(inherited)", "$(SRCROOT)/build/rust-core/$(PLATFORM_NAME)"); IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; DEBUG_INFORMATION_FORMAT = dwarf; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; ONLY_ACTIVE_ARCH = YES; }; name = Debug; };
+        A80000000000000000000002 = {isa = XCBuildConfiguration; buildSettings = {CLANG_ENABLE_MODULES = YES; ENABLE_USER_SCRIPT_SANDBOXING = NO; LIBRARY_SEARCH_PATHS = ("$(inherited)", "$(SRCROOT)/build/rust-core/$(PLATFORM_NAME)"); IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; SWIFT_COMPILATION_MODE = wholemodule; }; name = Release; };
+        A80000000000000000000003 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 57; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = App/Info.plist; MARKETING_VERSION = 0.57.0; ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; PRODUCT_BUNDLE_IDENTIFIER = org.subarubridge.iosresearch; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = NO; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
+        A80000000000000000000004 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 57; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = App/Info.plist; MARKETING_VERSION = 0.57.0; ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; PRODUCT_BUNDLE_IDENTIFIER = org.subarubridge.iosresearch; PRODUCT_NAME = "$(TARGET_NAME)"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = NO; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
         A90000000000000000000001 = {isa = XCLocalSwiftPackageReference; relativePath = .; };
         A90000000000000000000002 = {isa = XCSwiftPackageProductDependency; package = A90000000000000000000001; productName = SubaruBridgeCore; };
     };

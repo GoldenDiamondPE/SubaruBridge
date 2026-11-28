@@ -1,108 +1,105 @@
-# SubaruBridge basic iPhone companion — 0.2.0
+# SubaruBridge iOS 0.57.0
 
-This is the first iOS source branch alongside Android, targeting iOS 17 or later.
-**Apple SDK verification runs in the macOS CI job; physical iPhone and car validation remain required.** The Windows host can prepare the source,
-but the Mac is needed for Swift tests, Apple SDK validation and simulator work.
-Device packaging is separate from simulator builds. Development signing uses
-your own Apple account and a profile permitting the intended phone. Signing
-material and prebuilt IPAs are excluded from this source.
+The native iPhone app now brings Home, Garage, dashboard preview and diagnostic
+tools into one app. It targets iOS 17 and later and preserves the existing bundle
+identifier, favorite settings and local check results when upgrading.
 
-The companion now includes Music, Maps, Phone, Messages and Notifications cards.
-Apple Music library playback uses the native player; Spotify opens through its
-normal link. Maps opens a favorite destination, calling uses the iPhone prompt,
-and SMS uses MessageUI with user confirmation. The Notifications page requests
-permission explicitly and schedules an app-owned local test. System-wide iPhone notification
-access, Spotify remote control and an iPhone-to-Pixel transport are not implemented.
-See [the capability guide](../docs/apps.md).
+## Included
 
-The starter contains:
+- Native vehicle profiles and switching; manual/approximate odometer readings
+  and audited corrections; manufacturer-scoped or custom maintenance schedules.
+- Multi-item service visits with uncertain mileage ranges, optional dates,
+  provider/DIY details, costs, parts and warranty notes.
+- Full/partial/missed fuel logs, expenses, completed manual trips, reconciled
+  mileage estimates and monthly/yearly recorded distance and cost charts.
+- Opt-in local maintenance notifications, configurable lead times and snoozes.
+- Android-compatible additive JSON backup/restore, selected-vehicle CSV and an
+  escaped printable HTML service history. Conflicts preserve existing records.
+- The same original Rust engine and schema used by Android. Private atomic local
+  storage is protected by iOS file protection and excluded from automatic backup.
+  Export your own backup before removing the app; exports are unencrypted.
+- Original head-unit templates in a loopback-only WebKit preview with JavaScript
+  disabled. Native HTML links, touch-test forms and appearance settings work
+  through the app's HTTP handler, without a PC helper.
+- Bounded diagnostic metadata recording, private notes and event markers,
+  interrupted-run recovery, timelines, explicit deletion and private ZIP export.
+  Limits: ten minutes or one MiB per session, newest twelve sessions retained.
+  iOS saves recording when the app backgrounds or locks. This is not continuous
+  background recording, raw Bluetooth capture or a vehicle event data recorder.
+- Existing Apple Music library player, maps links, system calling/message
+  prompts, app-owned local notifications and accessory inventory.
+- Original blue bridge-and-road icon matching Android.
 
-- A SwiftUI dashboard and three themes loaded from Android's editable dashboard
-  configuration, with native display, local touch, phone-data and results screens.
-- A bounded observation model with retry/conflict checks and an incremental SLIP
-  framing component. Framing does not implement Bluetooth, IP, TCP or STARLINK.
-- Explicit local-only status. Local UI taps are not described as car requests.
-- An on-demand list of accessories and protocol names that iOS exposes through
-  External Accessory. No accessory protocol strings or identities are fabricated.
-- Ten Swift component tests, four native UI journeys, a local Swift package and a
-  checked-in Xcode project. CI builds and launches its own dedicated simulator.
-- An original icon generator and privacy manifest for app-owned preferences.
+The Garage and phone features work without connecting to a car or creating an
+account. Estimates, uncertain history and missing records stay explicit. No
+live odometer, vehicle health diagnosis, automatic GPS, OBD-II, attachments or
+encrypted backup is claimed by this release.
 
-## Mac build
+## Platform and car limits
 
-Keep this in a new folder such as `~/Developer/SubaruBridge-iOS`, preserving the
-existing Mac repository. With Xcode 15 or newer selected and its first-run setup
-completed:
+Android's observed STARLINK path uses Classic RFCOMM with SLIP/IP/TCP/HTTP. The
+shared Rust engine is built for iPhone, but the iOS accessory data channel and
+its framing have not been verified. Accessory inspection sends no experimental
+messages. No protocol names, accessory identities or authentication are invented.
+The preview and phone self-check are not physical Subaru results.
+
+Ordinary iOS apps do not expose another app's global notification inbox or
+generic media sessions. Taurus control through the Pixel remains the separate
+Android AMS experiment. The native iOS library player does not control Taurus.
+Audio and normal hands-free calling still use the phone/car's supported pairing.
+
+## Build on the Mac
+
+Install Xcode with an available iOS simulator, complete its normal first-run
+setup, and install Rust 1.90.0 through rustup. No vendor runtime is required.
 
 ```sh
+rustup toolchain install 1.90.0 --profile minimal
 cd ios
 bash scripts/mac-verify.sh
+bash scripts/test-basic-ui.sh
 open SubaruBridge.xcodeproj
 ```
 
-The script generates the original icon, runs `swift test` and builds for the simulator without device signing.
-Choose an installed iPhone simulator in Xcode to launch the app. Physical iPhone
-installation needs a signing team and normal device trust/developer setup; no
-Apple account credentials or signing material are included here.
+The scripts build the original Rust static library for the selected Apple
+architecture, generate the icon, run Swift tests and build the native app.
+Keep CARGO_HOME and RUSTUP_HOME available to Xcode if you use nonstandard tool
+locations. The Rust Xcode build phase also supports ordinary IDE builds.
 
-Run the native UI suite separately:
+The native UI script uses a dedicated **SubaruBridge Unified QA** iPhone 15 Plus
+simulator. It resets only the app on that simulator. The Garage fixture path and
+reset arguments exist only in Debug simulator builds. Release and physical-phone
+builds do not include that reset path. Logs and result bundles stay under build/.
 
-```sh
-bash scripts/test-basic-ui.sh
-```
-
-It creates an isolated iPhone 15 Plus simulator named SubaruBridge Basic QA,
-clears only this app on that simulator, then tests app navigation, disabled
-actions, favorite-number validation, keyboard dismissal, notification denial and
-the four-screen local check/export. Its screenshot and test result bundle stay
-under ignored `build/`. No real call or SMS is sent.
-
-For a signed device export after normal Xcode account/device setup:
+For a signed IPA, configure your own Xcode signing account and registered phone:
 
 ```sh
 DEVELOPMENT_TEAM=YOUR_TEAM_ID bash scripts/package-device.sh signed
 ```
 
-Check that the embedded profile permits your phone. An IPA is not installed by
-opening it in Files. Use Xcode's normal device installation and enable Developer
-Mode when iOS requests it. The explicit `unsigned` packaging mode produces a file
-named `requires-signing`; it cannot be installed as-is. Never commit certificates,
-profiles, credentials or signed exports.
+The embedded profile must permit the intended phone and remain valid. An IPA
+does not install by opening it in Files. Use the supported Xcode/device or signing
+workflow. The explicit unsigned packaging mode produces a requires-signing file.
+Never publish credentials, private keys, profiles or private diagnostic exports.
 
-The copied JSON resource is in
-`Sources/SubaruBridgeCore/Resources/dashboard.json`. The canonical Android UI
-configuration remains `android/headunit-ui/dashboard.json`; keep this copy in
-sync until a common build-resource pipeline is added. No Android code was replaced.
+## Resource ownership and verification
 
-## Transport decision still required
+Android's original editable dashboard remains canonical. After changing its
+configuration/templates, run `python3 scripts/sync_ios_headunit.py`; CI checks
+that the packaged iOS copy matches. No extracted STARLINK application material
+is distributed.
 
-Android's observed STARLINK path is vendor RFCOMM, SLIP, IP, TCP and HTTP.
-Apple documents Core Bluetooth Classic as GATT over BR/EDR; that is not evidence
-that its API exposes this RFCOMM service. External Accessory communication
-depends on the accessory's supported protocols and manufacturer authorization.
-The first iPhone test should inspect what the car actually exposes, using the
-normal pairing/authentication path, before implementing a direct transport.
+The Mac passed 32 Swift component tests, 76 shared Rust regressions and an Apple
+SDK simulator build. Five of six native UI journeys passed: app cards, favorites,
+notification denial, recorder/dashboard forms and the local four-screen check.
+The Garage journey reached service entry but could not reveal the upper-mileage
+field after its range-toggle interaction. A test interaction change is prepared
+but has not been rerun. Verify that form before describing the native suite as
+passing. Signed device packaging remains pending after the Mac became unavailable.
+Physical iPhone validation of this new Garage build and direct Subaru
+display/touch/reconnect remain required. The owner's earlier basic iPhone launch
+and notification result does not certify these newer features.
 
-An iPhone-to-Pixel companion is a separate option if direct authorized access
-does not fit. Standard car audio/calling and app data transport must be tested
-separately. The starter does not intercept system-wide messages or calls, relay
-audio, bypass the retired service, claim certification, or modify the car.
-
-Primary references:
-
-- [External Accessory](https://developer.apple.com/documentation/externalaccessory/)
-- [Core Bluetooth Classic explanation](https://developer.apple.com/videos/play/wwdc2019/901/)
-- [Accessory protocol declaration](https://developer.apple.com/documentation/bundleresources/information-property-list/uisupportedexternalaccessoryprotocols)
-
-## Verification and remaining work
-
-The Mac passed the ten component tests, all four UI journeys, an Apple SDK build
-and development archive/export. The owner reported successful physical iPhone
-launch and local notification delivery. This does not verify music-library
-playback, real calls/messages, car connectivity or an iPhone-to-Pixel transport.
-
-Next, test permission grant/denial and real library selection on a phone; open
-directions, cancel the phone and message prompts, and inspect the car's normally
-exposed accessories while parked. Keep logs private. Taurus media through the
-Pixel is developed as a separate Android accessory experiment rather than
-pretending the native iOS library player controls other apps.
+Primary references: [External Accessory](https://developer.apple.com/documentation/externalaccessory/),
+[accessory protocol declarations](https://developer.apple.com/documentation/bundleresources/information-property-list/uisupportedexternalaccessoryprotocols),
+[background execution](https://developer.apple.com/documentation/uikit/extending-your-app-s-background-execution-time).

@@ -10,11 +10,40 @@ use serde_json::{json,Value};
 use std::collections::{BTreeSet,BTreeMap};
 
 pub const MAX_JSON:usize=4*1024*1024;
-/// Strict UTF-8 JSON, with serde's bounded nesting, before a native DOM parser.
+/// Validate before native DOM parsers can discard duplicate fields or their values.
+struct StrictJson;
+impl<'de> Deserialize<'de> for StrictJson {
+    fn deserialize<D:serde::Deserializer<'de>>(deserializer:D)->Result<Self,D::Error> {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value=StrictJson;
+            fn expecting(&self,f:&mut std::fmt::Formatter)->std::fmt::Result{f.write_str("JSON with unique object keys")}
+            fn visit_bool<E:serde::de::Error>(self,_:bool)->Result<StrictJson,E>{Ok(StrictJson)}
+            fn visit_i64<E:serde::de::Error>(self,_:i64)->Result<StrictJson,E>{Ok(StrictJson)}
+            fn visit_u64<E:serde::de::Error>(self,_:u64)->Result<StrictJson,E>{Ok(StrictJson)}
+            fn visit_f64<E:serde::de::Error>(self,_:f64)->Result<StrictJson,E>{Ok(StrictJson)}
+            fn visit_str<E:serde::de::Error>(self,_:&str)->Result<StrictJson,E>{Ok(StrictJson)}
+            fn visit_unit<E:serde::de::Error>(self)->Result<StrictJson,E>{Ok(StrictJson)}
+            fn visit_seq<A:serde::de::SeqAccess<'de>>(self,mut sequence:A)->Result<StrictJson,A::Error>{
+                while sequence.next_element::<StrictJson>()?.is_some(){} Ok(StrictJson)
+            }
+            fn visit_map<A:serde::de::MapAccess<'de>>(self,mut object:A)->Result<StrictJson,A::Error>{
+                let mut keys=BTreeSet::new();
+                while let Some(key)=object.next_key::<String>()? {
+                    if !keys.insert(key){return Err(serde::de::Error::custom("Duplicate JSON field"));}
+                    object.next_value::<StrictJson>()?;
+                }
+                Ok(StrictJson)
+            }
+        }
+        deserializer.deserialize_any(Visitor)
+    }
+}
+/// Strict UTF-8 JSON, unique decoded keys, and serde's default bounded nesting.
 pub fn valid_document(input:&[u8])->bool {
     if input.len()>MAX_JSON{return false;}
     let payload=input.strip_prefix(b"\xef\xbb\xbf").unwrap_or(input);
-    serde_json::from_slice::<Value>(payload).is_ok()
+    serde_json::from_slice::<StrictJson>(payload).is_ok()
 }
 pub fn schedule()->Schedule {serde_json::from_str(include_str!("../../../vehicle-database/subaru-us-2017-legacy-25-cvt.json")).expect("Reviewed bundled maintenance data must parse")}
 

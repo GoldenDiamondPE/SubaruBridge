@@ -6,7 +6,8 @@ let package = Package(
     platforms: [.iOS(.v17), .macOS(.v13)],
     products: [.library(name: "SubaruBridgeCore", targets: ["SubaruBridgeCore"])],
     targets: [
-        .target(name: "SubaruBridgeCore", resources: [.process("Resources")]),
+        .systemLibrary(name: "CSubaruBridgeCore"),
+        .target(name: "SubaruBridgeCore", dependencies: ["CSubaruBridgeCore"], resources: [.process("Resources/dashboard.json"), .copy("Resources/HeadUnit")]),
         .testTarget(name: "SubaruBridgeCoreTests", dependencies: ["SubaruBridgeCore"])
     ]
 )

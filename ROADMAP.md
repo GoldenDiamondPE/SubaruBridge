@@ -8,15 +8,18 @@ recording in one app. The former root-ADB-armed recorder is replaced by bounded,
 opt-in app metadata recording. Duplicate research apps can remain disabled with
 their private data preserved. The original icon, recorder guide and remaining
 experimental migration boundary are documented in [One Android app](docs/unified-android.md).
-iOS development is paused at the owner's request while Android is the focus.
+iOS 0.57 now includes the native unified workspace, shared Rust Garage and local
+dashboard/diagnostic adapters. Complete signed-phone checks before claiming parity
+in everyday operation. Direct iPhone-to-Subaru transport remains a separate milestone.
 
 1. **Media and STARLINK reliability:** fix reproducible Android player/control
    faults; bench-test the iPhone AMS adapter with Taurus; then test independent
    Subaru display, touch, audio coexistence and reconnect. Record evidence per layer.
 2. **Ownership foundation:** the Android Garage now uses shared Rust vehicle,
    odometer, uncertain service history, maintenance, fuel and expense models,
-   with atomic storage and explicit backup/restore. Next add a native iOS storage
-   and UI adapter using the same engine, then migrations and record attachments.
+   with atomic storage and explicit backup/restore. The native iOS adapter now
+   uses that same engine and backup format. Next validate the signed phone build,
+   then add migrations and record attachments.
    Ownership remains usable without a car.
 3. **Authoritative maintenance:** complete manufacturer schedule notes, provenance,
    severe-service applicability and verified parts/fluid references for the exact

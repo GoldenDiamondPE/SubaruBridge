@@ -53,6 +53,7 @@ struct ConnectionLabView: View {
                     Label("Local iPhone demo Â· No vehicle transport connected", systemImage: "info.circle")
                         .font(.callout).foregroundStyle(.secondary)
                     if let configurationError { Text(configurationError).foregroundStyle(.red) }
+                    NavigationLink { RecorderView() } label: { Label("Record & diagnose", systemImage: "waveform.path.ecg") }.accessibilityIdentifier("tools-recorder")
                     if let configuration {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                             ForEach(configuration.tiles) { tile in

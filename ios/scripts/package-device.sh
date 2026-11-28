@@ -5,21 +5,30 @@ mode=${1:-signed}
 if [ "$mode" != signed ] && [ "$mode" != unsigned ]; then echo 'Choose signed or unsigned'; exit 2; fi
 mkdir -p build/artifacts
 swift scripts/render-icon.swift App/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+ARCHS=arm64 bash scripts/build-rust-core.sh iphoneos
 if [ "$mode" = signed ]; then
   : "${DEVELOPMENT_TEAM:?Set the development team from your own Xcode account}"
+  signing=( -allowProvisioningUpdates "DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM" CODE_SIGN_STYLE=Automatic )
+  if [ -n "${PROFILE_SPECIFIER:-}" ]; then
+    signing=( "DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM" CODE_SIGN_STYLE=Manual "PROVISIONING_PROFILE_SPECIFIER=$PROFILE_SPECIFIER" "CODE_SIGN_IDENTITY=Apple Development" )
+  fi
   archive="$PWD/build/DeviceArchive-$(date -u +%Y%m%d-%H%M%S).xcarchive"
   xcodebuild -project SubaruBridge.xcodeproj -scheme SubaruBridge -configuration Release \
     -destination 'generic/platform=iOS' -archivePath "$archive" -jobs 2 \
-    -allowProvisioningUpdates DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" CODE_SIGN_STYLE=Automatic archive
+    "${signing[@]}" archive
   export DEVELOPMENT_TEAM
   python3 - <<'PY'
 import os,plistlib
 from pathlib import Path
-Path('build/ExportOptions.plist').write_bytes(plistlib.dumps({'method':'debugging','signingStyle':'automatic',
-    'teamID':os.environ['DEVELOPMENT_TEAM'],'manageAppVersionAndBuildNumber':False}))
+options={'method':'debugging','signingStyle':'automatic',
+    'teamID':os.environ['DEVELOPMENT_TEAM'],'manageAppVersionAndBuildNumber':False}
+if os.environ.get('PROFILE_SPECIFIER'):
+    options.update(signingStyle='manual',signingCertificate='Apple Development',
+        provisioningProfiles={'org.subarubridge.iosresearch':os.environ['PROFILE_SPECIFIER']})
+Path('build/ExportOptions.plist').write_bytes(plistlib.dumps(options))
 PY
   xcodebuild -exportArchive -archivePath "$archive" -exportOptionsPlist build/ExportOptions.plist \
-    -exportPath build/artifacts/signed -allowProvisioningUpdates
+    -exportPath build/artifacts/signed
   echo 'Export completed. Verify the provisioning profile includes the intended iPhone.'
 else
   xcodebuild -project SubaruBridge.xcodeproj -scheme SubaruBridge -configuration Release \

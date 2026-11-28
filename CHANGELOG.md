@@ -1,5 +1,27 @@
 # Changes
 
+## 0.57.0 iOS — Unified companion
+
+- Add native Home, Garage, Dashboard and Tools navigation with the Android icon.
+- Use the existing shared Rust maintenance, mileage, fuel and expense engine from
+  Swift through the C interface. Keep one local Garage and Android-compatible
+  JSON backup/restore, CSV export and printable service history.
+- Add vehicle profiles, audited odometer corrections, uncertain multi-item service
+  records, fuel logs, expenses, manual trips, custom intervals, charts and local
+  maintenance reminders. Preserve the existing iPhone actions and preferences.
+- Package the original head-unit templates for a loopback-only, JavaScript-free
+  preview. Touch forms, settings and phone self-checks use the app's HTTP handler.
+- Add bounded metadata recording, private notes, interrupted-run recovery and ZIP
+  export. iOS saves a recording on backgrounding; it does not claim Android-style
+  continuous background recording or raw Bluetooth capture.
+- Reject duplicate JSON keys before native parsing can hide conflicting schema
+  fields. Shared regression coverage protects both platform adapters.
+- Direct Subaru accessory transport, Taurus control and other apps' iPhone
+  notifications remain separate, unverified or platform-restricted capabilities.
+- Component tests and an Apple SDK simulator build pass. Five of six native UI
+  journeys pass; the Garage range-toggle interaction needs a rerun. Signed IPA
+  packaging is pending. No physical car result is inferred from local tests.
+
 ## 0.57-dev — Unified Android workspace
 
 - Keep Garage, the original STARLINK dashboard, integrations and diagnostic tools

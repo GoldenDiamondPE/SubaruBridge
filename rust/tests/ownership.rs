@@ -6,6 +6,9 @@ use serde_json::{json,Value};
  let deep=format!("{}0{}","[".repeat(1000),"]".repeat(1000));assert!(!own::valid_document(deep.as_bytes()));
  let quoted=json!({"notes":"{".repeat(1000)}).to_string();assert!(own::valid_document(quoted.as_bytes()));
  assert!(!own::valid_document(br#"{"notes":"\uD800"}"#));assert!(!own::valid_document(&vec![b' ';own::MAX_JSON+1]));
+ assert!(!own::valid_document(br#"{"schemaVersion":999,"schemaVersion":1}"#));
+ assert!(!own::valid_document(br#"{"nested":{"id":1,"\u0069d":2}}"#));
+ assert!(own::valid_document(br#"{"left":{"id":1},"right":{"id":2}}"#));
 }
 
 #[test]fn version_counters_remain_exact_across_native_and_json_adapters(){

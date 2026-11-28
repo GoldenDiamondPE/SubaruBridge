@@ -20,11 +20,11 @@ milestone is a parked-car display, touch and reconnect test.
 - Phone preview, Android component tests and native protocol regressions.
 - A stable C interface for shared protocol work.
 - Android Music, Maps, Phone, Messages and Notifications dashboard cards with explicit permission and confirmation boundaries.
-- A native basic iOS companion with app-owned local notifications, native UI
-  journeys, simulator checks and development-device packaging scripts.
-- A native Android Garage for vehicle profiles, mileage, maintenance, services,
+- A native iOS companion with Home, Garage, dashboard preview, diagnostic recording,
+  phone actions, local notifications and device packaging. See [iOS](ios/README.md).
+- Native Android and iOS Garage screens for vehicle profiles, mileage, maintenance, services,
   fill-ups, expenses, manual trips, local reminders and explicit backups.
-  The calculations and versioned records live in shared Rust for the iOS port.
+  Both platforms use the same Rust calculations, versioned records and backup format.
 - Generic Android music-player selection and an experimental paired-iPhone media
   adapter for testing Taurus through Apple's public Media Service.
 

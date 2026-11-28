@@ -129,8 +129,10 @@ certificate.
 The first private storage adapter caps garage state at 1.5 MiB and 10,000 total
 history records. A failed or oversized save preserves the previous committed
 file. Future-schema or unreadable files are not reset to an empty garage.
-Attachments, encrypted backups, richer analytics and
-the native iOS Garage interface are subsequent work.
+The native iOS Garage uses the same Rust engine and backup format. Attachments,
+encrypted backups and richer analytics remain subsequent work. The iOS adapter
+adds native forms, charts and local calendar reminders; its device validation
+is tracked separately from Android and from actual Subaru connectivity.
 
 ## See the current screens
 

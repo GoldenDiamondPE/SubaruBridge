@@ -110,3 +110,20 @@ identifiers are excluded from the diagnostic journals.
 This is a metadata/control connection, not an audio bridge or a general iOS
 notification interface. Physical iPhone service exposure and car audio coexistence
 remain separate verification tasks.
+
+## Native iOS unified adapter
+
+The iOS Swift package imports the same original Rust static library through a
+small C module. OwnershipCore preserves integer JSON, validates before native
+parsing and frees each returned buffer. GarageRepository uses one private file,
+a transaction lock, atomic replacement, revision checks and the Android backup
+envelope. Unsupported or corrupt files are preserved rather than reset.
+
+Native SwiftUI Garage forms and charts operate independently of connectivity.
+Notifications schedule local calendar checks from saved records; automatic live
+mileage is not assumed. The loopback Network/WebKit preview uses the original
+HTTP routes with scripts disabled. No Garage or credential routes are exposed.
+The recorder uses monotonic elapsed session time, protected bounded files and
+explicit ZIP export; it saves on backgrounding instead of pretending iOS has
+Android's general foreground service. Accessory inventory is read-only pending
+verification of an authorized iPhone data protocol and its framing.
