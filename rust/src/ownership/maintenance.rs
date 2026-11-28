@@ -20,7 +20,7 @@ pub fn calculate(rule:&Rule,service:Option<&Service>,current:Option<u64>,estimat
     if override_rule.is_some_and(|v|v.disabled){due.status="notApplicable".into();due.explanation="Disabled by the vehicle owner.".into();return due;}
     let Some(service)=service else{due.explanation="No service history was recorded. No completion or overdue status is assumed.".into();return due;};
     let interval=if let Some(custom)=override_rule {&custom.interval}
-        else if severe {match rule.severe.as_ref(){Some(v)=>v,None=>{due.uncertain=true;due.explanation="Severe-condition notes have not been verified for this item. Set an explicit owner interval or verify the source notes.".into();return due;}}}
+        else if severe {match rule.severe.as_ref(){Some(v)=>v,None=>{due.uncertain=true;due.explanation="Choose specific driving conditions in the vehicle profile to apply the verified item-specific notes, or set an explicit owner interval. A broad severe flag cannot select the correct exception.".into();return due;}}}
         else if service.factory_baseline {rule.initial.as_ref().unwrap_or(&rule.normal)}else{&rule.normal};
     if let (Some(miles),Some(range))=(interval.miles,&service.mileage) {
         let increment=miles.saturating_mul(MM_PER_MILE);
@@ -42,4 +42,20 @@ pub fn calculate(rule:&Rule,service:Option<&Service>,current:Option<u64>,estimat
         if due.uncertain{" Estimated mileage, incomplete dates or approximate service history are explicitly retained."}else{""},
         if ambiguous{" The mileage range straddles the due threshold; a precise due state cannot be established."}else{""});
     due
+}
+
+/// Only apply an exception when its actual item-specific driving conditions match.
+pub fn for_conditions(rule:&Rule,conditions:&[String])->(Rule,String){
+    let mut selected=rule.clone();let mut notes=Vec::new();
+    if let Some(exception)=&rule.exception {
+        if exception.conditions.iter().any(|v|conditions.contains(v)){
+            selected.normal=exception.interval.clone();selected.initial=None;selected.action=exception.action.clone();
+            selected.source_row=format!("{}; page 31 {}",rule.source_row,exception.source);
+            notes.push(format!("Verified condition-specific service: {}.",exception.source));
+        }
+    }
+    for advisory in &rule.advisories {
+        if advisory.conditions.is_empty() || advisory.conditions.iter().any(|v|conditions.contains(v)){notes.push(advisory.note.clone());}
+    }
+    (selected,notes.join(" "))
 }

@@ -110,3 +110,17 @@ identifiers are excluded from the diagnostic journals.
 This is a metadata/control connection, not an audio bridge or a general iOS
 notification interface. Physical iPhone service exposure and car audio coexistence
 remain separate verification tasks.
+
+## Ownership storage additions in Android 0.58
+
+A version-2 AtomicFile envelope keeps the Rust state and receipt metadata in one
+source of truth. Receipt blobs use validated SHA-256 filenames; no imported
+path is used. Native GarageDataActivity handles system file selection, private
+PDF/image preview, complete/records-only export, password entry and conflict
+review. Crypto, copying, decoding and Rust validation run on worker threads.
+
+Pure Rust previewImport/applyImport preserve the odometer audit and currency
+semantics. Android adds receipt identity and storage-generation checks. Complete
+backup restore stages and verifies all blobs before atomically committing the
+manifest. The shared business format remains independent of Android UI/storage
+APIs; iOS implementation is deferred. See [the versioned format](ownership-backup-format.md).

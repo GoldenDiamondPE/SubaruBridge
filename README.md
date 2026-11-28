@@ -41,6 +41,9 @@ certification. See [dashboard apps and limits](docs/apps.md) for the implemented
 For ownership tracking, open **Home → Garage → Add vehicle**. No car connection,
 location access or account is required. See [the Garage guide](docs/garage.md)
 for recording approximate history, correcting readings and keeping a backup.
+Android 0.58 adds private receipts/PDFs, complete encrypted backups with conflict
+review, verified severe-service notes, offline specifications and fuel/mileage
+summaries. See [ownership release details](docs/ownership-058.md).
 
 1. Follow [the build guide](docs/build.md) for Android Studio/CLI and the pinned toolchain.
 2. Install your locally built APK. Open SubaruBridge and use the phone preview first.

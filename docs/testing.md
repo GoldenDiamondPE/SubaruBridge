@@ -163,3 +163,24 @@ Use this after the independent transport and basic touch test pass.
 The [capability guide](apps.md) lists the implemented adapters and remaining limits.
 The [iPhone bridge plan](iphone-bridge-plan.md) separates the next physical iPhone
 experiments from the simulator evidence.
+
+## Android ownership 0.58
+
+BridgeCoreSmoke now runs OwnershipDataChecks using private synthetic fixtures.
+It checks photos/PDFs, complete archives, encrypted multi-chunk round-trips,
+wrong passwords, corrupted/truncated encrypted files, path traversal, migration,
+future storage preservation, stale restore review and the native encrypted
+restore journey. The test has no intent-based fixture injection in production.
+
+The optional `-e reminderProbe prepare|idle|reboot|finish` instrumented stages
+save and restore reminder preferences without seeding owner maintenance. Prepare
+posts a test notification and schedules the normal daily check. Idle sends the
+actual private receiver while a developer has placed the device in deep idle.
+Reboot verifies the system boot receiver after ordinary unlock. Always run finish
+and restore device idle/power settings. This checks accelerated receiver recovery,
+not overnight scheduler delivery. Run only on the explicitly selected device.
+
+`-e ownershipPreview true` captures six real native screens from an isolated
+sample garage into private test-cache PNGs. No demonstration records enter the
+owner's garage. Original manufacturer PDFs, exports and device logs remain
+excluded from public source.

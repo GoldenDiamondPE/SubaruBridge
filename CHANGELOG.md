@@ -1,5 +1,22 @@
 # Changes
 
+## 0.58-dev — Android ownership completion
+
+- Verify the actual 2017 US manufacturer booklet, item-specific severe-service
+  exceptions and offline owner-manual fluid/capacity/torque/plug/tire references.
+- Add private JPEG/PNG/WebP and PDF receipts on saved vehicles, services, fuel,
+  expenses and trips; preview, save copies and remove attachments locally.
+- Add complete ZIP and optional password-encrypted SBBK backups, legacy JSON
+  compatibility, native conflict review and atomic, tested v1 storage migration.
+- Protect odometer correction history, currency meaning, receipt identity and
+  stale reviews. Reject duplicate JSON keys, unsafe paths and damaged archives.
+- Keep a stable daily reminder target, report permission/storage failures and
+  recover after boot/time changes instead of silently swallowing exceptions.
+- Add purchased-fuel totals/price, measured cycle fuel cost, fuel-economy charts
+  and labeled mileage/service-date estimates using recent confirmed readings.
+- Preserve the unified STARLINK/diagnostic/media paths. No iOS changes or OEM
+  application code/assets are included.
+
 ## 0.57-dev — Unified Android workspace
 
 - Keep Garage, the original STARLINK dashboard, integrations and diagnostic tools

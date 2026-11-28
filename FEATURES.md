@@ -16,13 +16,13 @@ is evidence that the independent app works on the Subaru.
 | Maps | Android notification directions; native phone URLs | Real navigation and head-unit rendering; no embedded live maps |
 | Calls / messages | Android dialer/composer, confirmed notification replies; native iOS prompts/composer | No arbitrary inbox read or call-audio interception; normal factory hands-free testing |
 | Notifications | Android opt-in bounded memory feed; iOS app-owned local notifications | iPhone-wide relay requires separate authorized accessory research |
-| Ownership | Native Android Garage; bounded atomic private storage, profiles, confirmed/approximate readings, correction trail and versioned Rust calculations | iOS persistence/UI adapter, attachments and future schema migrations |
-| Maintenance | 18 sourced normal-service rules for US 2017 Legacy 2.5 CVT; uncertain ranges, date/distance thresholds, editable owner-defined items and intervals on any vehicle | Manufacturer severe-service notes and verified schedules for other vehicles |
-| Service book | Multi-item visits, dates/ranges, DIY/provider, parts/labor/tax breakdown, owner-recorded part numbers, warranty notes, search and printable history | Receipt/photo/PDF attachments and richer part records |
-| Maintenance reminders | Opt-in daily Android inexact alarm and local notification; configurable lead times and snoozes; saved changes trigger checks; unknown history and archived vehicles excluded | Notification delivery after device power management/reboot; iOS adapter |
+| Ownership | Native Android Garage; bounded atomic private storage, profiles, confirmed/approximate readings, correction trail and versioned Rust calculations | iOS persistence/UI adapter; future business-schema migrations beyond the tested v1 storage upgrade |
+| Maintenance | 18 sourced rules with item-specific severe exceptions; offline fluids/capacity/torque/plug/tire references; uncertain history and owner intervals | Other vehicles/markets, exact VIN-specific filter fitments and CVT service fluid |
+| Service book | Multi-item visits, dates/ranges, DIY/provider, cost breakdown, part/warranty notes, private photos/PDFs, search and printable history | Richer verified VIN-specific parts database |
+| Maintenance reminders | Opt-in daily Android inexact alarm and local notification; configurable lead times and snoozes; saved changes trigger checks; unknown history and archived vehicles excluded | Physical notification and accelerated deep-idle receiver checks passed; reboot verification recorded in release testing; overnight delivery remains observational; iOS adapter |
 | Trips / fuel / expenses | Completed manual trips, reconciled estimates, full/partial/missed fills and derived operating/financing totals; editable records | Automatic GPS, routes, richer analytics and safeguards for auto recording |
-| Ownership summaries | Shared monthly/yearly calculations, native distance/cost charts and monthly details; corrected readings and undated costs remain explicit | Forecasts, configurable analytics widgets, trend comparisons and cost-per-mile coverage logic |
-| Data ownership | User-chosen JSON export/additive restore, CSV history and escaped printable offline HTML service report | Attachments, encrypted backups, conflict-resolution UI and CSV/GPX import |
+| Ownership summaries | Shared monthly/yearly distance/cost/fuel charts, purchased-fuel and measured-cycle cost, recent confirmed-growth estimates; partial coverage remains explicit | Configurable widgets, cross-period comparisons and complete-cost coverage |
+| Data ownership | Complete ZIP/optional encrypted SBBK backups with receipts, native conflict review, tested v1 storage migration, legacy JSON, CSV and printable HTML | Future platform adapter, CSV/GPX import and additional schema migrations |
 | Themes / app SDK | Editable original dashboard configuration/templates | Versioned sandboxed packages, permissions and richer simulator |
 | Media skins / virtual CDs | Planned on the common provider model | Provider APIs, content rights, actual rendering and verified parked restrictions |
 | OBD-II / black box | Optional read-only design | Additional compatible hardware and platform permission/storage tests |
@@ -33,9 +33,9 @@ is evidence that the independent app works on the Subaru.
 
 | System | Next deliverable and dependency |
 | --- | --- |
-| Ownership analytics | Monthly/yearly recorded trip/cost charts and fuel-cycle details are implemented; extend with forecasts, comparisons and user-arranged widgets |
-| Maintenance references | Exact severe-service notes, fluids/capacities/torques and parts; authoritative model-specific review before publishing facts |
-| Attachments and backups | Private receipt/photo/PDF storage, bundled restoration, encrypted export and conflict review; transactional file/schema tests |
+| Ownership analytics | Monthly/yearly trip/cost/fuel charts, purchased-fuel summaries, measured cycle fuel cost and labeled mileage forecasts implemented; comparisons and user-arranged widgets remain |
+| Maintenance references | Verified 2017 US notes and offline specifications implemented; extend exact VIN-specific parts fitment, other model years/markets and manufacturer revisions |
+| Attachments and backups | Implemented on Android 0.58 with transaction, corruption, stale-review, migration and encryption tests; iOS implementation deferred |
 | Automatic trips | Explicit location/background permission, vehicle selection, battery-efficient GPS, route/parking storage and GPX; platform and device checks |
 | Read-only diagnostics | Optional supported OBD-II hardware, verified PID support, DTC/readiness history and gauges; no ECU writes or code clearing |
 | Black box | Bounded local telemetry/connection timeline, retention, redaction and export; verified data sources and privacy controls |

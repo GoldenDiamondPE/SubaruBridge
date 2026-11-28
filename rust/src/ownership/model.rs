@@ -36,6 +36,7 @@ pub struct Vehicle {
     #[serde(default="usd")] pub currency:String,
     #[serde(default="us")] pub units:String,
     #[serde(default)] pub maintenance_profile:Option<String>,
+    #[serde(default)] pub severe_conditions:Vec<String>,
     #[serde(default)] pub severe:bool,#[serde(default)] pub archived:bool,#[serde(default)] pub notes:String,
 }
 fn usd()->String{"USD".into()}fn us()->String{"us".into()}
@@ -110,10 +111,20 @@ pub struct Rule {
     pub id:String,pub title:String,pub action:String,pub normal:Interval,
     #[serde(default)]pub initial:Option<Interval>,#[serde(default)]pub severe:Option<Interval>,
     pub source_row:String,#[serde(default)]pub note_refs:Vec<u32>,
+    #[serde(default)]pub exception:Option<SevereException>,#[serde(default)]pub advisories:Vec<Advisory>,
 }
+#[derive(Clone,Debug,Serialize,Deserialize)]
+#[serde(rename_all="camelCase",deny_unknown_fields)]
+pub struct SevereException {pub conditions:Vec<String>,pub interval:Interval,pub action:String,pub source:String}
+#[derive(Clone,Debug,Serialize,Deserialize)]
+#[serde(rename_all="camelCase",deny_unknown_fields)]
+pub struct Advisory {pub conditions:Vec<String>,pub note:String}
+#[derive(Clone,Debug,Serialize,Deserialize)]
+#[serde(rename_all="camelCase",deny_unknown_fields)]
+pub struct DrivingCondition {pub id:String,pub title:String}
 #[derive(Clone,Debug,Serialize,Deserialize)]
 #[serde(rename_all="camelCase",deny_unknown_fields)]
 pub struct Schedule {
     pub schema_version:u32,pub profile:String,pub market:String,pub vehicle:String,pub source_url:String,pub source_sha256:String,
-    pub source_page:String,pub verified_date:String,pub limitations:String,pub rules:Vec<Rule>,
+    pub source_page:String,pub verified_date:String,pub limitations:String,pub rules:Vec<Rule>,#[serde(default)]pub conditions:Vec<DrivingCondition>,
 }

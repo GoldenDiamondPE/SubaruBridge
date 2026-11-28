@@ -3,6 +3,7 @@ pub mod date;
 pub mod model;
 pub mod maintenance;
 pub mod analytics;
+pub mod import;
 use date::Date;
 use model::*;
 use serde::{Deserialize, Serialize};
@@ -10,11 +11,40 @@ use serde_json::{json,Value};
 use std::collections::{BTreeSet,BTreeMap};
 
 pub const MAX_JSON:usize=4*1024*1024;
-/// Strict UTF-8 JSON, with serde's bounded nesting, before a native DOM parser.
+/// Validate before native DOM parsers can discard duplicate fields or their values.
+struct StrictJson;
+impl<'de> Deserialize<'de> for StrictJson {
+    fn deserialize<D:serde::Deserializer<'de>>(deserializer:D)->Result<Self,D::Error> {
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value=StrictJson;
+            fn expecting(&self,f:&mut std::fmt::Formatter)->std::fmt::Result{f.write_str("JSON with unique object keys")}
+            fn visit_bool<E:serde::de::Error>(self,_:bool)->Result<StrictJson,E>{Ok(StrictJson)}
+            fn visit_i64<E:serde::de::Error>(self,_:i64)->Result<StrictJson,E>{Ok(StrictJson)}
+            fn visit_u64<E:serde::de::Error>(self,_:u64)->Result<StrictJson,E>{Ok(StrictJson)}
+            fn visit_f64<E:serde::de::Error>(self,_:f64)->Result<StrictJson,E>{Ok(StrictJson)}
+            fn visit_str<E:serde::de::Error>(self,_:&str)->Result<StrictJson,E>{Ok(StrictJson)}
+            fn visit_unit<E:serde::de::Error>(self)->Result<StrictJson,E>{Ok(StrictJson)}
+            fn visit_seq<A:serde::de::SeqAccess<'de>>(self,mut sequence:A)->Result<StrictJson,A::Error>{
+                while sequence.next_element::<StrictJson>()?.is_some(){} Ok(StrictJson)
+            }
+            fn visit_map<A:serde::de::MapAccess<'de>>(self,mut object:A)->Result<StrictJson,A::Error>{
+                let mut keys=BTreeSet::new();
+                while let Some(key)=object.next_key::<String>()? {
+                    if !keys.insert(key){return Err(serde::de::Error::custom("Duplicate JSON field"));}
+                    object.next_value::<StrictJson>()?;
+                }
+                Ok(StrictJson)
+            }
+        }
+        deserializer.deserialize_any(Visitor)
+    }
+}
+/// Strict UTF-8 JSON, unique decoded keys, and serde's default bounded nesting.
 pub fn valid_document(input:&[u8])->bool {
     if input.len()>MAX_JSON{return false;}
     let payload=input.strip_prefix(b"\xef\xbb\xbf").unwrap_or(input);
-    serde_json::from_slice::<Value>(payload).is_ok()
+    serde_json::from_slice::<StrictJson>(payload).is_ok()
 }
 pub fn schedule()->Schedule {serde_json::from_str(include_str!("../../../vehicle-database/subaru-us-2017-legacy-25-cvt.json")).expect("Reviewed bundled maintenance data must parse")}
 
@@ -28,6 +58,7 @@ pub struct Request {
 #[derive(Deserialize)]
 #[serde(tag="type",rename_all="camelCase",rename_all_fields="camelCase",deny_unknown_fields)]
 pub enum Command {
+    PreviewImport{backup:Garage},ApplyImport{backup:Garage,expected_revision:u64,resolutions:Vec<import::Resolution>},
     View,AddVehicle{vehicle:Vehicle},UpdateVehicle{vehicle:Vehicle},AddReading{reading:Reading},
     AddService{service:Service},AddFuel{entry:Fuel},AddExpense{expense:Expense},AddTrip{trip:Trip},
     SetOverride{value:Override},ResetOverride{vehicle_id:String,item_id:String},MergeBackup{backup:Garage},
@@ -76,26 +107,30 @@ pub fn mileage(state:&Garage,id:&str)->Mileage {
 }
 #[derive(Debug,Serialize)]
 #[serde(rename_all="camelCase")]
-pub struct FuelSummary {pub completed_cycles:u32,pub distance_mm:u64,pub volume_ml:u64,pub mpg_us:Option<f64>,pub litres_per_100_km:Option<f64>}
+pub struct FuelSummary {pub completed_cycles:u32,pub distance_mm:u64,pub volume_ml:u64,pub mpg_us:Option<f64>,pub litres_per_100_km:Option<f64>,pub cycle_cost_cents:u64,pub cost_per_mile:Option<f64>,pub cost_per_100_km:Option<f64>,pub fill_ups:usize,pub full_fill_ups:usize,pub purchased_volume_ml:u64,pub purchased_cost_cents:u64,pub average_price_per_litre:Option<f64>,pub average_price_per_us_gallon:Option<f64>}
 pub fn fuel_summary(state:&Garage,id:&str)->FuelSummary {
     fuel_entries(state.fuel.iter().filter(|e|e.vehicle_id==id).collect())
 }
 pub fn fuel_entries(mut entries:Vec<&Fuel>)->FuelSummary {
     entries.sort_by_key(|e|(e.at_ms,&e.id));
-    let mut out=FuelSummary{completed_cycles:0,distance_mm:0,volume_ml:0,mpg_us:None,litres_per_100_km:None};
-    let mut anchor:Option<u64>=None;let mut volume=0;
+    let mut out=FuelSummary{completed_cycles:0,distance_mm:0,volume_ml:0,mpg_us:None,litres_per_100_km:None,cycle_cost_cents:0,cost_per_mile:None,cost_per_100_km:None,
+        fill_ups:entries.len(),full_fill_ups:entries.iter().filter(|v|v.full).count(),purchased_volume_ml:entries.iter().map(|v|v.volume_ml).sum(),purchased_cost_cents:entries.iter().map(|v|v.cost_cents).sum(),average_price_per_litre:None,average_price_per_us_gallon:None};
+    let mut anchor:Option<u64>=None;let mut volume=0;let mut cycle_cost=0;
     for e in entries {
-        if e.missed_fill {anchor=None;volume=0;}
-        if anchor.is_some(){volume+=e.volume_ml;}
+        if e.missed_fill {anchor=None;volume=0;cycle_cost=0;}
+        if anchor.is_some(){volume+=e.volume_ml;cycle_cost+=e.cost_cents;}
         if e.full {
-            if let Some(start)=anchor {if e.distance_mm>=start && volume>0 {out.completed_cycles+=1;out.distance_mm+=e.distance_mm-start;out.volume_ml+=volume;}}
-            anchor=Some(e.distance_mm);volume=0;
+            if let Some(start)=anchor {if e.distance_mm>=start && volume>0 {out.completed_cycles+=1;out.distance_mm+=e.distance_mm-start;out.volume_ml+=volume;out.cycle_cost_cents+=cycle_cost;}}
+            anchor=Some(e.distance_mm);volume=0;cycle_cost=0;
         }
     }
     if out.volume_ml>0 {
         out.mpg_us=Some((out.distance_mm as f64/MM_PER_MILE as f64)/(out.volume_ml as f64/3785.411784));
         if out.distance_mm>0{out.litres_per_100_km=Some(out.volume_ml as f64/1000.0/(out.distance_mm as f64/1_000_000.0)*100.0);}
-    }out
+    }
+    if out.distance_mm>0 {out.cost_per_mile=Some(out.cycle_cost_cents as f64/100.0/(out.distance_mm as f64/MM_PER_MILE as f64));out.cost_per_100_km=Some(out.cycle_cost_cents as f64/(out.distance_mm as f64/1_000_000.0));}
+    if out.purchased_volume_ml>0 {out.average_price_per_litre=Some(out.purchased_cost_cents as f64*10.0/out.purchased_volume_ml as f64);out.average_price_per_us_gallon=out.average_price_per_litre.map(|v|v*3.785411784);}
+    out
 }
 /// A partial record must not sort before every dated record merely because its
 /// date is unknown. Only choose a service that demonstrably follows all others.
@@ -134,6 +169,9 @@ pub fn validate(state:&Garage,today:&Date,now:u64)->Result<(),String>{
         if !(1886..=2200).contains(&vehicle.year) || vehicle.nickname.trim().is_empty() || vehicle.make.trim().is_empty() || vehicle.model.trim().is_empty(){return Err("Vehicle name, make, model and valid year are required".into());}
         for value in [&vehicle.nickname,&vehicle.make,&vehicle.model,&vehicle.trim,&vehicle.engine,&vehicle.transmission,&vehicle.drivetrain]{text(value,160)?;}
         text(&vehicle.notes,2000)?;
+        let conditions=schedule().conditions;
+        let unique:BTreeSet<_>=vehicle.severe_conditions.iter().collect();
+        if unique.len()!=vehicle.severe_conditions.len() || vehicle.severe_conditions.iter().any(|c|!conditions.iter().any(|known|known.id==*c)){return Err("Invalid or duplicate driving condition".into());}
         if vehicle.currency.len()!=3 || !vehicle.currency.bytes().all(|v|v.is_ascii_uppercase()) || !["us","metric"].contains(&vehicle.units.as_str()){return Err("Choose supported units and a three-letter currency".into());}
         if let Some(vin)=&vehicle.vin {if !vin.is_empty() && (vin.len()!=17 || !vin.bytes().all(|v|v.is_ascii_uppercase() && !b"IOQ".contains(&v) || v.is_ascii_digit())){return Err("VIN must contain 17 valid uppercase characters".into());}}
         if let Some(plate)=&vehicle.plate{text(plate,32)?;}
@@ -237,7 +275,10 @@ pub fn execute(request:Request)->Result<Value,String>{
     if request.due_soon_mm.is_some_and(|v|v>100_000*MM_PER_MILE) || request.due_soon_days.is_some_and(|v|!(0..=3650).contains(&v)){return Err("Invalid due-soon thresholds".into());}
     let original=state.clone();
     let mut periods=Vec::new();
+    let mut import_review=None;
     match request.command {
+        Command::PreviewImport{backup}=>{import_review=Some(import::preview(&state,&backup,&request.today,request.now_ms)?);},
+        Command::ApplyImport{backup,expected_revision,resolutions}=>{state=import::apply(&state,backup,&request.today,request.now_ms,expected_revision,resolutions)?;},
         Command::View=>(),Command::AddVehicle{vehicle}=>state.vehicles.push(vehicle),
         Command::Analyze{periods:requested}=>{
             if requested.is_empty() || requested.len()>24{return Err("Choose one to 24 analytics periods".into());}
@@ -292,7 +333,10 @@ pub fn execute(request:Request)->Result<Value,String>{
                 let history:Vec<_>=services.iter().copied().filter(|s|s.item_ids.contains(&rule.id)).collect();
                 let last=latest_service(&history);
                 let custom=state.overrides.iter().find(|v|v.vehicle_id==vehicle.id && v.item_id==rule.id);
-                let mut status=maintenance::calculate(rule,last,miles.current_mm,miles.estimated,&request.today,vehicle.severe,custom,&schedule.source_url,soon_mm,soon_days);
+                let (effective,notes)=maintenance::for_conditions(rule,&vehicle.severe_conditions);
+                let legacy_severe=vehicle.severe && vehicle.severe_conditions.is_empty();
+                let mut status=maintenance::calculate(&effective,last,miles.current_mm,miles.estimated,&request.today,legacy_severe,custom,&schedule.source_url,soon_mm,soon_days);
+                if !notes.is_empty(){status.explanation.push_str(" ");status.explanation.push_str(&notes);}
                 if !history.is_empty() && last.is_none() && status.status!="notApplicable" {
                     status.uncertain=true;status.explanation="Service records cannot be reliably ordered. Add the missing dates or mileage before choosing a last service.".into();
                 }
@@ -300,7 +344,7 @@ pub fn execute(request:Request)->Result<Value,String>{
             }
         }
         for item in state.custom_items.iter().filter(|v|v.vehicle_id==vehicle.id) {
-            let rule=Rule{id:item.id.clone(),title:item.title.clone(),action:item.action.clone(),normal:item.interval.clone(),initial:None,severe:None,source_row:"Owner-defined item; no manufacturer interval is claimed".into(),note_refs:vec![]};
+            let rule=Rule{id:item.id.clone(),title:item.title.clone(),action:item.action.clone(),normal:item.interval.clone(),initial:None,severe:None,source_row:"Owner-defined item; no manufacturer interval is claimed".into(),note_refs:vec![],exception:None,advisories:vec![]};
             let history:Vec<_>=services.iter().copied().filter(|s|s.item_ids.contains(&item.id)).collect();let last=latest_service(&history);
             let default=Override{vehicle_id:vehicle.id.clone(),item_id:item.id.clone(),interval:item.interval.clone(),disabled:false};
             let custom=state.overrides.iter().find(|v|v.vehicle_id==vehicle.id && v.item_id==item.id).unwrap_or(&default);
@@ -316,9 +360,10 @@ pub fn execute(request:Request)->Result<Value,String>{
         summaries.push(json!({"vehicleId":vehicle.id,"mileage":miles,"maintenance":due,"fuel":fuel_summary(&state,&vehicle.id),
             "costs":{"currency":vehicle.currency,"fuelCents":fuel_cost,"serviceCents":service_cost,"otherOperatingCents":other,"financingCents":financing,"recordedOperatingCents":fuel_cost+service_cost+other,"recordedTotalCents":fuel_cost+service_cost+other+financing},
             "counts":{"readings":state.readings.iter().filter(|r|r.vehicle_id==vehicle.id).count(),"services":services.len(),"fuel":state.fuel.iter().filter(|e|e.vehicle_id==vehicle.id).count(),"expenses":state.expenses.iter().filter(|e|e.vehicle_id==vehicle.id).count(),"trips":state.trips.iter().filter(|e|e.vehicle_id==vehicle.id).count()},
+            "forecast":analytics::forecast(&state,&vehicle.id,request.now_ms),
             "analytics":periods.iter().map(|period|analytics::summarize(&state,&vehicle.id,period)).collect::<Vec<_>>() }));
     }
-    Ok(json!({"ok":true,"changed":changed,"state":state,"summaries":summaries,"schedule":schedule,"capabilities":crate::capabilities::registry()}))
+    Ok(json!({"ok":true,"changed":changed,"state":state,"summaries":summaries,"schedule":schedule,"importReview":import_review,"capabilities":crate::capabilities::registry()}))
 }
 pub fn execute_json(input:&[u8])->Vec<u8>{
     let result=if input.len()>MAX_JSON{Err("Ownership request exceeds size limit".into())}else{serde_json::from_slice::<Request>(input).map_err(|_|"Invalid ownership request or unsupported fields".into()).and_then(execute)};

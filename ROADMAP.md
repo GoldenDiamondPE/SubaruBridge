@@ -15,14 +15,16 @@ iOS development is paused at the owner's request while Android is the focus.
    Subaru display, touch, audio coexistence and reconnect. Record evidence per layer.
 2. **Ownership foundation:** the Android Garage now uses shared Rust vehicle,
    odometer, uncertain service history, maintenance, fuel and expense models,
-   with atomic storage and explicit backup/restore. Next add a native iOS storage
-   and UI adapter using the same engine, then migrations and record attachments.
+   with atomic storage and explicit backup/restore. The iOS storage
+   and UI adapter will use the same engine when iOS work resumes. Android 0.58 adds
+   tested storage migration, receipts and complete/encrypted reviewed backups.
    Ownership remains usable without a car.
-3. **Authoritative maintenance:** complete manufacturer schedule notes, provenance,
-   severe-service applicability and verified parts/fluid references for the exact
-   initial vehicle. Unknown history stays unknown; estimates stay labeled.
-4. **Everyday companion:** verify reminder delivery through reboot/power management,
-   improve backup conflict review, add receipts, richer costs and forecast comparisons.
+3. **Authoritative maintenance:** Android 0.58 includes verified 2017 booklet
+   notes and offline manual specifications. Extend exact VIN-specific filter/CVT
+   fluid fitment and schedules for other vehicles. Unknown history stays unknown; estimates stay labeled.
+4. **Everyday companion:** Android 0.58 implements reviewed/encrypted complete
+   backups, receipts, clearer reminder diagnostics, fuel cost and mileage forecasts.
+   Retain overnight reminder observation and extend cross-period comparisons.
    Custom maintenance, service-book details, lead times, snoozes and manual trips
    plus recorded monthly/yearly distance/cost charts are implemented; automatic GPS/routes follow
    explicit permission and battery-budget testing. Do not infer live ECU data.

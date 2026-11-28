@@ -39,11 +39,15 @@ It does not change the actual service interval. An item's interval screen also
 offers 7/30-day reminder snoozes and clearing the snooze. The calculated due
 status remains visible while its notification is snoozed.
 
-Normal-service thresholds use whichever applicable time or mileage threshold
-comes first. Manufacturer severe-service footnotes have not yet been verified.
-Choosing severe conditions does not invent a shorter interval. Critical fluid
-specifications, capacities, part numbers and torque values are not supplied yet.
-See [maintenance provenance](../MAINTENANCE_DATA.md).
+Normal and applicable severe-service thresholds use whichever time or mileage
+threshold comes first. Choose specific driving conditions in the vehicle profile;
+the verified 2017 booklet changes only the matching components. Instructions to
+inspect more often without a numerical interval remain notes. An older broad
+severe flag stays unresolved until specific conditions or an owner interval are
+chosen. **More → Fluids, parts & specifications** opens the offline reference.
+Quantities distinguish oil/filter service fill from published system capacities.
+Unverified VIN-specific filter pairings and CVT service fluid remain labelled.
+See [manufacturer provenance](../MAINTENANCE_DATA.md).
 
 ## History, fuel, trips and costs
 
@@ -81,7 +85,7 @@ US miles/gallons and metric kilometres/litres share canonical stored values.
 ## Ownership summaries
 
 Open **More → Ownership summaries** for a year of recorded trip-distance or
-operating-cost bars. Switch chart type or year and choose **Read monthly details**
+operating-cost or measured fuel-economy bars. Switch chart type or year and choose **Read monthly details**
 for counts, distance, duration, average/longest trip, dated costs, financing and
 fuel measurements. The information is calculated locally without changing history.
 
@@ -90,47 +94,72 @@ covers the first and last confirmed readings within the period; it is not
 presented as complete monthly/yearly mileage. Undated service costs stay in
 lifetime totals and are not assigned a guessed month. Fuel economy requires
 both full fills within the selected period; partial fills between them count.
-Unrecorded driving and purchases are not invented.
+Unrecorded driving and purchases are not invented. Summaries also show fill-up
+counts, purchased volume/cost, weighted average fuel price and measured cycle
+fuel cost. The operating-costs-per-logged-distance ratio is explicitly labelled
+as partial recorded coverage. It is not a measured whole-vehicle cost per mile.
+Recent confirmed readings can support a labelled annual mileage estimate and
+an estimated date for reaching a service mileage threshold. Calendar service
+may be earlier, and future driving may differ.
 
 Maintenance refreshes when you return to the Garage and when the phone's date
 or time changes. Timestamp forms retain their shown time zone while you edit.
 Default timestamps include an offset so a repeated daylight-saving hour can be
 identified precisely. A nonexistent local time is rejected instead of shifted.
 
-## Reminders and data
+## Receipts and photos
 
-**More → Maintenance reminders** enables local reminders. Allow Android
-notifications when asked. The app checks saved changes and requests a daily
-inexact alarm; Android power management may defer delivery. No exact-alarm
-permission, server or push account is required. Unknown history and archived
-vehicles do not create overdue alerts. Notifications contain counts, without VINs,
-plates, private notes or message contents. Immediate notification delivery and
-alarm restoration after reboot passed on the Android emulator. Extended idle
-delivery on physical phones still needs device-specific verification.
+Save a vehicle, service, fuel entry, expense or trip, then open its saved record
+and choose **Receipts & photos**. The system picker accepts JPEG, PNG, WebP and
+unlocked PDF files. A private copy is saved immediately; no broad storage or
+camera permission is needed. Limits are 16 MiB per file, 256 attachments and
+256 MiB total, with PDFs up to 500 pages. View privately, save a copy or remove
+an attachment without deleting its record. Original photo metadata is retained.
 
-**Export garage backup** opens Android's file picker. It exports all vehicles
-and ownership records as versioned JSON, including custom maintenance, lead times
-and snoozes. It excludes app themes, connection captures, media credentials,
-Android reminder-enable permission and selection preferences. Backups are
-unencrypted: the destination is your choice, and choosing a cloud file provider
-may upload that file. Keep a backup before uninstalling or clearing app data.
+## Backups and restore
 
-**Import garage backup** adds new IDs. Identical records are not duplicated.
-Conflicting records/settings, unknown schemas and invalid data cancel the entire import.
-This first version does not replace a conflicting local record automatically.
+Open **More → Backups & receipt data**; the same entry appears before adding a
+vehicle. Encrypted .sbbk and unencrypted ZIP backups include all ownership records
+and receipt files. Records-only JSON keeps the original format without receipts.
+Encrypted export requires a confirmed 10–256 character password. Keep it safely:
+the app cannot recover a forgotten password.
 
-**Export history CSV** exports the selected vehicle with explicit canonical units
-and a currency column. Formula-like text is escaped for spreadsheets. **Export
-service report** creates offline HTML suitable for opening in a browser and
-printing. It retains unknown dates and approximate mileage, and contains no
-external scripts or images. Neither export is a mechanic's vehicle-condition
-certificate.
+**Restore or merge a backup** authenticates encrypted files first, then opens a
+review of new/matching records and receipts. Review each conflict, compare both
+versions and explicitly keep local or use the backup where permitted. Odometer
+ID conflicts retain local history; use the explained correction workflow instead.
+Records cannot move between vehicles, existing costs cannot change currency and
+receipt-ID conflicts keep the original local receipt.
 
-The first private storage adapter caps garage state at 1.5 MiB and 10,000 total
-history records. A failed or oversized save preserves the previous committed
-file. Future-schema or unreadable files are not reset to an empty garage.
-Attachments, encrypted backups, richer analytics and
-the native iOS Garage interface are subsequent work.
+Choose **Import reviewed backup**, then confirm. Files and the final record graph
+validate together. Cancellation, wrong passwords, damaged files, future versions,
+invalid choices and stale reviews preserve the garage. A garage changed after
+review needs another review. Reimporting identical records does not duplicate them.
+No PC, account or internet service is needed.
+
+CSV history and printable HTML service reports remain available for the selected
+vehicle. They preserve missing/approximate information and do not embed receipts.
+Choosing a cloud document provider may upload an explicitly exported file. All
+ownership data is excluded from connection diagnostic reports. Keep a complete
+backup before clearing app data or uninstalling.
+
+## Local reminders
+
+**More → Maintenance reminders** shows the last check, next scheduled daily check
+and permission/storage problems. Reminders are opt-in and need Android and
+channel permission. **Send test notification** checks local delivery without
+inventing a due service. Notifications show counts without vehicle names or notes.
+
+Daily checks target 9:00 a.m. local time, with schedule recovery after unlocked
+boot, app update or clock/time-zone change. Reopening Garage does not postpone
+the target. Saved changes also prompt checks. Android can defer inexact alarms
+during idle; scheduled time is not a delivery guarantee. Snoozed/archived items
+and unknown history are excluded. Mileage reminders depend on new saved readings
+or trips. See [release verification](ownership-058.md) for actual test evidence.
+
+The tested storage migration wraps the existing v1 garage without replacing its
+business records. Unsupported future schemas and unreadable files remain intact.
+See [backup and storage details](ownership-backup-format.md).
 
 ## See the current screens
 
@@ -138,3 +167,5 @@ The [design demo](demo.html) includes real Android 0.56 screenshots from a
 synthetic emulator vehicle. The mileage, service bill and trips shown there are
 examples, not the owner's private records. The head-unit preview uses the original
 app templates and does not access a vehicle, phone, notification feed or account.
+
+See [backup and storage details](ownership-backup-format.md).
